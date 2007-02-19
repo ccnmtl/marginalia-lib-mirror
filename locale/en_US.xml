@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+ This is based on the OJS locale format, but with OJS-specific information
+ stripped out.  Simple XSLT transformations will convert it into the correct
+ OJS version, and into Javascript for other versions of Marginalia.
+ See util/locale2js.xsl.
+-->
+ 
+<locale name="en_US" full_name="U.S. English">
+	<!-- Button titles -->
+	<message key="public annotation">This annotation is public.</message>
+	<message key="private annotation">This annotation is private.</message>	
+	<message key="delete annotation button">Delete this annotation.</message>
+	<message key="annotation link button">Link to another document.</message>
+	<message key="annotation link label">Select a document to link to.</message>
+	<message key="delete annotation link button">Remove this link.</message>
+	
+	<!-- Errors -->
+	<message key="browser support of W3C range required for annotation creation"
+		>Your browser does not support the W3C range standard, so you cannot create annotations.</message>
+	<message key="select text to annotate">You must select some text to annotate.</message>
+	<message key="invalid selection">Selection range is not valid.</message>
+	<message key="corrupt XML from service"
+		>An attempt to retrieve annotations from the server returned corrupt XML data.</message>
+	<message key="note too long">Please limit your margin note to 250 characters.</message>
+	<message key="quote too long"
+		>The passage you have attempted to highlight is too long.  It may not exceed 1000 characters.</message>
+</locale>

@@ -1,0 +1,119 @@
+<html>
+<head>
+	<title>Marginalia Manifest</title>
+	<style type="text/css">
+		ol li {
+			margin: 1em 0 ;
+		}
+	</style>
+</head>
+<body>
+<h1>Marginalia Manifest</h1>
+
+<p>These are the implementation files that should be in this package:</p>
+
+<h2><code>locale</code> directory</h2>
+
+<p>The source of localized strings used by Marginalia.  The actual manner
+by which the host application decides which locale to use is 
+application-specific.  The Marginalia demo uses util/locale2js.xsl to
+produce www/strings.js, which should be included along with the Marginalia
+scripts.  These latter two files have been included to provide a working
+example of how Marginalia expects to access these localized strings regardless
+of how the host application provides them.</p>
+
+<p>Some applications may define their own version of this file in order
+to add more strings used for other features related to Marginalia.  The OJS
+plug-in, for example, does this.</p>
+
+<dl>
+<dt>locale/en_US.xml</dt>
+<dd>Sample English-language strings.</dd>
+</dl>
+
+<h2><code>util</code> directory</h2>
+
+<p>These are useful scripts used to construct an application.  They are
+not used at runtime.</p>
+
+<dl>
+
+<dt>util/dtd2js.pl</dt>
+<dd>Generates marginalia/html-model.js from html.dtd.</dd>
+
+<dt>util/html.dtd</dt>
+<dd>The HTML 4.01 Transitional DTD from the W3C.</dd>
+
+<dt>util/locale2js.xsl</dt>
+<dd>A sample conversion of locale/en_US.xml to produce www/strings.js,
+a Javascript file containing localized strings used by Marginalia.  See
+locale/en_US.xml above for details.</dd>
+
+<dt>www/strings.js</dt>
+<dd>See locale/en_US.xml above.</dd>
+
+</dl>
+
+<h2><code>marginalia</code> directory</h2>
+
+<p>This is the actual client-side library code.  It is named marginalia rather
+than, say, lib, in order to differentiate it from other client-side code that
+may be included in the host application.</p>
+
+<p>This directory should be dropped in to an existing host application without
+change.</p>
+
+<dl>
+
+<dt>3rd-party.js</dt>
+<dd>Some third-party Javascript code.</dd>
+
+<dt>annotation.js</dt>
+<dd>Defines a class representing annotations on the client side.</dd>
+
+<dt>domutil.js</dt>
+<dd>HTML DOM manipulation methods.</dd>
+
+<dt>html-model.js</dt>
+<dd>Information about the HTML document model needed by Marginalia.</dd>
+
+<dt>linkable.js</dt>
+<dd>Code used to create hyperlinks to block-level elements.  Used by the OJS
+plug-in.</dd>
+
+<dt>log.js</dt>
+<dd>Logging code.</dd>
+
+<dt>marginalia.js</dt>
+<dd>The bulk of the Marginalia UI implementation, with some application logic.</dd>
+
+<dt>post-micro.js</dt>
+<dd>Class representing an annotatable content area on a page.  Based on the hAtom
+microformat.</dd>
+
+<dt>prefs.js</dt>
+<dd>Class for storing Marginalia user preferences.</dd>
+
+<dt>ranges.js</dt>
+<dd>Calculations for locating points within the page, and highlighted ranges.
+Include special range calculation code for IE (as that browser doesn't implement
+the W3C Range object) and conversions between the W3C Range representation
+(which is not serializable or portable across browsers) and the Marginalia
+block/word/char implementation.  Prone to hard-to-find bugs.</dd>
+
+<dt>rest-annotate.js</dt>
+<dd>Defines methods for CRUD annotation operations on the server-side over a 
+(mostly) RESTful protocol.</dd>
+
+<dt>rest-keywords.js</dt>
+<dd>Defines methods for retrieving keywords from the server using a (mostly)
+RESTful protocol.</dd>
+
+<dt>smartcopy.js</dt>
+<dd>Smartcopy implementation.  Not part of annotation per-se, but necessary so
+that the two can coexist.</dd>
+
+</dl>
+
+</body>
+</html>

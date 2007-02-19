@@ -1,0 +1,80 @@
+<html>
+<head>
+	<title>Marginalia Library Readme</title>
+	<style type="text/css">
+		ol li {
+			margin: 1em 0 ;
+		}
+	</style>
+</head>
+<body>
+<h1>Marginalia Library Readme</h1>
+
+<p>This is the Marginalia client-side annotation library.  When integrated with a
+web application, it allows users to highlight passages of text and create margin
+notes.  You can find a stand-alone demo and other resources on the
+<a href="http://www.geof.net/code/annotation">Marginalia web site</a>.</p>
+
+<p>This library <strong>is not a working application</strong>.  It is missing
+essential functions and other parts of the implementation (such as the server
+side), including localization, the database specification, some callbacks,
+configuration options, etc.  It is a separate project to make it a straightforward
+drop-in library for use in multiple host applications.</p>
+
+<p>If you want to test out Marginalia, you must connect it to a web application.
+The Marginalia demo application is the simplest candidate.  Developers may also
+find other implementations with real-world applications helpful - such as OJS
+for the clarity of its integration, and Moodle for some of its additional
+features (e.g. searchable annotations and more sophisticated user permissions).</p>
+
+<h2>License &amp; Funding</h2>
+
+<p>I want to particularly thank BC Campus for funding this effort, and for allowing 
+its release under the GNU General Public License, and to Simon Fraser University 
+through Dr. Andrew Feenberg's Applied Communication and Technology Lab in the School 
+of Communication and through the Learning and Instructional Development Centre
+for their financial support.  Malaspina University-College has also been supportive,
+as they provided a test site for Marginalia for Moodle.</p>
+
+<p>Open Journal Systems support and other improvements to Marginalia were 
+made possible by Dr. Rick Kopak's "Navigating Information 
+Spaces" project at the University of British Columbia, funded by the Social Sciences 
+and Humanities Research Council of Canada.  Chia-ning Chiang and John Willinsky have 
+also been essential in getting this project off the ground.</p>
+
+<p>Unless otherwise noted, the code is Copyright (c) 2005-2007 Geoffrey Glass.</p>
+ 
+<p>This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.</p>
+
+<p>This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
+
+<p>You should have received a copy of the
+<a href="LICENSE.txt">GNU General Public License</a> along with
+this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place - Suite 330, Boston, MA 02111-1307, USA.</p>
+
+<h2>Limitations and Known Bugs</h2>
+
+<p>I am aware of several limitations with the software:</p>
+
+<ul>
+<li>This version has only been tested with Firefox.  IE support is likely broken
+for the moment.  Other browsers may work if and when they support relevant
+web standards.  Note that I did develop IE support;  I simply haven't had the
+time to keep it up-to-date with the most recent improvements to the system.
+Fixing it should be a matter of a bit of (painful) debugging.</li>
+<li>I have only tried annotation with a MySQL database.  It's possible there
+are incompatibilities with others (e.g. Postgres).</li>
+<li>Marginalia is incompatible with the Firefox "Auto Copy" extension if the
+extension is set to automatically clear the selection once it has been copied
+(this can be modified with the "Auto Copy" preferences).</li>
+</ul>
+
+</body>
+</html>
+
