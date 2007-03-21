@@ -234,39 +234,42 @@ function _annotationDisplayCallback( )
 	
 	// Display cached annotations
 	var annotations = marginalia.annotationCache;
-	var i;
-	for ( i = 0;  i < annotations.length;  ++i )
+	if ( annotations )
 	{
-		if ( null != annotations[ i ] )
+		var i;
+		for ( i = 0;  i < annotations.length;  ++i )
 		{
-			var post = annotations[ i ].post;
-			if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
+			if ( null != annotations[ i ] )
 			{
-				// Make the error message visible by adding a class which can match a CSS
-				// rule to display the error appropriately.
-				// This doesn't work on... wait for it... Internet Explorer.  However, I don't
-				// want to directly display a specific element or add content, because that
-				// would be application-specific.  For now, IE will have to do without.
-				addClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
-				// This was the alternative Moodle-specific solution:
-				//var errorElement = getChildByTagClass( post.element, null, 'range-mismatch', _skipPostContent );
-				//if ( null != errorElement )
-				//	errorElement.style.display = 'block';
+				var post = annotations[ i ].post;
+				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
+				{
+					// Make the error message visible by adding a class which can match a CSS
+					// rule to display the error appropriately.
+					// This doesn't work on... wait for it... Internet Explorer.  However, I don't
+					// want to directly display a specific element or add content, because that
+					// would be application-specific.  For now, IE will have to do without.
+					addClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
+					// This was the alternative Moodle-specific solution:
+					//var errorElement = getChildByTagClass( post.element, null, 'range-mismatch', _skipPostContent );
+					//if ( null != errorElement )
+					//	errorElement.style.display = 'block';
+				}
+				// I figure it's probably cheaper to null them rather than resizing the array
+				// each time
+				annotations[ i ] = null;
+				
+				curTime = new Date( );
+				if ( curTime - startTime >= AN_COOP_MAXTIME )
+					break;
 			}
-			// I figure it's probably cheaper to null them rather than resizing the array
-			// each time
-			annotations[ i ] = null;
-			
-			curTime = new Date( );
-			if ( curTime - startTime >= AN_COOP_MAXTIME )
-				break;
 		}
+		
+		if ( annotations.length == i )
+			delete marginalia.annotationCache;
+		else
+			setTimeout( _annotationDisplayCallback, AN_COOP_TIMEOUT );
 	}
-	
-	if ( annotations.length == i )
-		delete marginalia.annotationCache;
-	else
-		setTimeout( _annotationDisplayCallback, AN_COOP_TIMEOUT );
 }
 
 /**

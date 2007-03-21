@@ -1237,7 +1237,7 @@ function getTextRangeContent( range, fskip )
 		{
 			if ( TEXT_NODE == walker.node.nodeType )
 				s += walker.node.nodeValue;
-			else if ( ELEMENT_NODE == walker.node.nodeType ) //&& 'inline' != htmlDisplayModel( walker.node.tagName ) )
+			else if ( ELEMENT_NODE == walker.node.nodeType && 'inline' != htmlDisplayModel( walker.node.tagName ) )
 				s += ' ';
 			walker.walk( ! fskip( walker.node ) );	
 		}
