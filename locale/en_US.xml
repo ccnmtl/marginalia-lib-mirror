@@ -26,4 +26,7 @@
 	<message key="note too long">Please limit your margin note to 250 characters.</message>
 	<message key="quote too long"
 		>The passage you have attempted to highlight is too long.  It may not exceed 1000 characters.</message>
+	<message key="zero length quote"
+		>You must select some text to annotate.</message>
 </locale>
+

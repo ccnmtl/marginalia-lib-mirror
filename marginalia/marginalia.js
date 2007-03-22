@@ -1657,6 +1657,14 @@ function createAnnotation( postId, warn )
 		return false;
 	}
 	
+	if ( 0 == annotation.quote.length )
+	{
+		annotation.destruct( );
+		if ( warn )
+			alert( getLocalized( 'zero length quote' ) );
+		return false;
+	}
+	
 	// Check to see whether the quote is too long (don't do this based on the raw text 
 	// range because the quote strips leading and trailing spaces)
 	if ( annotation.quote.length > MAX_QUOTE_LENGTH )
