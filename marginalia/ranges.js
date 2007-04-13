@@ -87,7 +87,7 @@ function textRangeToWordRange( textRange, root, fskip )
 
 function closestPrecedingElement( rel )
 {
-	while ( ELEMENT_NODE != rel.nodeType || 'block' != htmlDisplayModel( rel.tagName ))
+	while ( ELEMENT_NODE != rel.nodeType || ! isBreakingElement( rel.tagName ))
 	{
 		if ( rel.previousNode )
 			rel = rel.previousElement;
@@ -385,7 +385,7 @@ WordRange.prototype.compare = function( r2 )
 
 /**
  * Convert a node relative to a root element to a path.  This is like an xpath
- * except that only element nodes are counted.
+ * except that only breaking element nodes are counted.
  */
 function NodeToPath( root, rel )
 {
@@ -396,7 +396,7 @@ function NodeToPath( root, rel )
 		var count = 1;
 		for ( var prev = node.previousSibling; prev;  prev = prev.previousSibling )
 		{
-			if ( ELEMENT_NODE == prev.nodeType )
+			if ( ELEMENT_NODE == prev.nodeType && isBreakingElement( prev.tagName ) )
 				count += 1;
 		}
 		path = '/' + String( count ) + path;
@@ -417,19 +417,11 @@ function PathToNode( root, path )
 	// The simple case:  rel is root
 	if ( '/' == path )
 		node = root;
-	// Use XPath support if available (as non-Javascript it should run faster)
-	else if ( document.evaluate )
-	{
-		pathparts = path.split( '/' );
-		var xpath = '*[' + Number( pathparts[ 1 ] ) + ']';
-		for ( var i = 2;  i < pathparts.length;  ++i )
-			xpath += '/*[' + Number( pathparts[ i ] ) + ']';
-		var node = document.evaluate( xpath, root, null, XPathResult.ANY_TYPE, null );
-		node = node.iterateNext( );
-	}
-	// Otherwise use my implementation
 	else
 	{
+		/* This will be slow because it's a linear search.  
+		/* It would be well worth optimizing this by caching a list of jump points,
+		 * or adding a breaknum attribute usable by xpath (e.g. /*[@breaknum=4]) */
 		node = root;
 		nodes = path.split( '/' );
 		for ( var i = 1;  i < nodes.length;  ++i )
@@ -437,7 +429,7 @@ function PathToNode( root, path )
 			var count = Number( nodes[ i ] );
 			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
 			{
-				if ( ELEMENT_NODE == node.nodeType )
+				if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
 				{
 					count -= 1;
 					if ( 0 == count )
@@ -448,6 +440,21 @@ function PathToNode( root, path )
 				return null;
 		}
 	}
+	/* Unfortunately we can't use xpath, because it doesn't understand the HTML document
+	 * model and thus has no concept of breaking elements, nor does the syntax allow for
+	 * tests like /(p|div|li)[4]
+	 *
+	// Use XPath support if available (as non-Javascript it should run faster)
+	else if ( document.evaluate )
+	{
+		pathparts = path.split( '/' );
+		var xpath = '*[' + Number( pathparts[ 1 ] ) + ']';
+		for ( var i = 2;  i < pathparts.length;  ++i )
+			xpath += '/*[' + Number( pathparts[ i ] ) + ']';
+		var node = document.evaluate( xpath, root, null, XPathResult.ANY_TYPE, null );
+		node = node.iterateNext( );
+	}
+	*/
 	return node;
 }
 
@@ -455,7 +462,7 @@ function PathToNode( root, path )
 /*
  * Convert a word range to a string looking like this:
  * /2/1/3/15.0:/2/1/3/16.4
- * The first portion locates the rel node as the nth block-level element child of its parent.
+ * The first portion locates the rel node as the nth breaking element child of its parent.
  * Non-element nodes are *not counted*;  this is necessary because we don't want to
  * count whitespace only text nodes which might vanish under different formatting.
  * The second part of the string is the starting offset (as word and character),
@@ -510,7 +517,7 @@ NodeToWordPoint_Machine.prototype.startElement =
 NodeToWordPoint_Machine.prototype.endElement = function( node )
 {
 	this.trace( '<' + node.tagName + '>' );
-	if ( 'inline' != htmlDisplayModel( node.tagName ) )
+	if ( isBreakingElement( node.tagName ) )
 	{
 		if ( STATE_WORD == this.state )
 			this.state = STATE_SPACE;
@@ -943,7 +950,7 @@ WordPointWalker.prototype.walk = function()
 			{
 				//trace( 'WordPointWalker', ' WordPointWalker - element node (' + this.currNode.tagName + ')' );
 				// Note that ELEMENT_NODE is returned at both start and end tags
-				if ( 'inline' != htmlDisplayModel( this.currNode.tagName ) )
+				if ( isBreakingElement( this.currNode.tagName ) )
 					this.inWord = false;
 				this.atNodeEnd = true;
 			}
@@ -1237,7 +1244,7 @@ function getTextRangeContent( range, fskip )
 		{
 			if ( TEXT_NODE == walker.node.nodeType )
 				s += walker.node.nodeValue;
-			else if ( ELEMENT_NODE == walker.node.nodeType && 'inline' != htmlDisplayModel( walker.node.tagName ) )
+			else if ( ELEMENT_NODE == walker.node.nodeType && isBreakingElement( walker.node.tagName ) )
 				s += ' ';
 			walker.walk( ! fskip( walker.node ) );	
 		}

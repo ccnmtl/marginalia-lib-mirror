@@ -30,15 +30,28 @@ DOCUMENT_NODE = 9;
 
 /*
  * Return the display model (inline, block, none, or unknown) for an HTML element
+ * (note that table-row, table-cell, and similar display models are currently treated
+ * as 'block')
  */
 function htmlDisplayModel( tagName )
 {
 	var model = HTML_CONTENT_MODEL[ tagName.toLowerCase() ];
-	if ( null != model ) {
+	if ( null != model )
 		return model[ 'model' ];
-	}
+	return 'unknown';
 }
 
+/*
+ * Determine whether a given HTML element is breaking - i.e., whether the element boundary
+ * effectively adds whitespace (inline elements are not breaking;  block, table cell, 
+ * and similar elements are)
+ */
+function isBreakingElement( tagName )
+{
+	return 'block' == htmlDisplayModel( tagName );
+}
+
+ 
 /*
  * Is an HTML element valid within a specified element?
  * The table used here is generated from the HTML DTD by a Perl script.
