@@ -156,6 +156,7 @@ function parseAnnotationXml( xmlDoc )
 							{
 								href = href.substring( window.annotationUrlBase.length );
 							}
+							annotation.url = href;
 							annotation.post = findPostByUrl( href );
 						}
 					}
@@ -172,7 +173,7 @@ function parseAnnotationXml( xmlDoc )
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
 						annotation.quote = null == field.firstChild ? null : field.firstChild.nodeValue;
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
-						rangeStr = field.firstChild.nodeValue;
+						annotation.rangeStr = field.firstChild.nodeValue;
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
 					{
 						if ( field.firstChild )
@@ -180,14 +181,20 @@ function parseAnnotationXml( xmlDoc )
 						else
 							annotation.access = 'private';
 					}
+					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
+						annotation.updated = field.firstChild ? null : field.firstChild.nodeValue;
 				}
+				// Linking up with posts and ranges should be moved out of here, so that this
+				// parse function would make sense to call outside the context of the annotated
+				// document (MarginaliaDirect has to do this)
+				//
 				// This should really check the validity of the whole annotation.  Most important
 				// though is that the ID not be zero, otherwise this would interfere with the
 				// creation of new annotations.
 				if ( 0 != annotation.id && null != annotation.post )
 				{
 					annotation.range = new WordRange( );
-					annotation.range.fromString( annotation.post.contentElement, rangeStr );
+					annotation.range.fromString( annotation.post.contentElement, annotation.rangeStr );
 					annotations[ annotations.length ] = annotation;
 				}
 			}

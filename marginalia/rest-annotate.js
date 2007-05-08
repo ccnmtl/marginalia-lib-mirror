@@ -60,14 +60,14 @@ function RestAnnotationService( serviceUrl )
 /**
  * Fetch a list of annotations from the server
  */
-RestAnnotationService.prototype.listAnnotations = function( marginalia, url, point, f )
+RestAnnotationService.prototype.listAnnotations = function( url, username, point, f )
 {
 	// exclude content to lighten the size across the wire
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += '?format=atom&exclude=content';
 	if ( point )
 		serviceUrl += '&point=' + encodeURIParameter( point );
-	serviceUrl += '&user=' + encodeURIParameter( marginalia.anusername ) + '&url=' + encodeURIParameter( url );
+	serviceUrl += '&user=' + encodeURIParameter( username ) + '&url=' + encodeURIParameter( url );
 	
 	var xmlhttp = createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -96,7 +96,7 @@ RestAnnotationService.prototype.listAnnotations = function( marginalia, url, poi
  * Create an annotation on the server
  * When successful, calls a function f with one parameter:  the URL of the created annotation
  */
-RestAnnotationService.prototype.createAnnotation = function( marginalia, annotation, f )
+RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 //url, offset, length, note, access, quote, quote_title, quote_author, f )
 {
 	var serviceUrl = this.serviceUrl;
@@ -140,7 +140,7 @@ RestAnnotationService.prototype.createAnnotation = function( marginalia, annotat
 /**
  * Update an annotation on the server
  */
-RestAnnotationService.prototype.updateAnnotation = function( marginalia, annotation, f )
+RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 {
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotation.id ) : ( '?id=' + annotation.id );
@@ -179,7 +179,7 @@ RestAnnotationService.prototype.updateAnnotation = function( marginalia, annotat
 /**
  * Delete an annotation on the server
  */
-RestAnnotationService.prototype.deleteAnnotation = function( marginalia, annotationId, f )
+RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 {
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotationId ) : ( '?id=' + annotationId );

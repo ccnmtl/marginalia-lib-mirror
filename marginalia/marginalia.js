@@ -118,7 +118,7 @@ function Marginalia( service, username, anusername, urlBase, preferences, keywor
 
 Marginalia.prototype.listAnnotations = function( url, block, f )
 {
-	var r = this.annotationService.listAnnotations( this, url, block, f );
+	var r = this.annotationService.listAnnotations( url, this.anusername, block, f );
 	// First strip out any existing annotations
 	// This used to be done by the callback function, but doing it here has the benefit
 	// of getting it done while the server is busy fetching the result.
@@ -140,17 +140,17 @@ Marginalia.prototype.listAnnotations = function( url, block, f )
 
 Marginalia.prototype.createAnnotation = function( annotation, f )
 {
-	this.annotationService.createAnnotation( this, annotation, f );
+	this.annotationService.createAnnotation( annotation, f );
 }
 
 Marginalia.prototype.updateAnnotation = function( annotation )
 {
-	this.annotationService.updateAnnotation( this, annotation, null );
+	this.annotationService.updateAnnotation( annotation, null );
 }
 
 Marginalia.prototype.deleteAnnotation = function( annotationId )
 {
-	this.annotationService.deleteAnnotation( this, annotationId, null );
+	this.annotationService.deleteAnnotation( annotationId, null );
 }
 
 

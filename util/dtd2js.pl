@@ -9,8 +9,8 @@
 # marginlia cannot correctly place highlight markers (for example, <em>
 # markers must not be inserted within a <script> element).
 
-%displayModels = (
-'a' => 'inline',
+%tagInfo = (
+'a' => ( model => 'inline' ),
 'abbr' => 'inline',
 'acronym' => 'inline',
 'address' => 'inline',
