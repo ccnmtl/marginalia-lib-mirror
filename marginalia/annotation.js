@@ -53,6 +53,7 @@ function Annotation( post, range )
 		this.quote_title = post.title;
 	}
 	this.range = range;
+	this.rangeStr = post && range ? range.toString( post.contentElement ) : null;
 	this.post = post;
 	this.id = 0;
 	this.note = '';
@@ -74,7 +75,11 @@ function annotationFromTextRange( post, textRange )
 	var range = textRangeToWordRange( textRange, post.contentElement, _skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
+	// TODO: The annotation object should be comfortable storing only the data about an annotation,
+	// without links to actual references etc.  Those should be derived or retrievable via methods
+	// (e.g. string = annotation.range (string), but WordRange = annotation.getRange())
 	var annotation = new Annotation( post, range );
+	annotation.rangeStr = range.toString( post.contentElement );
 	// Can't just call toString() to grab the quote from the text range, because that would
 	// include any smart copy text.
 	annotation.quote = getTextRangeContent( textRange, _skipContent );
