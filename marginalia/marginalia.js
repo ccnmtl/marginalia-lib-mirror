@@ -587,7 +587,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
 {
 	// Since we're editing, set the appropriate class on body
-	addClass( getBodyElement( ), AN_EDITINGNOTE_CLASS );
+	addClass( getBodyElement( document ), AN_EDITINGNOTE_CLASS );
 	
 	var annotation = getNestedFieldValue( noteElement, AN_ANNOTATION_FIELD );
 	var selectNode = getChildByTagClass( noteElement, 'select', AN_KEYWORDSCONTROL_CLASS, null );
@@ -1122,7 +1122,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
-	removeClass( getBodyElement( ), AN_EDITINGNOTE_CLASS );
+	removeClass( getBodyElement( document ), AN_EDITINGNOTE_CLASS );
 	
 	// The annotation is local and needs to be created in the DB
 	if ( annotation.isLocal )
@@ -1202,7 +1202,7 @@ PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
 	this.removeNote( marginalia, annotation );
 	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
-	addClass( getBodyElement( ), AN_EDITINGLINK_CLASS );
+	addClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
 	createCookie( AN_LINKING_COOKIE, annotation.id, 1 );
 	_enableLinkTargets( );
 	window.addEventListener( 'blur', _disableLinkTargets, false );
@@ -1253,7 +1253,7 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 	_disableLinkTargets( );
 	removeCookie( AN_LINKING_COOKIE );
 	removeCookie( AN_LINKURL_COOKIE );
-	removeClass( getBodyElement( ), AN_EDITINGLINK_CLASS );
+	removeClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
 	window.scrollTo( scrollX, scrollY );
 	return true;
 }
@@ -1277,7 +1277,7 @@ PostMicro.prototype.updateLink = function( marginalia, annotation )
 	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
-	removeClass( getBodyElement( ), AN_EDITINGLINK_CLASS );
+	removeClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
 	
 	window.scrollTo( scrollX, scrollY );
 }
@@ -1485,7 +1485,7 @@ function _editLink( event )
  */
 function _updateLinks( )
 {
-	if ( hasClass( getBodyElement( ), AN_EDITINGLINK_CLASS ) )
+	if ( hasClass( getBodyElement( document ), AN_EDITINGLINK_CLASS ) )
 	{
 		var annotationId = readCookie( AN_LINKING_COOKIE );
 		var newLink = readCookie( AN_LINKURL_COOKIE );

@@ -66,7 +66,7 @@ MarginaliaDirect.prototype.show = function( )
 	
 	box.appendChild( this.newButton( 'md-close', 'Close', function() { direct.hide( ) } ) );
 	
-	var body = getBodyElement( );
+	var body = getBodyElement( document );
 	body.appendChild( box );
 }
 

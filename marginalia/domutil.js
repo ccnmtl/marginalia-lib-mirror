@@ -153,9 +153,9 @@ function hasClass( element, className )
  * Convenience function to get the document's body element
  * (useful for setting event handlers and classes for global modes)
  */
-function getBodyElement( )
+function getBodyElement( doc )
 {
-	return getChildByTagClass( document.documentElement, 'body', null, null );
+	return getChildByTagClass( doc.documentElement, 'body', null, null );
 }
 
 /*

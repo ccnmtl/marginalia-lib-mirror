@@ -24,11 +24,37 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-// Only works on Mozilla - other browsers have no dump function
-function logError( s )
+/**
+ * First argument:  switch on logging
+ * Second argument:  log to pop-up log window (not just to console)
+ */
+function ErrorLogger( on, popup )
 {
-	if ( LOGGING_ON )
+	this.on = on;
+	this.popup = popup;
+	this.traceSettings = new Object( );
+	return this;
+}
+
+ErrorLogger.prototype.getLogElement =  function( )
+{
+	if ( ! this.logElement )
 	{
+		this.logWindow = window.open( "", "Log" );
+		this.logDocument = this.logWindow.document;
+		this.logDocument.open( "text/html", "replace" );
+		this.logDocument.write( "<html>\n<head>\n\t<title>Log</title>\n</head>\n<body>\n<ul id='log'>\n</ul>\n</body>\n</html>" );
+		this.logDocument.close( );
+		this.logElement = this.logDocument.getElementById( 'log' );
+	}
+	return this.logElement;
+}
+
+ErrorLogger.prototype.logError = function( s )
+{
+	if ( this.on )
+	{
+		// Only works on Mozilla - other browsers have no dump function
 		if ( window.dump )
 		{
 			// Not working - dunno why.  Or why it has to be so obtuse.
@@ -39,37 +65,52 @@ function logError( s )
 			*/
 			dump( "ERROR: " + s + "\n" );
 		}
-		var dumpElement = document.getElementById( 'debug' );
-		if ( INWINDOW_LOG && dumpElement )
+		if ( this.popup )
 		{
-			dumpElement.style.display = 'block';
-			var li = document.createElement( 'li' );
-			li.appendChild( document.createTextNode( s ) );
-			dumpElement.appendChild( li );
+			var dumpElement = this.getLogElement( );
+			if ( dumpElement )
+			{
+				var li = this.logDocument.createElement( 'li' );
+				li.appendChild( this.logDocument.createTextNode( s ) );
+				dumpElement.appendChild( li );
+			}
 		}
 	}
 }
 
-function setTrace( topic, b )
+ErrorLogger.prototype.setTrace = function( topic, b )
 {
-	if ( null == window.traceSettings )
-		window.traceSettings = new Object( );
-	window.traceSettings[ topic ] = b;
+	this.traceSettings[ topic ] = b;
+}
+
+ErrorLogger.prototype.trace = function( topic, s )
+{
+	if ( this.on && !topic || this.traceSettings[ topic ])
+	{
+		if ( window.dump )
+			dump( s + "\n");
+		if ( this.popup )
+		{
+			var dumpElement = this.getLogElement( );
+			if ( dumpElement )
+			{
+				var li = this.logDocument.createElement( 'li' );
+				li.appendChild( this.logDocument.createTextNode( s ) );
+				dumpElement.appendChild( li );
+			}
+		}
+	}
+}
+
+function logError( s )
+{
+	if ( window.log )
+		window.log.logError( s );
 }
 
 function trace( topic, s )
 {
-	if ( TRACING_ON && !topic || ( null != window.traceSettings && window.traceSettings[ topic ]) )
-	{
-		if ( window.dump )
-			dump( s + "\n");
-		var dumpElement = document.getElementById( 'debug' );
-		if ( INWINDOW_LOG && dumpElement )
-		{
-			dumpElement.style.display = 'block';
-			var li = document.createElement( 'li' );
-			li.appendChild( document.createTextNode( s ) );
-			dumpElement.appendChild( li );
-		}
-	}
+	if ( window.log )
+		window.log.trace( topic, s );
 }
+
