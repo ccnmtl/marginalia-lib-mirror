@@ -111,6 +111,31 @@ function getLocalName( element )
 		return element.baseName;	// IE implementation
 }
 
+/**
+ * Add an event listener (W3C or IE)
+ * Note that IE a) only supports bubbling and b) doesn't provide the target, so this can
+ * only be used in limited circumstances
+ */
+function addAnonBubbleEventListener( element, eventName, f )
+{
+	if ( element.addEventListener )
+		// Currently this won't work in IE, because it doesn't support the W3C event model.
+		element.addEventListener( eventName, f, false );
+	else
+		element.attachEvent( 'on' + eventName, f );
+}
+
+/**
+ * Named for symmetry with addAnonBubbleEventListener
+ */
+function removeAnonBubbleEventListener( element, eventName, f )
+{
+	if ( element.addEventListener )
+		element.removeEventListener( eventName, f, false );
+	else
+		element.detachEvent( 'on' + eventName, f );
+}
+
 /*
  * Stop an event from bubbling
  */
@@ -119,7 +144,12 @@ function stopPropagation( event )
 	if ( event.stopPropagation )
 		event.stopPropagation();		// W3C
 	else
+	{
+		// So that this can be passed as a handler without first calling getEvent
+		if ( ! event )
+			event = window.event;
 		event.cancelBubble = true;	// IE
+	}
 }
 
 /*

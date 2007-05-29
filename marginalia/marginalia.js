@@ -97,7 +97,8 @@ function marginaliaInit( service, thisuser, anuser, urlBase, preferences, keywor
 			document.onkeyup = _keyupCreateAnnotation;
 	}
 	
-	if ( ANNOTATION_LINKING )
+	// Click-to-link doesn't work in IE because of its weak event model
+	if ( ANNOTATION_LINKING && window.addEventListener )
 	{
 		window.addEventListener( 'focus', _enableLinkTargets, false );
 		window.addEventListener( 'focus', _updateLinks, false );
@@ -444,7 +445,6 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		{
 			var expandButton = document.createElement( 'button' );
 			expandButton.className = AN_EXPANDBUTTON_CLASS;
-			expandButton.setAttribute( 'type', 'button' );
 			expandButton.setAttribute( 'title', 'annotation expand edit button' );
 			expandButton.appendChild( document.createTextNode(
 				AN_EDIT_NOTE_KEYWORDS == annotation.editing ? AN_COLLAPSED_ICON : AN_EXPANDED_ICON ) );
@@ -455,9 +455,11 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		}
 		
 		// If anywhere outside the note area is clicked, the annotation will be saved.
-		// Currently this won't work in IE, because it doesn't support the W3C event model.
-		document.documentElement.addEventListener( 'click', _saveAnnotation, false );
-		noteElement.addEventListener( 'click', stopPropagation, false );
+		// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
+		// so this only works because I can figure out which element was clicked by looking for
+		// AN_EDITINGNOTE_CLASS.
+		addAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotation );
+		addAnonBubbleEventListener( noteElement, 'click', stopPropagation );
 	}
 	else if ( AN_EDIT_LINK == annotation.editing )
 	{
@@ -497,9 +499,11 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		noteElement.appendChild( buttonNode );
 
 		// If anywhere outside the note area is clicked, the annotation will be saved.
-		// Currently this won't work in IE, because it doesn't support the W3C event model.
-		document.documentElement.addEventListener( 'click', _saveAnnotationLink, false );
-		noteElement.addEventListener( 'click', stopPropagation, false );
+		// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
+		// so this only works because I can figure out which element was clicked by looking for
+		// AN_EDITINGNOTE_CLASS.
+		addAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotationLink );
+		addAnonBubbleEventListener( noteElement, 'click', stopPropagation );
 	}
 	else
 	{
@@ -1075,9 +1079,13 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation )
  */
 PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 {
-	document.documentElement.removeEventListener( 'click', _saveAnnotation, false );
+	// Remove events
+	removeAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotation );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.id );
+	removeAnonBubbleEventListener( noteElement, 'click', stopPropagation );
+	
 	marginalia.preferences.setPreference( PREF_NOTEEDIT_MODE, annotation.editing );
-
+	
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = getWindowYScroll( );
 	var scrollX = getWindowXScroll( );
@@ -1119,7 +1127,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	
 	// Replace the editable note display
 	this.removeNote( marginalia, annotation );
-	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
+	noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	removeClass( getBodyElement( document ), AN_EDITINGNOTE_CLASS );
@@ -1205,7 +1213,8 @@ PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
 	addClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
 	createCookie( AN_LINKING_COOKIE, annotation.id, 1 );
 	_enableLinkTargets( );
-	window.addEventListener( 'blur', _disableLinkTargets, false );
+	if ( window.addEventListener )
+		window.addEventListener( 'blur', _disableLinkTargets, false );
 }
 
 
@@ -1214,7 +1223,10 @@ PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
  */
 PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 {
-	document.documentElement.removeEventListener( 'click', _saveAnnotationLink, false );
+	// Remove events
+	removeAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotationLink );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.id );
+	removeAnonBubbleEventListener( noteElement, 'click', stopPropagation );
 
 	// don't allow this to happen more than once
 	if ( ! annotation.editing )
@@ -1431,7 +1443,8 @@ function _editLinkKeypress( event )
  */
 function _saveAnnotation( event )
 {
-	event = getEvent( event );
+	// Note that the MS event model doesn't provide info about which element triggered this event
+	// so avoid using the event field - look up the currently-edited node instead
 	var note = getChildByTagClass( document.documentElement, 'li', AN_EDITINGNOTE_CLASS, null );
 	// var post = getParentByTagClass( note, null, 'post', false, null );
 	var post = getNestedFieldValue( note, AN_POST_FIELD );
@@ -1444,7 +1457,8 @@ function _saveAnnotation( event )
  */
 function _saveAnnotationLink( event )
 {
-	event = getEvent( event );
+	// Note that the MS event model doesn't provide info about which element triggered this event
+	// so avoid using the event field - look up the currently-edited node instead
 	var note = getChildByTagClass( document.documentElement, 'li', AN_EDITINGLINK_CLASS, null );
 	// var post = getParentByTagClass( note, null, 'post', false, null );
 	var post = getNestedFieldValue( note, AN_POST_FIELD );
