@@ -178,7 +178,10 @@ function parseAnnotationXml( xmlDoc )
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
 						annotation.quote = null == field.firstChild ? null : field.firstChild.nodeValue;
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
-						annotation.rangeStr = field.firstChild.nodeValue;
+					{
+						if ( field.getAttribute( 'format', 'block' ) == 'block' )
+							annotation.rangeStr = field.firstChild.nodeValue;
+					}
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
 					{
 						if ( field.firstChild )
