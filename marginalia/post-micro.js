@@ -39,18 +39,19 @@ PM_URL_REL = 'bookmark';				// the url of this fragment (uses rel rather than cl
  * Initially that information was integrated into individual DOM nodes (especially
  * as PostMicro objects), but because of memory leak problems I'm moving it here.
  */
-function PostPageInfo( )
+function PostPageInfo( doc )
 {
 	this.posts = new Array( );
 	this.postsById = new Object( );
 	this.postsByUrl = new Object( );
-	this.IndexPosts( document.documentElement );
+	this.IndexPosts( doc.documentElement );
 	return this;
 }
 
 PostPageInfo.prototype.IndexPosts = function( root )
 {
 	var posts = getChildrenByTagClass( root, null, PM_POST_CLASS );
+	trace( null, 'All posts: ' + posts );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
@@ -61,6 +62,7 @@ PostPageInfo.prototype.IndexPosts = function( root )
 		if ( null != post.url && '' != post.url )
 			this.postsByUrl[ post.url ] = post;
 		postElement.post = post;
+	trace( null, 'Post:  id=' + posts[ i ].id + ', url=' + posts[ i ].url );
 	}
 }
 
@@ -74,6 +76,10 @@ PostPageInfo.prototype.getPostByUrl = function( url )
 	return this.postsByUrl[ url ];
 }
 
+PostPageInfo.prototype.getAllPosts = function( )
+{
+	return this.posts;
+}
 
 /*
  * For ignoring post content when looking for specially tagged nodes, so that authors

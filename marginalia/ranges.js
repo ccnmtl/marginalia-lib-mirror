@@ -25,6 +25,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * $Id$
  */
 
 /*
@@ -50,41 +52,6 @@ STATE_DONE = 5
  * Second, these points can be ordered.
  */
  
-/**
- * Convert a text range to a word range
- * This is rather inefficient, because it starts at the beginning of the range for both points.
- * The second point will always follow the first, so with a bit of work the state machine could
- * continue from that point.
- *
- * textRange - the W3C range object (or matching Javascript object) specifying the range
- * root - a root element containing both the start and end points
- * fskip - a function that returns true when an element should not be counted
- * Returns:  A new WordRange object.
- */
-function textRangeToWordRange( textRange, root, fskip )
-{
-	var range = new WordRange( );
-	
-	rel = closestPrecedingElement( textRange.startContainer );
-	range.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
-
-	rel = closestPrecedingElement( textRange.endContainer );
-	range.end = nodePointToWordPoint( textRange.endContainer, textRange.endOffset, rel, false, fskip );
-	
-	// If there was a problem, free memory
-	if ( null == range.start || null == range.end )
-	{
-		if ( range.start )
-			range.start.destroy( );
-		if ( range.end )
-			range.end.destroy( );
-		return null;
-	}
-	
-	// Done
-	return range;
-}
-
 function closestPrecedingElement( rel )
 {
 	while ( ELEMENT_NODE != rel.nodeType || ! isBreakingElement( rel.tagName ))
@@ -100,13 +67,22 @@ function closestPrecedingElement( rel )
 }
 
 
+function TextRange( startContainer, startOffset, endContainer, endOffset )
+{
+	this.startContainer = startContainer;
+	this.startOffset = startOffset;
+	this.endContainer = endContainer;
+	this.endOffset = endOffset;
+	return this;
+}
+
 /*
  * Convert a word range to a text range
  * This is also inefficient, because annotation calls it repeatedly, each time from the start
  * of the document.  A better version would take advantage of the fact that highlights are
  * always shown in order.  Also, it suffers from the same inefficiency as textRangeToWordRange.
  */
-function wordRangeToTextRange( wordRange, root, fskip )
+TextRange.prototype.fromWordRange = function( wordRange, root, fskip )
 {
 	trace( 'word-range', 'wordRangeToTextRange: ' + wordRange.toString( root ) );
 
@@ -116,7 +92,8 @@ function wordRangeToTextRange( wordRange, root, fskip )
 	{
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' + wordRange.start.toString( root ) );
-		return null;
+		// TODO: proper exceptions
+		throw "Unable to find point"
 	}
 	var startPoint = new NodePoint( walker.currNode, walker.currChars );
 
@@ -125,27 +102,22 @@ function wordRangeToTextRange( wordRange, root, fskip )
 	{
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' + wordRange.end.toString( root ) );
-		return null;
+		// TODO: proper exceptions
+		throw "Unable to find point"
 	}
 	var endPoint = new NodePoint( walker.currNode, walker.currChars );
 
-	var range = new TextRange( startPoint.container, startPoint.offset, endPoint.container, endPoint.offset );
+	this.startContainer = startPoint.container;
+	this.startOffset = startPoint.offset;
+	this.endContainer = endPoint.container;
+	this.endOffset = endPoint.offset;
+
 	walker.destroy( );
 	walker = null;
 	startPoint.destroy( );
 	startPoint = null;
 	endPoint.destroy( );
 	endPoint = null;
-	return range;
-}
-
-function TextRange( startContainer, startOffset, endContainer, endOffset )
-{
-	this.startContainer = startContainer;
-	this.startOffset = startOffset;
-	this.endContainer = endContainer;
-	this.endOffset = endOffset;
-	return this;
 }
 
 TextRange.prototype.destroy = function( )
@@ -255,96 +227,44 @@ function WordPoint( )
 	return this;
 }
 
+WordPoint.prototype.toBlockPoint = function( root )
+{
+	var point = new BlockPoint( );
+	point.path = point.pathFromNode( root, this.rel );
+	point.words = this.words;
+	point.chars = this.chars;
+	return point;
+}
+	
+WordPoint.prototype.fromBlockPoint = function( blockPoint, root, fskip )
+{
+	this.rel = blockPoint.getReferenceElement( root, fskip )
+	this.words = blockPoint.words;
+	this.chars = blockPoint.chars;
+	return null != this.rel;
+}
+
+WordPoint.prototype.toXPathPoint = function( root )
+{
+	var point = new XPathPoint( );
+	point.path = point.pathFromNode( root, this.rel );
+	point.words = this.words;
+	point.chars = this.chars;
+	return point;
+}
+
+WordPoint.prototype.fromXPathPoint = function( xpathPoint, root, fskip )
+{
+	this.rel = xpathPoint.getReferenceElement( root, fskip );
+	this.words = xpathPoint.words;
+	this.chars = xpathPoint.chars;
+	return null != this.rel;
+}
+	
 WordPoint.prototype.destroy = function( )
 {
 	delete this.root;
 	this.rel = null;
-}
-
-/**
- * Compare two points to see which comes first.  The rel elements must be normalized -
- * i.e., each of rel1 and rel2 must be the closest possible rel for p1 and p2
- * respectively.
- */
-WordPoint.prototype.compare = function( p2 )
-{
-	if ( this.rel == p2.rel )
-	{
-		if ( this.words < p2.words || this.words == p2.words && this.chars < p2.chars )
-			return -1;
-		else if ( this.words > p2.words || this.words == p2.words && this.chars > p2.chars )
-			return 1;
-		else
-			return 0;
-	}
-	else
-	{
-		// Otherwise, compare rel node positions
-		// Since these nearly always have precalculated string representations,
-		// the easiest way to do this is to compare those.  This is also better
-		// than the O(n) liner search to compare positions required by browser that
-		// don't support node.compareDocumentPosition.
-		// It's a real hack to use document.documentElement here, but it will work (if a bit slowly)
-		var p1 = this.toString( document.documentElement );
-		var p2 = p2.toString( document.documentElement );
-		p1 = p1.split('/');
-		p2 = p2.split('/');
-		for ( var i = 0;  i < p1.length;  ++i )
-		{
-			if ( i >= p2.length )
-			{
-				trace( 'point-compare', 'Compare ' + p1 + ' > ' + p2 );
-				return 1;
-			}
-			var x1 = Number( p1[ i ] );
-			var x2 = Number( p2[ i ] );
-			if ( x1 < x2 )
-			{
-				trace( 'point-compare', 'Compare ' + p1 + ' < ' + p2 );
-				return -1;
-			}
-			if ( x1 > x2 )
-			{
-				trace( 'point-compare', 'Compare ' + p1 + ' > ' + p2 );
-				return 1;
-			}
-		}
-		if ( i < p2.length )
-		{
-			trace( 'point-compare', 'Compare ' + p1 + ' < ' + p2 );
-			return -1;
-		}
-		else
-		{
-			// this should never happen
-			return null;
-		}
-	}
-}
-
-WordPoint.prototype.toString = function( root )
-{
-	if ( null == root )
-		throw "WordPoint.toString requires root parameter";
-	if ( ! this.string || this.root != root)
-	{
-		this.root = root;
-		this.string = NodeToPath( root, this.rel ) + '/' + this.words + '.' + this.chars;
-	}
-	return this.string;
-}
-
-WordPoint.prototype.fromString = function( root, s )
-{
-	var slash = s.lastIndexOf( '/' );
-	this.rel = PathToNode( root, s.substring( 0, slash ) );
-	var dot = s.indexOf( '.' );
-	this.words = s.substring( slash + 1, dot ) * 1;
-	this.chars = s.substring( dot + 1 ) * 1;
-	//trace( null, 'WordPoint.fromString( ' + root.tagName + ',' + s + ') -> ' + this.rel.tagName + ' + ' + this.words + '.' + this.chars );
-	// root and string are cached:
-	this.root = root;
-	this.string = s;
 }
 
 function WordRange()
@@ -354,6 +274,63 @@ function WordRange()
 	return this;
 }
 
+/**
+ * Convert a text range to a word range
+ *
+ * textRange - the W3C range object (or matching Javascript object) specifying the range
+ * root - a root element containing both the start and end points
+ * fskip - a function that returns true when an element should not be counted
+ * Returns:  A new WordRange object.
+ */
+WordRange.prototype.fromTextRange = function( textRange, root, fskip )
+{
+	rel = closestPrecedingElement( textRange.startContainer );
+	this.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
+
+	rel = closestPrecedingElement( textRange.endContainer );
+	this.end = nodePointToWordPoint( textRange.endContainer, textRange.endOffset, rel, false, fskip );
+	
+	// If there was a problem, free memory
+	if ( null == this.start || null == this.end )
+	{
+		if ( this.start )
+			this.start.destroy( );
+		if ( this.end )
+			this.end.destroy( );
+		// TODO: a proper exception here or above
+		throw "WordRange.fromTextRange failed";
+	}
+}
+
+/**
+ * Convert an BlockRange to a WordRange
+ * Returns false if the start and/or end poin could not be resolved
+ */
+WordRange.prototype.fromBlockRange = function( blockRange, root, fskip )
+{
+	var r = true;
+	this.start = new WordPoint( );
+	r = r && this.start.fromBlockPoint( blockRange.start, root, fskip );
+	this.end = new WordPoint( );
+	r = r && this.end.fromBlockPoint( blockRange.end, root, fskip );
+	return r;
+}
+
+/**
+ * Convert an XPathRange to a WordRange
+ * Returns false if the start and/or end poin could not be resolved
+ */
+WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
+{
+	var r = true;
+	this.start = new WordPoint( );
+	r = r && this.start.fromXPathPoint( xpathRange.start, root, fskip );
+	this.end = new WordPoint( );
+	r = r && this.end.fromXPathPoint( xpathRange.end, root, fskip );
+	return r;
+}
+
+
 WordRange.prototype.destroy = function( )
 {
 	if ( null != this.start )
@@ -362,145 +339,18 @@ WordRange.prototype.destroy = function( )
 		this.end.destroy( );
 }
 
-/** Compare two word ranges
- * -1:  the range starts before r2, or they both start in the same place and it ends earlier
- * 0: the ranges are identical
- * 1: the range starts after r2, or if they both start in the same place it ends later
- */
-WordRange.prototype.compare = function( r2 )
-{
-	a = this.start.compare( r2.start );
-	if ( 0 == a )
-	{
-		b = this.end.compare( r2.end );
-		if ( 0 == b )
-			return 0;
-		else
-			return b > 0 ? 1 : -1;
-	}
-	else
-		return a;
-}
-
-
 /**
  * Convert a node relative to a root element to a path.  This is like an xpath
  * except that only breaking element nodes are counted.
+ * NodeToPath: replaced by BlockPoint.pathFromNode()
  */
-function NodeToPath( root, rel )
-{
-	var path = '';
-	var node = rel;
-	while ( null != node && root != node )
-	{
-		var count = 1;
-		for ( var prev = node.previousSibling; prev;  prev = prev.previousSibling )
-		{
-			if ( ELEMENT_NODE == prev.nodeType && isBreakingElement( prev.tagName ) )
-				count += 1;
-		}
-		path = '/' + String( count ) + path;
-		node = node.parentNode;
-	}
-	return path;
-}
 
 /**
  * Convert a path expression (as produced by NodeToPath()) to a node reference
+ * PathToNode: replaced by (Block|XPath)Point.getReferenceElement( )
  */
-function PathToNode( root, path )
-{
-	var node;
-	path = path.replace( /(\s|\u00a0)+/g, ' ' );
-	
-	// Locate the rel node based on the path
-	// The simple case:  rel is root
-	if ( '/' == path )
-		node = root;
-	else
-	{
-		/* This will be slow because it's a linear search.  
-		/* It would be well worth optimizing this by caching a list of jump points,
-		 * or adding a breaknum attribute usable by xpath (e.g. /*[@breaknum=4]) */
-		node = root;
-		nodes = path.split( '/' );
-		for ( var i = 1;  i < nodes.length;  ++i )
-		{
-			var count = Number( nodes[ i ] );
-			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
-			{
-				if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
-				{
-					count -= 1;
-					if ( 0 == count )
-						break;
-				}
-			}
-			if ( 0 != count )
-				return null;
-		}
-	}
-	/* Unfortunately we can't use xpath, because it doesn't understand the HTML document
-	 * model and thus has no concept of breaking elements, nor does the syntax allow for
-	 * tests like /(p|div|li)[4]
-	 *
-	// Use XPath support if available (as non-Javascript it should run faster)
-	else if ( document.evaluate )
-	{
-		pathparts = path.split( '/' );
-		var xpath = '*[' + Number( pathparts[ 1 ] ) + ']';
-		for ( var i = 2;  i < pathparts.length;  ++i )
-			xpath += '/*[' + Number( pathparts[ i ] ) + ']';
-		var node = document.evaluate( xpath, root, null, XPathResult.ANY_TYPE, null );
-		node = node.iterateNext( );
-	}
-	*/
-	return node;
-}
 
 	
-/*
- * Convert a word range to a string looking like this:
- * /2/1/3/15.0:/2/1/3/16.4
- * The first portion locates the rel node as the nth breaking element child of its parent.
- * Non-element nodes are *not counted*;  this is necessary because we don't want to
- * count whitespace only text nodes which might vanish under different formatting.
- * The second part of the string is the starting offset (as word and character),
- * as is the third part.
- *
- * There are usually multiple equivalent locator strings based on different rel
- * nodes.  Normalized paths always use the closest possible rel node - i.e., rel is
- * the element in the document for which the word offsets will be minima.
- * Normalized paths should always be used so that word ranges can be ordered.
- *
- * I experimented with a format looking like /2/1/3+15.0 /2/1/3+16.4, but changed to this
- * because the plus sign and space are hard to read when urlencoded.
- */
-WordRange.prototype.toString = function( root )
-{
-	if ( null == root )
-		throw "WordRange.toString() requires root parameter";
-	return this.start.toString( root ) + ':' + this.end.toString( root );
-}
-
-/** Read in the content of a WordRange from a string.
- *  Assumes the WordRange is set to default values
- *  Returns true if the string format was valid
- *  If the string property is not set by this function, then the input string
- *  did not contain a path component.  This is an indication to the caller to
- *  update the string representation on disk (if that's where it came from).
- */ 
-WordRange.prototype.fromString = function( root, s )
-{
-	var parts = s.split( ':' );
-	
-	this.start = new WordPoint( );
-	this.start.fromString( root, parts[ 0 ] );
-	this.end = new WordPoint( );
-	this.end.fromString( root, parts[ 1 ] );
-}
-
-
 /** Produce a point based on the state of a NodeToWordPoint_Machine */
 NodeToWordPoint_Machine.prototype.getPoint = function( )
 {

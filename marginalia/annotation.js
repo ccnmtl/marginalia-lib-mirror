@@ -36,6 +36,7 @@ AN_EDIT_NOTE_KEYWORDS = 'note keywords';
 AN_EDIT_LINK = 'link';
 
 
+
 /* ************************ Annotation Class ************************ */
 /*
  * This is a data-only class with (almost) no methods.  This is because all annotation
@@ -44,17 +45,11 @@ AN_EDIT_LINK = 'link';
  * An annotation is based on a selection range relative to a contentElement.
  * The ID of a new range is 0, as it doesn't yet exist on the server.
  */
-function Annotation( post, range )
+function Annotation( url )
 {
-	if ( null != post )
-	{
-		this.container = post.contentElement;
-		this.quote_author = post.author;
-		this.quote_title = post.title;
-	}
-	this.range = range;
-	this.rangeStr = post && range ? range.toString( post.contentElement ) : null;
-	this.post = post;
+	this.url = url;
+	this.blockRange = null;
+	this.xpathRange = null;
 	this.id = 0;
 	this.note = '';
 	this.access = ANNOTATION_ACCESS_DEFAULT;
@@ -65,9 +60,16 @@ function Annotation( post, range )
 	return this;
 }
 
+Annotation.prototype.fieldsFromPost = function( post )
+{
+	this.quote_author = post.author;
+	this.quote_title = post.title;
+}	
+
+
 function compareAnnotationRanges( a1, a2 )
 {
-	return a1.range.compare( a2.range );
+	return a1.blockRange.compare( a2.blockRange );
 }
 
 function annotationFromTextRange( post, textRange )
@@ -75,11 +77,9 @@ function annotationFromTextRange( post, textRange )
 	var range = textRangeToWordRange( textRange, post.contentElement, _skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
-	// TODO: The annotation object should be comfortable storing only the data about an annotation,
-	// without links to actual references etc.  Those should be derived or retrievable via methods
-	// (e.g. string = annotation.range (string), but WordRange = annotation.getRange())
-	var annotation = new Annotation( post, range );
-	annotation.rangeStr = range.toString( post.contentElement );
+	var annotation = new Annotation( post.url );
+	annotation.blockRange = textRange.toBlockRange( );
+	annotation.xpathRange = textRange.toXPathRange( );
 	// Can't just call toString() to grab the quote from the text range, because that would
 	// include any smart copy text.
 	annotation.quote = getTextRangeContent( textRange, _skipContent );
@@ -92,11 +92,8 @@ function annotationFromTextRange( post, textRange )
  */
 Annotation.prototype.destruct = function( )
 {
-	this.container = null;
-	this.post = null;
-	if ( this.range && this.range.destroy )
-		this.range.destroy( );
-	this.range = null;
+	this.blockRange = null;
+	this.xpathRange = null;
 }
 
 
@@ -174,13 +171,16 @@ function parseAnnotationXml( xmlDoc )
 						}
 					}
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'title' )
-						annotation.note = null == field.firstChild ? '' : field.firstChild.nodeValue;
+						annotation.note = null == field.firstChild ? '' : getNodeText( field );
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
-						annotation.quote = null == field.firstChild ? null : field.firstChild.nodeValue;
+						annotation.quote = null == field.firstChild ? null : getNodeText( field );
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
 					{
-						if ( field.getAttribute( 'format', 'block' ) == 'block' )
-							annotation.rangeStr = field.firstChild.nodeValue;
+						var format = field.getAttribute( 'format', 'block' );
+						if ( 'block' == format )
+							annotation.blockRange = new BlockRange( getNodeText( field ) );
+						else if ( 'xpath' == format )
+							annotation.xpathRange = new XPathRange( getNodeText( field ) );
 					}
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
 					{
@@ -190,21 +190,9 @@ function parseAnnotationXml( xmlDoc )
 							annotation.access = 'private';
 					}
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
-						annotation.updated = field.firstChild ? null : field.firstChild.nodeValue;
+						annotation.updated = getNodeText( field );
 				}
-				// Linking up with posts and ranges should be moved out of here, so that this
-				// parse function would make sense to call outside the context of the annotated
-				// document (MarginaliaDirect has to do this)
-				//
-				// This should really check the validity of the whole annotation.  Most important
-				// though is that the ID not be zero, otherwise this would interfere with the
-				// creation of new annotations.
-				if ( 0 != annotation.id && null != annotation.post )
-				{
-					annotation.range = new WordRange( );
-					annotation.range.fromString( annotation.post.contentElement, annotation.rangeStr );
-					annotations[ annotations.length ] = annotation;
-				}
+				annotations[ annotations.length ] = annotation;
 			}
 		}
 		annotations.sort( compareAnnotationRanges );

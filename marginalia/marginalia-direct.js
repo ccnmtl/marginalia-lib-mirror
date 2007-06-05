@@ -109,7 +109,8 @@ MarginaliaDirect.prototype.updateAnnotation = function( listItem )
 	var direct = this;
 	var annotation = listItem.annotation;
 	annotation.url = this.getFieldInput( listItem, 'md-annotation-url' ).value;
-	annotation.range = this.getFieldInput( listItem, 'md-annotation-range' ).value;
+	annotation.blockRange = new BlockRange( this.getFieldInput( listItem, 'md-annotation-block-range' ).value );
+	annotation.xpathRange = new XPathRange( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value );
 	annotation.quote = this.getFieldInput( listItem, 'md-annotation-quote' ).value;
 	annotation.note = this.getFieldInput( listItem, 'md-annotation-note' ).value;
 	annotation.link = this.getFieldInput( listItem, 'md-annotation-link' ).value;
@@ -146,7 +147,8 @@ MarginaliaDirect.prototype.showAnnotation = function( annotation )
 	
 	// URL, Range, Access
 	listItem.appendChild( this.newInputField( null, 'md-annotation-url', 'URL', annotation.url, true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-range', 'Range', annotation.rangeStr, true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-block-range', 'Block Range', annotation.blockRange.toString(), true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', annotation.xpathRange.toString(), true ) );
 	listItem.appendChild( this.newInputField( null, 'md-annotation-access', 'Access', annotation.access, true ) );
 	
 	// Quote, Note, Link

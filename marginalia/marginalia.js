@@ -117,6 +117,22 @@ function Marginalia( service, username, anusername, urlBase, preferences, keywor
 	return this;
 }
 
+/**
+ * Could do this in the initializer, but by leaving it until now we can avoid
+ * forcing clients to have an onload handler
+ */
+Marginalia.prototype.listPosts = function( )
+{
+	if ( ! this.posts )
+		this.posts = new PostPageInfo( document );
+	return this.posts;
+}
+
+/**
+ * Return a list of all annotations for a given url (and possibly block).
+ * Also delete any existing annotations.
+ * TODO: separate these two functionalities into different, clearly-labeled functions
+ */
 Marginalia.prototype.listAnnotations = function( url, block, f )
 {
 	var r = this.annotationService.listAnnotations( url, this.anusername, block, f );
@@ -124,17 +140,17 @@ Marginalia.prototype.listAnnotations = function( url, block, f )
 	// This used to be done by the callback function, but doing it here has the benefit
 	// of getting it done while the server is busy fetching the result.
 	var marginalia = window.marginalia;
-	var postElements = getChildrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-	for ( var i = 0;  i < postElements.length;  ++i )
+	var posts = marginalia.listPosts( ).getAllPosts( );
+	for ( var i = 0;  i < posts.length;  ++i )
 	{
+		var post = posts[ i ];
 		// Hide any range mismatch error
-		removeClass( postElements[ i ], AN_RANGEMISMATCH_ERROR_CLASS );
-		// should also destruct each annotation
-		var destructAnnotations = getPostMicro( postElements[ i ] ).removeAnnotations( marginalia );
-		for ( var j = 0;  j < destructAnnotations.length;  ++j )
-			destructAnnotations[ j ].destruct( );
-		normalizeSpace( postElements[ i ] );
-		postElements[ i ] = null;	// prevent IE leaks
+		removeClass( posts[ i ].element, AN_RANGEMISMATCH_ERROR_CLASS );
+		// Should also destruct each annotation
+		var annotations = post.removeAnnotations( marginalia );
+		for ( var j = 0;  j < annotations.length;  ++j )
+			annotations[ j ].destruct( );
+		normalizeSpace( post.element );
 	}
 	return r;
 }
@@ -242,7 +258,8 @@ function _annotationDisplayCallback( )
 		{
 			if ( null != annotations[ i ] )
 			{
-				var post = annotations[ i ].post;
+				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].url );
+				trace( null, 'url=' + annotations[ i ].url + ', post=' + post );
 				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
 				{
 					// Make the error message visible by adding a class which can match a CSS
@@ -250,11 +267,9 @@ function _annotationDisplayCallback( )
 					// This doesn't work on... wait for it... Internet Explorer.  However, I don't
 					// want to directly display a specific element or add content, because that
 					// would be application-specific.  For now, IE will have to do without.
+					// TODO: instead of turning the error on or off, actually list the annotations
+					// in place (which we can  out from range info)
 					addClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
-					// This was the alternative Moodle-specific solution:
-					//var errorElement = getChildByTagClass( post.element, null, 'range-mismatch', _skipPostContent );
-					//if ( null != errorElement )
-					//	errorElement.style.display = 'block';
 				}
 				// I figure it's probably cheaper to null them rather than resizing the array
 				// each time
@@ -278,17 +293,14 @@ function _annotationDisplayCallback( )
  */
 Marginalia.prototype.hideAnnotations = function( )
 {
-	var postElements = getChildrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-	for ( var i = 0;  i < postElements.length;  ++i )
+	var posts = this.listPosts( ).getAllPosts( );
+	for ( var i = 0;  i < posts.length;  ++i )
 	{
-		removeClass( postElements[ i ], AN_RANGEMISMATCH_ERROR_CLASS );
-		if ( postElements[ i ].post )
-		{
-			var annotations = postElements[ i ].post.removeAnnotations( );
-			for ( var j = 0;  j < annotations.length;  ++j )
-				annotations[ j ].destruct( );
-			postElements[ i ] = null;	// prevent IE leaks
-		}
+		var post = posts[ i ];
+		removeClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
+		var annotations = post.removeAnnotations( );
+		for ( var j = 0;  j < annotations.length;  ++j )
+			annotations[ j ].destruct( );
 	}
 }
 
@@ -303,7 +315,7 @@ Marginalia.prototype.hideAnnotations = function( )
 function getNodeByFragmentPath( url )
 {
 	var postElements = getChildrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-	if ( 0 == postElements.length )
+	if ( 1 != postElements.length )
 		return;
 	var post = getPostMicro( postElements[ 0 ] );
 	var content = post.getContentElement( );
@@ -320,7 +332,7 @@ function scrollWindowToNode( node )
 	if ( null != node )
 	{
 		var xoffset = getWindowXScroll( );
-		var yoffset = getElementYOffset( node, document.documentElement );
+		var yoffset = getElementYOffset( node, node.ownerDocument.documentElement );
 		window.scrollTo( xoffset, yoffset );
 	}
 }
@@ -673,9 +685,35 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
  */
 PostMicro.prototype.showHighlight = function( marginalia, annotation )
 {
-	trace( 'show-highlight', 'Show highlight for annotation at ' + annotation.range.toString( annotation.post.contentElement ) + ': ' + annotation.quote );
+	if ( annotation.xpathRange )
+		trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.xpathRange.toString( ) + ': ' + annotation.quote );
+	else
+		trace( 'show-highlight', 'Show highlight for annotation at block ' + annotation.blockRange.toString( ) + ': ' + annotation.quote );
+		
+	// Word range needed for conversion to text range and for later calculations
+	var wordRange = new WordRange( );
+	if ( annotation.xpathRange )
+	{
+		if ( ! wordRange.fromXPathRange( annotation.xpathRange, this.contentElement, _skipContent ) )
+		{
+			trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
+			return false;
+		}
+	}
+	else
+	{
+		if ( ! wordRange.fromBlockRange( annotation.blockRange, this.contentElement, _skipContent ) )
+		{
+			trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
+			return false;
+		}
+		// TODO: Store XPathRange back to annotation on server
+	}
 	
-	var textRange = wordRangeToTextRange( annotation.range, annotation.post.contentElement, _skipContent );
+	// Text range is easiest way to get textual content of annotation
+	// TODO: textRange.fromWordRange() is costly.  Implement WordRange.getText() for efficiency
+	var textRange = new TextRange( );
+	textRange.fromWordRange( wordRange );
 	// Check whether the content of the text range matches what the annotation expects
 	if ( null == textRange )
 	{
@@ -706,28 +744,21 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			tempRange.destroy( );
 			tempRange = null;
 		}
-		trace( 'find-quote', 'Annotation ' + annotation.id + ' range \"' + contextBefore + '<' + actual + '>' + contextAfter + '\" doesn\'t match "' + quote + '"' );
+		var rangeStr = annotation.blockRange ? annotation.blockRange.toString() : '';
+		trace( 'find-quote', 'Annotation ' + annotation.id + ' range (' + rangeStr + ') \"' + contextBefore + '<' + actual + '>' + contextAfter + '\" doesn\'t match "' + quote + '"' );
 		return false;
 	}
 	else
 		trace( 'find-quote', 'Quote found: ' + actual + ' (' + textRange.startOffset + ',' + textRange.endOffset + ')' );
 	
-	// Make a list of intermediate text nodes to create highlights in
-//	var startPoint = wordPointToNodePoint( annotation.range.rel, annotation.range.start, _skipContent );
-//	var walker = new WordWalker( startPoint.container, startPoint.offset,
-//		true, annotation.range.end, _skipContent );
-//	trace( 'show-highlight', 'annotation.range.rel=' + annotation.range.start.rel + ":\n" + getNodeText( annotation.range.start.rel ) );
-//	trace( 'show-highlight', 'Range: ' + annotation.range.toString( annotation.post.contentElement) );
-
-
-//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
-	var walker = new WordPointWalker( annotation.range.start.rel, _skipContent );
-	walker.walkToPoint( annotation.range.start );
+	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
+	var walker = new WordPointWalker( wordRange.start.rel, _skipContent );
+	walker.walkToPoint( wordRange.start );
 	var initialOffset = walker.currChars;
 	var initialRel = walker.currNode;
 
 	var highlightRanges = new Array();
-	walker.setPoint( annotation.range.end );
+	walker.setPoint( wordRange.end );
 	var rangeNum = 0;
 	var done = false;
 	while ( ! done )
@@ -1637,8 +1668,8 @@ function createAnnotation( postId, warn )
 		return false;
 	}
 		
-	var range = getPortableSelectionRange();
-	if ( null == range )
+	var textRange = getPortableSelectionRange();
+	if ( null == textRange )
 	{
 		if ( warn )
 			alert( getLocalized( 'select text to annotate' ) );
@@ -1662,8 +1693,14 @@ function createAnnotation( postId, warn )
 	
 	var marginalia = window.marginalia;
 	var post = document.getElementById( postId ).post;
-	var annotation = annotationFromTextRange( post, range );
+	var annotation = new Annotation( post.url );
 	annotation.userid = marginalia.username;
+	var wordRange = new WordRange( );
+	wordRange.fromTextRange( range, post.contentElement, _skipContent );
+	annotation.blockRange = wordRange.toBlockRange( );
+	annotation.xpathRange = wordRange.toXPathRange( );
+	
+	// TODO: test selection properly
 	if ( null == annotation )
 	{
 		if ( warn )
