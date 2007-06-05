@@ -711,49 +711,8 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		// TODO: Store XPathRange back to annotation on server
 	}
 	
-	// Text range is easiest way to get textual content of annotation
-	// TODO: This calculation is effectively done twice - once, here, to fetch the text, and once
-	// below to determine highlight regions.
-	var textRange = new TextRange( );
-	textRange.fromWordRange( wordRange, _skipContent );
-	// Check whether the content of the text range matches what the annotation expects
-	if ( null == textRange )
-	{
-		trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
-		return false;
-	}
-	var actual = getTextRangeContent( textRange, _skipContent );
-	var quote = annotation.quote;
-	actual = actual.replace( /\s|\u00a0\s*/g, ' ' );
-	quote = quote.replace( /\s|\u00a0\s*/g, ' ' );
-	if ( actual != quote )
-	{
-		var contextBefore = '';
-		var contextAfter = '';
-		var tempRange;
-		if ( textRange.startOffset > 0 )
-		{
-			tempRange = new TextRange( textRange.startContainer, textRange.startOffset >= 15 ? textRange.startOffset : 0, textRange.startContainer, textRange.startOffset );
-			contextBefore = getTextRangeContent( tempRange, _skipContent );
-			tempRange.destroy( );
-			tempRange = null;
-		}
-		var endLength = nodeTextLength( textRange.endContainer );
-		if ( textRange.endOffset < endLength )
-		{
-			tempRange = new TextRange( textRange.endContainer, textRange.endOffset, textRange.endContainer, textRange.endOffset + 15 < endLength ? textRange.endOffset + 15 : endLength );
-			contextAfter = getTextRangeContent( tempRange, _skipContent );
-			tempRange.destroy( );
-			tempRange = null;
-		}
-		var rangeStr = annotation.blockRange ? annotation.blockRange.toString() : '';
-		trace( 'find-quote', 'Annotation ' + annotation.id + ' range (' + rangeStr + ') \"' + contextBefore + '<' + actual + '>' + contextAfter + '\" doesn\'t match "' + quote + '"' );
-		return false;
-	}
-	else
-		trace( 'find-quote', 'Quote found: ' + actual + ' (' + textRange.startOffset + ',' + textRange.endOffset + ')' );
-	
 	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
+	// TODO: check whether the range even falls within the content element
 	var walker = new WordPointWalker( wordRange.start.rel, _skipContent );
 	walker.walkToPoint( wordRange.start );
 	var initialOffset = walker.currChars;
@@ -763,6 +722,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	walker.setPoint( wordRange.end );
 	var rangeNum = 0;
 	var done = false;
+	var actual = '';	// actual quote text
 	while ( ! done )
 	{
 		done = walker.walk( );
@@ -771,18 +731,38 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			highlightRanges[ rangeNum ] = new TextRange( 
 				walker.currNode, initialOffset,
 				walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( initialOffset, walker.currChars );
 		}
 		else
 		{
 			highlightRanges[ rangeNum ] = new TextRange(
 				walker.currNode, 0,
 				walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( 0, walker.currChars );
 		}
 		trace( 'show-highlight', 'HRange: ' + highlightRanges[ rangeNum ].startOffset + ' ' 
 			+ highlightRanges[ rangeNum ].endOffset + " [" + walker.currNode + "]\n" ); //+ getNodeText( walker.currNode ) );
 		rangeNum += 1;
 	}
 	walker.destroy();
+	
+	// Confirm whether the actual text matches what's expected in the annotation quote
+	var quote = annotation.quote;
+	actual = actual.replace( /\s+|\u00a0\s*/g, ' ' );
+	quote = quote.replace( /\s+|\u00a0\s*/g, ' ' );
+	if ( actual != quote )
+	{
+		// Older versions (before 2007-06-05) have some context calculation code which could be
+		// modified and used here.
+		var rangeStr = annotation.blockRange ? annotation.blockRange.toString() : '';
+		trace( 'find-quote', 'Annotation ' + annotation.id + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
+		return false;
+	}
+	else
+		trace( 'find-quote', 'Quote found: ' + actual );
+
 //setTrace( 'WordPointWalker', false );		// Show return values from WordPointWalker
 	
 	// Now iterate over the ranges and highlight each one
