@@ -1,5 +1,7 @@
 /* The following cookie functions are from Peter-Paul Koch's Quirksmode at
  * http://www.quirksmode.org/js/cookies.html
+ *
+ * $Id$
  */
 function createCookie(name,value,days) {
 	if (days) {

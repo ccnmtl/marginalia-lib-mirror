@@ -1,6 +1,8 @@
 /*
  * post-micro.js
  *
+ * Support for message / blog post micro-format.  This is based on the
+ * hAtom microformat.
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
@@ -22,8 +24,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * Support for message / blog post micro-format.  This is based on the
- * hAtom microformat.
+ * $Id$
  */
 
 // These class names will change once there's a microformat standard.
