@@ -266,9 +266,9 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 		var parts = path.match( /^(.*)\/word\((\d+),(\d+)\)$/ );
 		if ( parts )
 		{
-			this.path = parts[ 0 ];
-			this.words = Number( parts[ 1 ] );
-			this.chars = Number( parts[ 2 ] );
+			this.path = parts[ 1 ];
+			this.words = Number( parts[ 2 ] );
+			this.chars = Number( parts[ 3 ] );
 		}
 		else
 		{
@@ -282,7 +282,7 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 XPathPoint.prototype.toString = function( )
 {
 	if ( this.words )
-		return this.path + '/words(' + this.words + ',' + this.chars + ')';
+		return this.path + '/word(' + this.words + ',' + this.chars + ')';
 	else
 		return this.path;
 }
@@ -303,18 +303,22 @@ XPathPoint.prototype.pathFromNode = function( root, rel )
 			if ( ELEMENT_NODE == prev.nodeType && prev.tagName == node.tagName )
 				count += 1;
 		}
-		path = '/' + node.tagName + '[' + String( count ) + ']' + path;
+		if ( '' != path )
+			path = path + '/';
+		path = node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
 		node = node.parentNode;
 	}
 	this.path = path;
 }
 
-XPathPoint.prototype.getReferenceNode = function( root )
+XPathPoint.prototype.getReferenceElement = function( root )
 {
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
+		// TODO: Figure out how to handle tag case name inconsistencies between HTML and XHTML
 		// TODO: add security check here to ensure now unsafe xpath function calls (e.g. document())
+		trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + this.path );
 		var node = root.ownerDocument.evaluate( this.path, root, null, XPathResult.ANY_TYPE, null );
 		node = node.iterateNext( );
 		return node;

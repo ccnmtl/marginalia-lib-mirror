@@ -52,7 +52,6 @@ function PostPageInfo( doc )
 PostPageInfo.prototype.IndexPosts = function( root )
 {
 	var posts = getChildrenByTagClass( root, null, PM_POST_CLASS );
-	trace( null, 'All posts: ' + posts );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
@@ -63,7 +62,6 @@ PostPageInfo.prototype.IndexPosts = function( root )
 		if ( null != post.url && '' != post.url )
 			this.postsByUrl[ post.url ] = post;
 		postElement.post = post;
-	trace( null, 'Post:  id=' + posts[ i ].id + ', url=' + posts[ i ].url );
 	}
 }
 

@@ -261,7 +261,6 @@ function _annotationDisplayCallback( )
 			if ( null != annotations[ i ] )
 			{
 				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].url );
-				trace( null, 'url=' + annotations[ i ].url + ', post=' + post );
 				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
 				{
 					// Make the error message visible by adding a class which can match a CSS
@@ -696,9 +695,10 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	var wordRange = new WordRange( );
 	if ( annotation.xpathRange )
 	{
-		if ( ! wordRange.fromXPathRange( annotation.xpathRange, this.contentElement, _skipContent ) )
+		var r = wordRange.fromXPathRange( annotation.xpathRange, this.contentElement, _skipContent );
+		if ( false == r )
 		{
-			trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
+			// trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
 			return false;
 		}
 	}
@@ -713,9 +713,10 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	}
 	
 	// Text range is easiest way to get textual content of annotation
-	// TODO: textRange.fromWordRange() is costly.  Implement WordRange.getText() for efficiency
+	// TODO: This calculation is effectively done twice - once, here, to fetch the text, and once
+	// below to determine highlight regions.
 	var textRange = new TextRange( );
-	textRange.fromWordRange( wordRange );
+	textRange.fromWordRange( wordRange, _skipContent );
 	// Check whether the content of the text range matches what the annotation expects
 	if ( null == textRange )
 	{
@@ -1698,9 +1699,9 @@ function createAnnotation( postId, warn )
 	var annotation = new Annotation( post.url );
 	annotation.userid = marginalia.username;
 	var wordRange = new WordRange( );
-	wordRange.fromTextRange( range, post.contentElement, _skipContent );
-	annotation.blockRange = wordRange.toBlockRange( );
-	annotation.xpathRange = wordRange.toXPathRange( );
+	wordRange.fromTextRange( textRange, post.contentElement, _skipContent );
+	annotation.blockRange = wordRange.toBlockRange( post.contentElement );
+	annotation.xpathRange = wordRange.toXPathRange( post.contentElement );
 	
 	// TODO: test selection properly
 	if ( null == annotation )
@@ -1710,11 +1711,13 @@ function createAnnotation( postId, warn )
 		return false;
 	}
 	
+	annotation.quote = getTextRangeContent( textRange, _skipContent );
 	if ( 0 == annotation.quote.length )
 	{
 		annotation.destruct( );
 		if ( warn )
 			alert( getLocalized( 'zero length quote' ) );
+		trace( null, "zero length quote '" + annotation.quote + "'" );
 		return false;
 	}
 	

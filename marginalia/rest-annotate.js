@@ -43,6 +43,10 @@ function encodeURIParameter( s )
 	s = s.replace( /%2[fF]/g, '/' );
 	s = s.replace( /%3[aA]/g, ':' );
 	s = s.replace( /%20/g, '+' );
+	s = s.replace( /%5[bB]/g, '[' );
+	s = s.replace( /%5[dD]/g, ']' );
+	s = s.replace( /%2[cC]/g, ',' );
+	s = s.replace( /%3[bB]/g, ';' );
 	return s;
 }
 
@@ -99,19 +103,21 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, point
  * When successful, calls a function f with one parameter:  the URL of the created annotation
  */
 RestAnnotationService.prototype.createAnnotation = function( annotation, f )
-//url, offset, length, note, access, quote, quote_title, quote_author, f )
 {
 	var serviceUrl = this.serviceUrl;
 		
 	var body
 		= 'url=' + encodeURIParameter( annotation.url )
-		+ '&range=' + encodeURIParameter( annotation.range.toString( annotation.post.contentElement ) )
 		+ '&note=' + encodeURIParameter( annotation.note )
 		+ '&access=' + encodeURIParameter( annotation.access )
 		+ '&quote=' + encodeURIParameter( annotation.quote )
 		+ '&quote_title=' + encodeURIParameter( annotation.quote_title )
 		+ '&quote_author=' + encodeURIParameter( annotation.quote_author )
 		+ '&link=' + encodeURIParameter( annotation.link );
+	if ( annotation.blockRange )
+		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
+	if ( annotation.xpathRange )
+		body += '&xpath-range=' + encodeURIParameter( annotation.xpathRange.toString( ) );
 	var xmlhttp = createAjaxRequest( );
 	
 	xmlhttp.open( 'POST', serviceUrl, true );
@@ -154,6 +160,11 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 		body += ( body == '' ? '' : '&' ) + 'access=' + annotation.access;
 	if ( null != annotation.link )
 		body += ( body == '' ? '' : '&' ) + 'link=' + annotation.link;
+	if ( annotation.blockRange )
+		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
+	if ( annotation.xpathRange )
+		body += '&xpath-range=' + encodeURIParameter( annotation.xpathRange.toString( ) );
+
 	var xmlhttp = createAjaxRequest( );
 	xmlhttp.open( 'PUT', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );

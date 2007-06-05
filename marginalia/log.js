@@ -44,7 +44,7 @@ ErrorLogger.prototype.getLogElement =  function( )
 	{
 		this.logWindow = window.open( "marginalia/log.html", "Log" );
 		this.logDocument = this.logWindow.document;
-/*		this.logDocument.open( "text/html", "replace" );
+		this.logDocument.open( "text/html", "replace" );
 		this.logDocument.write( 
 //			"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n"
 			"<html>\n<head>\n"
@@ -52,13 +52,15 @@ ErrorLogger.prototype.getLogElement =  function( )
 			+ "\t<title>Marginalia Log</title>\n"
 			+ "</head>\n<body>\n<ul id='log'>\n</ul>\n</body>\n</html>" );
 		this.logDocument.close( );
-		var stylesheet = this.logDocument.createElement( 'link' );
-		stylesheet.setAttribute( 'rel', 'stylesheet' );
-		stylesheet.setAttribute( 'type', 'text/css' );
-		stylesheet.setAttribute( 'href', 'log.css' );
-		var headElement = getChildByTagClass( this.logDocument.documentElement, 'head', null );
-		headElement.appendChild( stylesheet );
-*/		this.logElement = this.logDocument.getElementById( 'log' );
+// For some reason, if I add the stylesheet the logging information doesn't show up.
+// Looks like a browser bug.
+//		var stylesheet = this.logDocument.createElement( 'link' );
+//		stylesheet.setAttribute( 'rel', 'stylesheet' );
+//		stylesheet.setAttribute( 'type', 'text/css' );
+//		stylesheet.setAttribute( 'href', 'log.css' );
+//		var headElement = getChildByTagClass( this.logDocument.documentElement, 'head', null );
+//		headElement.appendChild( stylesheet );
+		this.logElement = this.logDocument.getElementById( 'log' );
 	}
 	return this.logElement;
 }
@@ -110,10 +112,10 @@ ErrorLogger.prototype.trace = function( topic, s )
 				var li = this.logDocument.createElement( 'li' );
 				li.appendChild( this.logDocument.createTextNode( s ) );
 				dumpElement.appendChild( li );
-				dump( "Logged to window: " + s );
+//				dump( "Logged to window: " + s );
 			}
-			else
-				dump( "Unable to log to window" );
+//			else
+//				dump( "Unable to log to window" );
 		}
 	}
 }

@@ -82,16 +82,18 @@ function TextRange( startContainer, startOffset, endContainer, endOffset )
  * of the document.  A better version would take advantage of the fact that highlights are
  * always shown in order.  Also, it suffers from the same inefficiency as textRangeToWordRange.
  */
-TextRange.prototype.fromWordRange = function( wordRange, root, fskip )
+TextRange.prototype.fromWordRange = function( wordRange, fskip )
 {
-	trace( 'word-range', 'wordRangeToTextRange: ' + wordRange.toString( root ) );
+	// These trace statements used to output the BlockRange string for the word range,
+	// but with that code moved out and without a root parameter, that no longer works
+	trace( 'word-range', 'wordRangeToTextRange' );
 
 	// Walk to the start point
 	var walker = new WordPointWalker( wordRange.start.rel, fskip );
 	if ( ! walker.walkToPoint( wordRange.start ) )
 	{
 		// Using document.documentElement is a slow hack
-		trace( 'word-range', 'Unable to find point ' + wordRange.start.toString( root ) );
+		trace( 'word-range', 'Unable to find point ' );
 		// TODO: proper exceptions
 		throw "Unable to find point"
 	}
@@ -101,7 +103,7 @@ TextRange.prototype.fromWordRange = function( wordRange, root, fskip )
 	if ( ! walker.walkToPoint( wordRange.end ) )
 	{
 		// Using document.documentElement is a slow hack
-		trace( 'word-range', 'Unable to find point ' + wordRange.end.toString( root ) );
+		trace( 'word-range', 'Unable to find point ' );
 		// TODO: proper exceptions
 		throw "Unable to find point"
 	}
@@ -230,7 +232,7 @@ function WordPoint( )
 WordPoint.prototype.toBlockPoint = function( root )
 {
 	var point = new BlockPoint( );
-	point.path = point.pathFromNode( root, this.rel );
+	point.pathFromNode( root, this.rel );
 	point.words = this.words;
 	point.chars = this.chars;
 	return point;
@@ -247,7 +249,7 @@ WordPoint.prototype.fromBlockPoint = function( blockPoint, root, fskip )
 WordPoint.prototype.toXPathPoint = function( root )
 {
 	var point = new XPathPoint( );
-	point.path = point.pathFromNode( root, this.rel );
+	point.pathFromNode( root, this.rel );
 	point.words = this.words;
 	point.chars = this.chars;
 	return point;
@@ -303,6 +305,17 @@ WordRange.prototype.fromTextRange = function( textRange, root, fskip )
 }
 
 /**
+ * Convert a WordRange to a BlockRange
+ */
+WordRange.prototype.toBlockRange = function( root )
+{
+	var blockRange = new BlockRange( );
+	blockRange.start = this.start.toBlockPoint( root );
+	blockRange.end = this.end.toBlockPoint( root );
+	return blockRange;
+}
+
+/**
  * Convert an BlockRange to a WordRange
  * Returns false if the start and/or end poin could not be resolved
  */
@@ -314,6 +327,17 @@ WordRange.prototype.fromBlockRange = function( blockRange, root, fskip )
 	this.end = new WordPoint( );
 	r = r && this.end.fromBlockPoint( blockRange.end, root, fskip );
 	return r;
+}
+
+/**
+ * Convert a WordRange to an XPathRange
+ */
+WordRange.prototype.toXPathRange = function( root )
+{
+	var xpathRange = new XPathRange( );
+	xpathRange.start = this.start.toXPathPoint( root );
+	xpathRange.end = this.end.toXPathPoint( root );
+	return xpathRange;
 }
 
 /**
