@@ -98,6 +98,16 @@ Annotation.prototype.destruct = function( )
 	this.xpathRange = null;
 }
 
+/**
+ * Handy representation for debugging
+ */
+Annotation.prototype.toString = function( )
+{
+	if ( this.xpathRange )
+		return this.xpathRange.toString( );
+	else
+		return this.blockRange.toString( );
+}
 
 /**
  * Figure out whether note editing should be in keywords or freeform mode

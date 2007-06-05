@@ -140,6 +140,7 @@ BlockPoint.prototype.pathFromNode = function( root, rel, fskip )
 BlockPoint.prototype.getReferenceElement = function( root, fskip )
 {
 	var node;
+	var startTime = new Date( );
 	
 	// Locate the rel node based on the path
 	// The simple case:  rel is root
@@ -171,6 +172,8 @@ BlockPoint.prototype.getReferenceElement = function( root, fskip )
 				return null;
 		}
 	}
+	trace( 'range-timing', 'BlockPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
+
 	return node;
 }
 
@@ -304,7 +307,7 @@ XPathPoint.prototype.pathFromNode = function( root, rel )
 				count += 1;
 		}
 		if ( '' != path )
-			path = path + '/';
+			path = '/' + path;
 		path = node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
 		node = node.parentNode;
 	}
@@ -316,11 +319,13 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
+		var startTime = new Date( );
 		// TODO: Figure out how to handle tag case name inconsistencies between HTML and XHTML
 		// TODO: add security check here to ensure now unsafe xpath function calls (e.g. document())
 		trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + this.path );
 		var node = root.ownerDocument.evaluate( this.path, root, null, XPathResult.ANY_TYPE, null );
 		node = node.iterateNext( );
+		trace( 'range-timing', 'XPathPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
 		return node;
 	}
 	else

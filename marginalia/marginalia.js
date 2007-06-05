@@ -686,10 +686,9 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
  */
 PostMicro.prototype.showHighlight = function( marginalia, annotation )
 {
-	if ( annotation.xpathRange )
-		trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.xpathRange.toString( ) + ': ' + annotation.quote );
-	else
-		trace( 'show-highlight', 'Show highlight for annotation at block ' + annotation.blockRange.toString( ) + ': ' + annotation.quote );
+	var startTime = new Date( );
+	
+	trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.toString( ) );
 		
 	// Word range needed for conversion to text range and for later calculations
 	var wordRange = new WordRange( );
@@ -838,6 +837,8 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		if ( ANNOTATION_LINKING && annotation.link )
 			this.showLink( marginalia, annotation );
 	}
+	var endTime = new Date( );
+	trace( 'highlight-timing', 'ShowAnnotation took ' + ( endTime - startTime ) + 'ms for ' + annotation.toString( ) );
 	return true;
 }
 
