@@ -37,6 +37,7 @@ AN_EDITINGNOTE_CLASS = 'editing-note';		// (on body) indicates a note is being e
 AN_EDITINGLINK_CLASS = 'editing-link';
 AN_EDITCHANGED_CLASS = 'changed';	// indicates content of a text edit changed
 AN_LASTHIGHLIGHT_CLASS = 'last';	// used to flag the last highlighted regin for a single annotation
+AN_QUOTENOTFOUND_CLASS = 'quote-error';	// note's corresponding highlight region not found
 
 // Classes to identify specific controls
 AN_LINKBUTTON_CLASS = 'annotation-link';
@@ -400,8 +401,8 @@ PostMicro.prototype.getAnnotationIndex = function( marginalia, annotation )
  */
 PostMicro.prototype.addAnnotationPos = function( marginalia, annotation, pos )
 {
-	if ( ! this.showHighlight( marginalia, annotation ) )
-		return -1;
+	var quoteFound = this.showHighlight( marginalia, annotation );
+	// Go ahead and show the note even if the quote wasn't found
 	this.showNote( marginalia, pos, annotation );
 	return pos;
 }
@@ -424,6 +425,12 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 {
 	var noteList = this.getNotesElement( marginalia );
 
+	// Will need to align the note with the highlight.
+	// If the highlight is not found, then the quote doesn't match - display
+	// the annotation, but with an error and deactivate some behaviors.
+	var highlightElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
+	var quoteFound = highlightElement != null;
+	
 	// Ensure we have a dummy first sibling
 	if ( null == noteList.firstChild )
 	{
@@ -448,6 +455,8 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	noteElement.id = AN_ID_PREFIX + annotation.id;
 	noteElement.annotationId = annotation.id;
 	noteElement.annotation = annotation;
+	if ( ! quoteFound )
+		addClass( noteElement, AN_QUOTENOTFOUND_CLASS );
 	
 	// Create its contents
 	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing || AN_EDIT_NOTE_FREEFORM == annotation.editing )
@@ -572,7 +581,9 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		// add the text content
 		var noteText = document.createElement( 'p' );
 		var keyword = marginalia.keywordService.getKeyword( annotation.note );
-		if ( keyword )
+		if ( ! quoteFound )
+			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.quote + '"' );
+		else if ( keyword )
 			noteText.setAttribute( 'title', keyword.description );
 		noteText.appendChild( document.createTextNode( annotation.note ) );
 		noteElement.appendChild( noteText );
@@ -588,8 +599,9 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		noteElement.onmouseout = _unhoverAnnotation;
 	}
 
-	var highlightElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
-	noteElement.style.marginTop = '' + this.calculateNotePushdown( marginalia, prevNode, highlightElement ) + 'px';
+	var alignElement = highlightElement ? highlightElement : this.getNoteAlignElement( annotation );
+	if ( null != alignElement )
+		noteElement.style.marginTop = '' + this.calculateNotePushdown( marginalia, prevNode, alignElement ) + 'px';
 	
 	// Insert the note in the list
 	noteList.insertBefore( noteElement, nextNode );
@@ -880,13 +892,27 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 	var note = document.getElementById( AN_ID_PREFIX + annotation.id );
 	while ( null != note )
 	{
-		var highlight = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
-		if ( null == highlight || null == note )
-			logError( "positionNote:  Couldn't find note or highlight for " + AN_ID_PREFIX + annotation.id );
-		else
-			note.style.marginTop = '' + this.calculateNotePushdown( note.previousSibling, highlight );
+		var alignElement = this.getNoteAlignElement( annotation );
+		// Don't push down if no align element was found
+		if ( null != alignElement )
+			note.style.marginTop = '' + this.calculateNotePushdown( note.previousSibling, alignElement );
 		note = note.nextSibling;
 	}
+}
+
+/**
+ * Determine where an annotation note should be aligned vertically
+ */
+PostMicro.prototype.getNoteAlignElement = function( annotation )
+{
+	// Try to find the matching highlight element
+	var alignElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
+	// If there is no matching highlight element, pick the paragraph.  Prefer XPath range representation.
+	if ( null == alignElement && annotation.xpathRange )
+		alignElement = annotation.xpathRange.start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.blockRange )
+		alignElement = annotation.blockRange.start.getReferenceElement( this.contentElement );
+	return alignElement;
 }
 
 /*
@@ -895,13 +921,11 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
  * The previous note and the highlight must already be displayed, but this note
  * does not yet need to be part of the DOM.
  */
-PostMicro.prototype.calculateNotePushdown = function( marginalia, previousNoteElement, highlightElement )
+PostMicro.prototype.calculateNotePushdown = function( marginalia, previousNoteElement, alignElement )
 {
 	var noteY = getElementYOffset( previousNoteElement, null ) + previousNoteElement.offsetHeight;
-	var highlightY = getElementYOffset( highlightElement, null );
-	// highlightElement.border = 'red 1px solid';
-	trace( 'align-notes', 'calculateNotePushdown for ' + getNodeText( highlightElement ) + ' (' + highlightElement.className + ') : highlightY=' + highlightY + ', noteY=' + noteY );
-	return ( noteY < highlightY ) ? highlightY - noteY : 0;
+	var alignY = getElementYOffset( alignElement, null );
+	return ( noteY < alignY ) ? alignY - noteY : 0;
 }
 
 /*
@@ -913,8 +937,13 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 	// (I believe it's a timing thing)
 	for ( ;  null != element;  element = element.nextSibling )
 	{
-		var highlightElement = getChildByTagClass( this.contentElement, null, AN_ID_PREFIX + element.annotation.id, null );
-		element.style.marginTop = '' + this.calculateNotePushdown( marginalia, element.previousSibling, highlightElement ) + 'px';
+		var annotation = element.annotation;
+		if ( annotation )
+		{
+			var alignElement = this.getNoteAlignElement( annotation );
+			if ( alignElement )
+				element.style.marginTop = '' + this.calculateNotePushdown( marginalia, element.previousSibling, alignElement ) + 'px';
+		}
 	}
 }
 
@@ -1031,6 +1060,7 @@ function stripLinks( node )
 /**
  * Indicate an annotation is under the mouse cursor by lighting up the note and the highlight
  * If flag is false, this will remove the lit-up indication instead.
+ * Works even if the highlight region is missing.
  */
 PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
 {

@@ -173,7 +173,8 @@ MarginaliaDirect.prototype.showAnnotation = function( annotation )
 	// URL, Range, Access
 	listItem.appendChild( this.newInputField( null, 'md-annotation-url', 'URL', annotation.url, true ) );
 	listItem.appendChild( this.newInputField( null, 'md-annotation-block-range', 'Block Range', annotation.blockRange.toString(), true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', annotation.xpathRange.toString(), true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', 
+		annotation.xpathRange ? annotation.xpathRange.toString() : '', true ) );
 	listItem.appendChild( this.newInputField( null, 'md-annotation-access', 'Access', annotation.access, true ) );
 	
 	// Quote, Note, Link
