@@ -28,5 +28,7 @@
 		>The passage you have attempted to highlight is too long.  It may not exceed 1000 characters.</message>
 	<message key="zero length quote"
 		>You must select some text to annotate.</message>
+	<message key="quote not found"
+		>The highlighted passage could not be found</message>
 </locale>
 
