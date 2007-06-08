@@ -38,6 +38,8 @@ AN_EDITINGLINK_CLASS = 'editing-link';
 AN_EDITCHANGED_CLASS = 'changed';	// indicates content of a text edit changed
 AN_LASTHIGHLIGHT_CLASS = 'last';	// used to flag the last highlighted regin for a single annotation
 AN_QUOTENOTFOUND_CLASS = 'quote-error';	// note's corresponding highlight region not found
+AN_NOTECOLLAPSED_CLASS = 'collapsed';		// only the first line of the note shows
+AN_ACTIONPREFIX_CLASS = 'action-';		// prefix for class names for actions (e.g. action-delete)
 
 // Classes to identify specific controls
 AN_LINKBUTTON_CLASS = 'annotation-link';
@@ -588,6 +590,10 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		noteText.appendChild( document.createTextNode( annotation.note ) );
 		noteElement.appendChild( noteText );
 		
+		// Mark the action
+		if ( ANNOTATION_ACTIONS && annotation.action && annotation.action != '' )
+			addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.action );
+		
 		if ( canEdit )
 		{
 			// Add edit behavior
@@ -601,7 +607,10 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 
 	var alignElement = highlightElement ? highlightElement : this.getNoteAlignElement( annotation );
 	if ( null != alignElement )
-		noteElement.style.marginTop = '' + this.calculateNotePushdown( marginalia, prevNode, alignElement ) + 'px';
+	{
+		var pushdown = this.calculateNotePushdown( marginalia, prevNode, alignElement );
+		noteElement.style.marginTop = '' + ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
+	}
 	
 	// Insert the note in the list
 	noteList.insertBefore( noteElement, nextNode );
@@ -801,15 +810,28 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			}
 			// replace node content with annotation
 			newNode = document.createElement( 'em' );
+			
 			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.id;
+			if ( ANNOTATION_ACTIONS && annotation.action && '' != annotation.action )
+				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.action;
 			newNode.onmouseover = _hoverAnnotation;
 			newNode.onmouseout = _unhoverAnnotation;
 			newNode.annotation = annotation;
 			node.parentNode.replaceChild( newNode, node );
-			newNode.appendChild( node );
+			
+			if ( ANNOTATION_ACTIONS && annotation.action && ( 'substitute' == annotation.action || 'delete' == annotation.action ) )
+			{
+				var delNode = document.createElement( 'del' );
+				delNode.appendChild( node );
+				newNode.appendChild( delNode );
+			}
+			else
+				newNode.appendChild( node );
+			
 			node.nodeValue = text.substring( range.startOffset, range.endOffset );
 			lastHighlight = newNode;
 			node = newNode;	// necessary for the next bit to work right
+
 			// break the portion of the node after the annotation off and insert it
 			if ( range.endOffset < text.length )
 			{
@@ -825,6 +847,9 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	if ( lastHighlight )
 	{
 		addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
+		// If this was a substitution or insertion action, insert the text
+		if ( ANNOTATION_ACTIONS && annotation.action && ( 'insert' == annotation.action || 'substitute' == annotation.action ) )
+			this.showActionInsert( marginalia, annotation );
 		// If there's a link from this annotation, add the link icon
 		if ( ANNOTATION_LINKING && annotation.link )
 			this.showLink( marginalia, annotation );
@@ -841,6 +866,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
  */
 PostMicro.prototype.showLink = function( marginalia, annotation )
 {
+	// TODO: I don't think this works - should prefix with the AN_LINK_CLASS
 	var existingLink = getChildByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.id, _skipContent );
 	if ( existingLink )
 		existingLink.parentNode.removeChild( existingLink );
@@ -852,7 +878,7 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 		{
 			if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
 			{
-				// should check whether a link is valid in this location;  if not,
+				// TODO: should check whether a link is valid in this location;  if not,
 				// either refuse to show or insert a clickable Javascript object instead
 				var lastHighlight = highlights[ i ];
 				var supNode = document.createElement( 'sup' );
@@ -882,6 +908,33 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 	}
 }
 
+/**
+ * Display insertion text for insert or substitute actions
+ */
+PostMicro.prototype.showActionInsert = function( marginalia, annotation )
+{
+	trace( 'actions', 'showActionInsert for ' + annotation.quote );
+	var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null, _skipContent );
+	for ( var i = 0;  i < highlights.length;  ++i )
+	{
+		if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
+		{
+			// TODO: should check whether <ins> is valid in this position
+			var lastHighlight = highlights[ i ];
+			var insNode = document.createElement( 'ins' );
+			insNode.appendChild( document.createTextNode( annotation.note ) );
+			lastHighlight.appendChild( insNode );
+			trace( 'actions', 'Insert text is ' + annotation.note );
+/*			// Insert *after* the annotation highlight
+			if ( lastHighlight.nextSibling )
+				lastHighlight.parentNode.insertBefore( insNode, lastHighlight.nextSibling );
+			else
+				lastHighlight.parentNode.appendChild( insNode );
+*/			addClass ( insNode, AN_ID_PREFIX + annotation.id );
+		}
+	}
+}
+
 /*
  * Position the notes for an annotation next to the highlight
  * It is not necessary to call this method when creating notes, only when the positions of
@@ -895,7 +948,10 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 		var alignElement = this.getNoteAlignElement( annotation );
 		// Don't push down if no align element was found
 		if ( null != alignElement )
-			note.style.marginTop = '' + this.calculateNotePushdown( note.previousSibling, alignElement );
+		{
+			var pushdown = this.calculateNotePushdown( note.previousSibling, alignElement );
+			note.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
+		}
 		note = note.nextSibling;
 	}
 }
@@ -925,24 +981,62 @@ PostMicro.prototype.calculateNotePushdown = function( marginalia, previousNoteEl
 {
 	var noteY = getElementYOffset( previousNoteElement, null ) + previousNoteElement.offsetHeight;
 	var alignY = getElementYOffset( alignElement, null );
-	return ( noteY < alignY ) ? alignY - noteY : 0;
+	return alignY - noteY;
 }
 
 /*
  * Reposition notes, starting with the note list element passed in
+ * Repositioning consists of two things:
+ * 1. Updating the margin between notes
+ * 2. Collapsing a note if the two notes following it are both pushed down
  */
 PostMicro.prototype.repositionNotes = function( marginalia, element )
 {
 	// We don't want the browser to scroll, which it might under some circumstances
 	// (I believe it's a timing thing)
-	for ( ;  null != element;  element = element.nextSibling )
+	while ( element )
 	{
 		var annotation = element.annotation;
 		if ( annotation )
 		{
 			var alignElement = this.getNoteAlignElement( annotation );
 			if ( alignElement )
-				element.style.marginTop = '' + this.calculateNotePushdown( marginalia, element.previousSibling, alignElement ) + 'px';
+			{
+				var goback = false;
+				var previous = element.previousSibling;
+				var pushdown = this.calculateNotePushdown( marginalia, previous, alignElement );
+
+			/* uncomment this to automatically collapse some notes: *
+				// If there's negative pushdown, check whether the preceding note also has pushdown
+				if ( pushdown < 0
+					&& previous 
+					&& previous.annotation 
+					&& ! hasClass( previous, AN_NOTECOLLAPSED_CLASS )
+					&& previous.pushdown
+					&& previous.pushdown < 0 )
+				{
+					// So now two in a row have negative pushdown.
+					// Go back two elements and collapse, then restart pushdown 
+					// calculations at the previous element.
+					var collapseElement = previous.previousSibling;
+					if ( collapseElement && collapseElement.annotation )
+					{
+						addClass( collapseElement, AN_NOTECOLLAPSED_CLASS );
+						element = previous;
+						goback = true;
+					}
+				}
+			*/
+				// If we didn't have to go back and collapse a previous element,
+				// set this note's pushdown correctly.
+				if ( ! goback )
+				{
+					element.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
+					removeClass( element, AN_NOTECOLLAPSED_CLASS );
+					element.pushdown = pushdown;
+					element = element.nextSibling;
+				}
+			}
 		}
 	}
 }
@@ -1655,11 +1749,23 @@ function _keyupCreateAnnotation( event )
 }
 
 /**
- * Skip embedded links created by annotation
+ * Skip embedded links created by Marginalia
  */
 function _skipAnnotationLinks( node )
 {
 	return ELEMENT_NODE == node.nodeType 
+		&& node.parentNode
+		&& 'a' == getLocalName( node )
+		&& hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );
+}
+
+/**
+ * Skip embedded action text created by Marginalia
+ */
+function _skipAnnotationActions( node )
+{
+	return ELEMENT_NODE == node.nodeType
+		&& 'ins' == getLocalName( node )
 		&& node.parentNode
 		&& hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );
 }

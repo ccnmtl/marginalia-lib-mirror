@@ -55,6 +55,7 @@ function Annotation( url )
 	this.id = 0;
 	this.note = '';
 	this.access = ANNOTATION_ACCESS_DEFAULT;
+	this.action = '';
 	this.quote = '';
 	this.isLocal = false;
 	// this.editing = null; -- deleted when not needed
@@ -89,6 +90,17 @@ function annotationFromTextRange( post, textRange )
 	return annotation;
 }
 
+/**
+ * The tag used to represent this annotation's highlight in documents
+ */
+Annotation.prototype.getHighlightTag = function( )
+{
+	if ( ANNOTATION_ACTIONS && this.action && 'delete' == this.action )
+		return 'del';
+	else
+		return 'em';
+}
+		
 /**
  * Destructor to prevent IE memory leaks
  */
@@ -195,12 +207,9 @@ function parseAnnotationXml( xmlDoc )
 							annotation.xpathRange = new XPathRange( getNodeText( field ) );
 					}
 					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
-					{
-						if ( field.firstChild )
-							annotation.access = field.firstChild.nodeValue;
-						else
-							annotation.access = 'private';
-					}
+						annotation.access = null == field.firstChild ? 'private' : getNodeText( field );
+					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'action' )
+						annotation.action = null == field.firstChild ? '' : getNodeText( field );
 					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
 						annotation.updated = getNodeText( field );
 				}
