@@ -30,7 +30,7 @@
 ANNOTATION_NICE_URLS = false;
 
 
-/*
+/**
  * I'm tired of the standard Javascript encodeURIComponent encoding slashes
  * and colons in query parameters.  This makes debugging information difficult
  * to read, and there's really no point to it (at least for URI parameters).  
@@ -51,7 +51,7 @@ function encodeURIParameter( s )
 }
 
 
-/*
+/**
  * Initialize the REST annotation service
  */
 function RestAnnotationService( serviceUrl )
@@ -114,6 +114,8 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&quote_title=' + encodeURIParameter( annotation.quote_title )
 		+ '&quote_author=' + encodeURIParameter( annotation.quote_author )
 		+ '&link=' + encodeURIParameter( annotation.link );
+	if ( annotation.action )
+		body += '&action=' + encodeURIParameter (annotation.action );
 	if ( annotation.blockRange )
 		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
 	if ( annotation.xpathRange )

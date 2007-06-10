@@ -76,7 +76,7 @@ AN_COOP_MAXTIME = 240;
 
 /* ************************ User Functions ************************ */
 
-/*
+/**
  * Must be called before any other annotation functions
  * service - used to connect to the server side
  * anuser - the user whose annotations are to be shown
@@ -203,7 +203,7 @@ Marginalia.prototype.hideMarginalia = function( )
 }	
 
 
-/*
+/**
  * Show all annotations on the page
  * Make sure to call showMarginalia too
  * There used to be showAnnotations and hideAnnotations functions which could
@@ -216,7 +216,7 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	this.listAnnotations( url, block, _showAnnotationsCallback );
 }
 
-/*
+/**
  * This is the callback function called by listAnnotations when data first comes back
  * from the server.
  */
@@ -228,7 +228,7 @@ function _showAnnotationsCallback( xmldoc )
 	_annotationDisplayCallback( );
 }
 
-/*
+/**
  * This callback is used to display annotations from the cache in the marginalia object.
  * It will spend a certain amount of time displaying annotations;  if it can't show them
  * all in that time, it will call setTimeout to trigger continued display later.  This
@@ -935,7 +935,7 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 	}
 }
 
-/*
+/**
  * Position the notes for an annotation next to the highlight
  * It is not necessary to call this method when creating notes, only when the positions of
  * existing notes are changing
@@ -971,7 +971,7 @@ PostMicro.prototype.getNoteAlignElement = function( annotation )
 	return alignElement;
 }
 
-/*
+/**
  * Calculate the pixel offset from the previous displayed note to this one
  * by setting the top margin to the appropriate number of pixels.
  * The previous note and the highlight must already be displayed, but this note
@@ -984,7 +984,7 @@ PostMicro.prototype.calculateNotePushdown = function( marginalia, previousNoteEl
 	return alignY - noteY;
 }
 
-/*
+/**
  * Reposition notes, starting with the note list element passed in
  * Repositioning consists of two things:
  * 1. Updating the margin between notes
@@ -1181,7 +1181,7 @@ PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
 	}
 }
 
-/*
+/**
  * Called to start editing a new annotation
  * the annotation isn't saved to the db until edit completes
  */
@@ -1270,6 +1270,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	removeClass( getBodyElement( document ), AN_EDITINGNOTE_CLASS );
+	
+	// TODO: For annotations with links; insert, or substitute actions, must update highlight also
 	
 	// The annotation is local and needs to be created in the DB
 	if ( annotation.isLocal )
@@ -1738,12 +1740,28 @@ function _keyupCreateAnnotation( event )
 {
 	var marginalia = window.marginalia;
 	event = getEvent( event );
-	if ( event.keyCode == 13 )
+	if ( null != marginalia.username && marginalia.username == marginalia.anusername )
 	{
-		if ( null != marginalia.username && marginalia.username == marginalia.anusername )
+		// Enter to create a regular note
+		if ( 13 == event.keyCode )
 		{
 			if ( createAnnotation( null, false ) )
 				stopPropagation( event );
+		}
+		else if ( ANNOTATION_ACTIONS )
+		{
+			var action = null;
+			if ( 88 == event.keyCode || 120 == event.keyCode )		// X to create an annotation with the delete action
+				action = 'delete';
+			else if ( 86 == event.keyCode || 118 == event.keyCode )	// V to create an annotation with the insert action
+				action = 'insert';
+			else if ( 67 == event.keyCode || 99 == event.keyCode )	// C to create an annotation with the substitute action
+				action = 'substitute';
+			if ( null != action )
+			{
+				if ( createAnnotation( null, false, action ) )
+					stopPropagation( event );
+			}
 		}
 	}
 }
@@ -1777,7 +1795,7 @@ function _skipAnnotationActions( node )
  * application to decide what control creates an annotation.  Deletes and edits,
  * on the other hand, are built-in to the note display.
  */
-function createAnnotation( postId, warn )
+function createAnnotation( postId, warn, action )
 {
 	// Test for selection support (W3C or IE)
 	if ( ( ! window.getSelection || null == window.getSelection().rangeCount )
@@ -1805,7 +1823,7 @@ function createAnnotation( postId, warn )
 	
 	if ( null == postId )
 	{
-		var contentElement = getParentByTagClass( range.startContainer, null, PM_CONTENT_CLASS, false, null );
+		var contentElement = getParentByTagClass( textRange.startContainer, null, PM_CONTENT_CLASS, false, null );
 		if ( null == contentElement )
 			return false;
 		postId = getParentByTagClass( contentElement, null, PM_POST_CLASS, true, _skipPostContent ).id;
@@ -1815,6 +1833,9 @@ function createAnnotation( postId, warn )
 	var post = document.getElementById( postId ).post;
 	var annotation = new Annotation( post.url );
 	annotation.userid = marginalia.username;
+	if ( action )
+		annotation.action = action;
+	
 	var wordRange = new WordRange( );
 	wordRange.fromTextRange( textRange, post.contentElement, _skipContent );
 	annotation.blockRange = wordRange.toBlockRange( post.contentElement );
