@@ -709,6 +709,12 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 {
 	var startTime = new Date( );
 	
+	// TODO: How to handle zero-length ranges?  (Currently Marginalia hangs.)
+	// I think the answer is to fix all these conversion functions etc. so that they
+	// work consistently and correctly when dealing with zero-length ranges.
+	// A zero-length range should be represented by an <em> element in the text with
+	// no content;  for insert edit actions this code would then do the right thing.
+	
 	trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.toString( ) );
 		
 	// Word range needed for conversion to text range and for later calculations
@@ -1120,6 +1126,7 @@ PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 	var highlights = getChildrenByTagClass( contentElement, 'em', AN_ID_PREFIX + annotation.id, null, null );
 	for ( var i = 0;  i < highlights.length;  ++i )
 		highlights[ i ].annotation = null;
+	// TODO: Properly handle removal of <del> and <ins> tags for annotations with actions
 	stripMarkup( contentElement, 'em', AN_ID_PREFIX + annotation.id, true, stripLinks );
 	// This normalization was (erroneously) commented out - I think because it's so slow.
 	// The best solution would be to a) modify stripMarkup to join adjacent text elements
@@ -1810,7 +1817,7 @@ function createAnnotation( postId, warn, action )
 	if ( null == textRange )
 	{
 		if ( warn )
-			alert( getLocalized( 'select text to annotate' ) );
+			alert( '1' + getLocalized( 'select text to annotate' ) );
 		return false;
 	}
 	
@@ -1841,21 +1848,31 @@ function createAnnotation( postId, warn, action )
 	annotation.blockRange = wordRange.toBlockRange( post.contentElement );
 	annotation.xpathRange = wordRange.toXPathRange( post.contentElement );
 	
+	annotation.quote = getTextRangeContent( textRange, _skipContent );
+	if ( 0 == annotation.quote.length )
+	{
+		if ( ANNOTATION_ACTIONS && 'insert' != action ) )
+		{
+			// zero-length quotes are ok for insertion actions
+			// Collapse ranges to points
+			annotation.blockRange.start = annotation.blockRange.end;
+			annotation.xpathRange.start = annotation.xpathRange.end;
+		}
+		else
+		{
+			annotation.destruct( );
+			if ( warn )
+				alert( '3' + getLocalized( 'zero length quote' ) );
+			trace( null, "zero length quote '" + annotation.quote + "'" );
+			return false;
+		}
+	}
+	
 	// TODO: test selection properly
 	if ( null == annotation )
 	{
 		if ( warn )
-			alert( getLocalized( 'invalid selection' ) );
-		return false;
-	}
-	
-	annotation.quote = getTextRangeContent( textRange, _skipContent );
-	if ( 0 == annotation.quote.length )
-	{
-		annotation.destruct( );
-		if ( warn )
-			alert( getLocalized( 'zero length quote' ) );
-		trace( null, "zero length quote '" + annotation.quote + "'" );
+			alert( '2' + getLocalized( 'invalid selection' ) );
 		return false;
 	}
 	
