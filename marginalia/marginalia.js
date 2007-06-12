@@ -48,6 +48,8 @@ AN_DELETEBUTTON_CLASS = 'annotation-delete';
 AN_EXPANDBUTTON_CLASS = 'expand-edit';
 AN_KEYWORDSCONTROL_CLASS = 'keywords';
 
+AN_RANGECARET_ID = 'range-caret';		// identifies caret used to show zero-length ranges
+
 AN_ANNOTATION_FIELD = 'annotation';	// reference to Annotation object
 AN_POST_FIELD = 'post';				// reference to PostMicro object
 
@@ -93,7 +95,15 @@ function marginaliaInit( service, thisuser, anuser, urlBase, preferences, keywor
 
 	// Event handlers
 	if ( document.addEventListener )
+	{
 		document.addEventListener( 'keyup', _keyupCreateAnnotation, false );
+		// TODO: These display where the user clicks in a document.
+		// There's no support for this UI nicety in IE.
+		/* commented out for now - see comments in _mouseupShowCaret
+		document.addEventListener( 'mousedown', _mousedownHideCaret, false );
+		document.addEventListener( 'mouseup', _mouseupShowCaret, false );
+		*/
+	}
 	else  // for IE:
 	{
 		if ( document.onkeyup )
@@ -591,7 +601,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		noteElement.appendChild( noteText );
 		
 		// Mark the action
-		if ( ANNOTATION_ACTIONS && annotation.action && annotation.action != '' )
+		if ( ANNOTATION_ACTIONS && annotation.action && annotation.action )
 			addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.action );
 		
 		if ( canEdit )
@@ -737,6 +747,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		}
 		// TODO: Store XPathRange back to annotation on server
 	}
+	trace( 'show-highlight', 'WordRange constructed' );
 	
 	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
 	// TODO: check whether the range even falls within the content element
@@ -744,6 +755,8 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	walker.walkToPoint( wordRange.start );
 	var initialOffset = walker.currChars;
 	var initialRel = walker.currNode;
+	
+	trace( 'show-highlight', 'Walked to start' );
 
 	var highlightRanges = new Array();
 	walker.setPoint( wordRange.end );
@@ -774,9 +787,10 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		rangeNum += 1;
 	}
 	walker.destroy();
+	trace( 'show-highlight', 'Walked to end' );
 	
 	// Confirm whether the actual text matches what's expected in the annotation quote
-	var quote = annotation.quote;
+	var quote = annotation.quote ? annotation.quote : '';
 	actual = actual.replace( /\s+|\u00a0\s*/g, ' ' );
 	quote = quote.replace( /\s+|\u00a0\s*/g, ' ' );
 	if ( actual != quote )
@@ -789,7 +803,8 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	}
 	else
 		trace( 'find-quote', 'Quote found: ' + actual );
-
+	trace( 'show-highlight', 'Found quote' );
+	
 //setTrace( 'WordPointWalker', false );		// Show return values from WordPointWalker
 	
 	// Now iterate over the ranges and highlight each one
@@ -818,14 +833,14 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			newNode = document.createElement( 'em' );
 			
 			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.id;
-			if ( ANNOTATION_ACTIONS && annotation.action && '' != annotation.action )
+			if ( ANNOTATION_ACTIONS && annotation.action && annotation.action )
 				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.action;
 			newNode.onmouseover = _hoverAnnotation;
 			newNode.onmouseout = _unhoverAnnotation;
 			newNode.annotation = annotation;
 			node.parentNode.replaceChild( newNode, node );
 			
-			if ( ANNOTATION_ACTIONS && annotation.action && ( 'substitute' == annotation.action || 'delete' == annotation.action ) )
+			if ( ANNOTATION_ACTIONS && 'edit' == annotation.action && annotation.quote )
 			{
 				var delNode = document.createElement( 'del' );
 				delNode.appendChild( node );
@@ -854,7 +869,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	{
 		addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
 		// If this was a substitution or insertion action, insert the text
-		if ( ANNOTATION_ACTIONS && annotation.action && ( 'insert' == annotation.action || 'substitute' == annotation.action ) )
+		if ( ANNOTATION_ACTIONS && 'edit' == annotation.action && annotation.note )
 			this.showActionInsert( marginalia, annotation );
 		// If there's a link from this annotation, add the link icon
 		if ( ANNOTATION_LINKING && annotation.link )
@@ -1087,16 +1102,36 @@ PostMicro.prototype.removeAnnotations = function( marginalia )
 		notesElement.removeChild( child );
 		child = notesElement.firstChild;
 	}
-	stripMarkup( this.contentElement, 'em', AN_HIGHLIGHT_CLASS, true );
+	var micro = this;
+	var stripTest = function( tnode )
+		{ return micro.highlightStripTest( tnode, null ); };
+	stripMarkup( this.contentElement, stripTest, true );
 	//portableNormalize( this.contentElement );
 	removeClass( this.element, AN_ANNOTATED_CLASS );
 	return annotations;
 }
 
 /**
+ * Test function for removing highlights, edits, and annotation links
+ */
+PostMicro.prototype.highlightStripTest = function( tnode, emclass )
+{
+	if ( matchTagClass( tnode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode, emclass ) ) )
+		return STRIP_TAG;
+	else if ( tnode.parentNode && matchTagClass( tnode.parentNode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode, emclass ) ) )
+	{
+		if ( matchTagClass( tnode, 'ins', null ) || matchTagClass( tnode, 'del', null ) )
+			return STRIP_CONTENT;
+		else if ( matchTagClass( tnode, 'a', null ) )
+			return STRIP_CONTENT;
+	}
+	return STRIP_NONE;
+}
+
+/**
  * Remove an individual annotation from a post
  */
-PostMicro.prototype.removeAnnotation = function ( marginalia, annotation )
+PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
 {
 	var next = this.removeNote( marginalia, annotation );
 	this.removeHighlight( marginalia, annotation );
@@ -1127,7 +1162,10 @@ PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 	for ( var i = 0;  i < highlights.length;  ++i )
 		highlights[ i ].annotation = null;
 	// TODO: Properly handle removal of <del> and <ins> tags for annotations with actions
-	stripMarkup( contentElement, 'em', AN_ID_PREFIX + annotation.id, true, stripLinks );
+	var micro = this;
+	var stripTest = function( tnode )
+		{ return micro.highlightStripTest( tnode, AN_ID_PREFIX + annotation.id ); };
+	stripMarkup( contentElement, stripTest, true );
 	// This normalization was (erroneously) commented out - I think because it's so slow.
 	// The best solution would be to a) modify stripMarkup to join adjacent text elements
 	// as it goes, or b) write a walker to join relevant text elements.
@@ -1755,20 +1793,69 @@ function _keyupCreateAnnotation( event )
 			if ( createAnnotation( null, false ) )
 				stopPropagation( event );
 		}
-		else if ( ANNOTATION_ACTIONS )
+		// C to create an edit action
+		else if ( ANNOTATION_ACTIONS && 67 == event.keyCode)
 		{
 			var action = null;
-			if ( 88 == event.keyCode || 120 == event.keyCode )		// X to create an annotation with the delete action
-				action = 'delete';
-			else if ( 86 == event.keyCode || 118 == event.keyCode )	// V to create an annotation with the insert action
-				action = 'insert';
-			else if ( 67 == event.keyCode || 99 == event.keyCode )	// C to create an annotation with the substitute action
-				action = 'substitute';
+			if ( 67 == event.keyCode || 99 == event.keyCode )
+				action = 'edit';
 			if ( null != action )
 			{
 				if ( createAnnotation( null, false, action ) )
 					stopPropagation( event );
 			}
+		}
+	}
+}
+
+/**
+ * When the user creates a zero-length text range, show the position with a marker
+ */
+function _mouseupShowCaret( event )
+{
+	// TODO: Embedding the caret in the text is a bad idea.  Better to find the location
+	// by briefly inserting something, then hover another node over it.
+	var textRange = getPortableSelectionRange();
+	if ( null != textRange )
+	{
+		var node = textRange.startContainer;
+		if ( getParentByTagClass( node, null, PM_POST_CLASS ) )
+		{
+			// Only show the caret if it's a point (i.e. the range has zero length)
+			if ( textRange.startContainer == textRange.endContainer
+				&& textRange.startOffset == textRange.endOffset )
+			{
+				// Create the caret
+				var caret = document.createElement( 'span' );
+				caret.appendChild( document.createTextNode( '>' ) );
+				caret.setAttribute( 'id', AN_RANGECARET_ID );
+				var textBefore = node.nodeValue.substring( 0, textRange.startOffset );
+				var textAfter = node.nodeValue.substring( textRange.startOffset );
+				node.nodeValue = textBefore;
+				node.parentNode.insertBefore( caret, node.nextSibling );
+				var afterNode = document.createTextNode( textAfter );
+				node.parentNode.insertBefore( afterNode, caret.nextSibling );
+			}
+		}
+	}
+}
+
+/**
+ * Hide the position caret when the user clicks somewhere
+ */
+function _mousedownHideCaret( event )
+{
+	var caret = document.getElementById( AN_RANGECARET_ID );
+	if ( caret )
+	{
+		var beforeNode = caret.previousSibling;
+		var afterNode = caret.nextSibling;
+		caret.parentNode.removeChild( caret );
+		// Do a quick bit of normalization
+		if ( beforeNode && afterNode && TEXT_NODE == beforeNode.nodeType && TEXT_NODE == afterNode.nodeType )
+		{
+			beforeNode.nodeValue += afterNode.nodeValue;
+			afterNode.parentNode.removeChild( afterNode );
 		}
 	}
 }
@@ -1786,9 +1873,11 @@ function _skipAnnotationLinks( node )
 
 /**
  * Skip embedded action text created by Marginalia
+ * Not needed - ins and del nodes are instead highlight em
  */
 function _skipAnnotationActions( node )
 {
+	return false;
 	return ELEMENT_NODE == node.nodeType
 		&& 'ins' == getLocalName( node )
 		&& node.parentNode
@@ -1851,9 +1940,9 @@ function createAnnotation( postId, warn, action )
 	annotation.quote = getTextRangeContent( textRange, _skipContent );
 	if ( 0 == annotation.quote.length )
 	{
-		if ( ANNOTATION_ACTIONS && 'insert' != action ) )
+		if ( ANNOTATION_ACTIONS && 'edit' == action )
 		{
-			// zero-length quotes are ok for insertion actions
+			// zero-length quotes are ok for edit actions
 			// Collapse ranges to points
 			annotation.blockRange.start = annotation.blockRange.end;
 			annotation.xpathRange.start = annotation.xpathRange.end;

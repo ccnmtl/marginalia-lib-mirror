@@ -91,17 +91,6 @@ function annotationFromTextRange( post, textRange )
 }
 
 /**
- * The tag used to represent this annotation's highlight in documents
- */
-Annotation.prototype.getHighlightTag = function( )
-{
-	if ( ANNOTATION_ACTIONS && this.action && 'delete' == this.action )
-		return 'del';
-	else
-		return 'em';
-}
-		
-/**
  * Destructor to prevent IE memory leaks
  */
 Annotation.prototype.destruct = function( )

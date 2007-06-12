@@ -475,10 +475,65 @@ function addClass( element, name )
  * tagName or className can be null to indicate any tag or class
  * Note that this is an HTML implementation:  tag name comparisons are case-insensitive (ack!)
  * Originally written to strip annotation highlights.
- * doNormalize - if true, normalize this node on completion.  For long documents this can
- * be *much* faster than normalizing the whole thing
+ *
+ *  node - the node to be recursively stripped
+ *  test - call back returns one of 0, STRIP_TAG, or STRIP_CONTENT
+ *  doNormalize - if true, normalize this node on completion.  For long documents this can
+ *    be *much* faster than normalizing the whole thing
  */
-function stripMarkup( node, tagName, className, doNormalize, callback )
+STRIP_NONE = 0;
+STRIP_TAG = 1;		// remove the start and end tags, but leave the content in place
+STRIP_CONTENT = 2; 	// remove the start and end tags and the content
+function stripMarkup( node, test, doNormalize )
+{
+	var strippedThisNode = false;
+	var child = node.firstChild;
+	while ( null != child )
+	{
+		var nextChild = child.nextSibling;
+		// only interested in element nodes
+		if ( child.nodeType == ELEMENT_NODE )
+		{
+			stripMarkup( child, test, doNormalize );
+			var testR = test( child );
+			
+			if ( testR )
+			{
+				// make a list of child nodes so we're not modifying and walking at the same time
+				var grandchildren = new Array();
+				for ( var j = 0;  j < child.childNodes.length;  ++j )
+					grandchildren[ j ] = child.childNodes[ j ];
+				
+				for ( var j = 0;  j < grandchildren.length; ++j )
+				{
+					child.removeChild( grandchildren[ j ] );
+					if ( STRIP_CONTENT == testR )
+						clearEventHandlers( grandchildren[ j ], false );
+					else
+						node.insertBefore( grandchildren[ j ], child );
+				}
+				clearEventHandlers( child, false );
+				node.removeChild( child );
+				strippedThisNode = true;
+			}
+		}
+		child = nextChild;
+	}
+	if ( doNormalize && strippedThisNode )
+		portableNormalize( node );
+}
+
+/**
+ * Convenience function to test whether a node matches a tag name and a class name
+ * Tag names all converted to lower case before comparison
+ */
+function matchTagClass( node, tagName, className )
+{
+	return ( null == tagName || node.tagName.toUpperCase( ) == tagName.toUpperCase( ) )
+		&& ( null == className || hasClass( node, className ) );
+}
+
+/*function stripMarkup( node, tagName, className, doNormalize, callback )
 {
 	var strippedThisNode = false;
 	var child = node.firstChild;
@@ -512,7 +567,7 @@ function stripMarkup( node, tagName, className, doNormalize, callback )
 	if ( doNormalize && strippedThisNode )
 		portableNormalize( node );
 }
-
+*/
 /*
  * Recursively remove markup tags of a given name and/or class
  * tagName or className can be null to indicate any tag or class
