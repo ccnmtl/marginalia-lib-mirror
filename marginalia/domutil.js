@@ -651,6 +651,17 @@ function getWindowXScroll( )
 		return document.body.scrollLeft;
 }
 
+function scrollWindowToNode( node )
+{
+	if ( null != node )
+	{
+		var xoffset = getWindowXScroll( );
+		var yoffset = getElementYOffset( node, node.ownerDocument.documentElement );
+		window.scrollTo( xoffset, yoffset );
+	}
+}
+
+ 
 /*
  * Delay for a brief time
  * This is a busy wait, so it's very bad.  I use it for some testing, because

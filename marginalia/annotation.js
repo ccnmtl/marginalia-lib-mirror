@@ -150,59 +150,71 @@ function parseAnnotationXml( xmlDoc )
 			// obliged to use tagName here rather than localName due to IE
 			if ( child.namespaceURI == NS_ATOM && getLocalName( child ) == 'entry' )
 			{
-				var hOffset, hLength, text, url, id;
-				var annotation = new Annotation( );
-				var rangeStr = null;
-				for ( var field = child.firstChild;  field != null;  field = field.nextSibling )
+				// An exception may be thrown if there's a format error, in which case we
+				// don't want to parse or list the annotation - if we did, it might cause
+				// the whole application to fail, making it impossible to view other annotations
+				// or to fix the problem (e.g. through Marginalia Direct).
+				try
 				{
-					if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'link' )
+					var hOffset, hLength, text, url, id;
+					var annotation = new Annotation( );
+					var rangeStr = null;
+					for ( var field = child.firstChild;  field != null;  field = field.nextSibling )
 					{
-						var rel = field.getAttribute( 'rel' );
-						var href = field.getAttribute( 'href' );
-						// What is the role of this link element?  (there are several links in each entry)
-						if ( 'self' == rel )
-							annotation.id = href.substring( href.lastIndexOf( '/' ) + 1 );
-						else if ( 'related' == rel )
-							annotation.link = href;
-						else if ( 'alternate' == rel )
+						if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'link' )
 						{
-							if ( null != window.annotationUrlBase
-								&& href.substring( 0, window.annotationUrlBase.length ) == window.annotationUrlBase )
+							var rel = field.getAttribute( 'rel' );
+							var href = field.getAttribute( 'href' );
+							// What is the role of this link element?  (there are several links in each entry)
+							if ( 'self' == rel )
+								annotation.id = href.substring( href.lastIndexOf( '/' ) + 1 );
+							else if ( 'related' == rel )
+								annotation.link = href;
+							else if ( 'alternate' == rel )
 							{
-								href = href.substring( window.annotationUrlBase.length );
+								if ( null != window.annotationUrlBase
+									&& href.substring( 0, window.annotationUrlBase.length ) == window.annotationUrlBase )
+								{
+									href = href.substring( window.annotationUrlBase.length );
+								}
+								annotation.url = href;
+								annotation.post = findPostByUrl( href );
 							}
-							annotation.url = href;
-							annotation.post = findPostByUrl( href );
 						}
-					}
-					else if ( NS_ATOM == field.namespaceURI && 'author' == getLocalName( field ) )
-					{
-						for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
+						else if ( NS_ATOM == field.namespaceURI && 'author' == getLocalName( field ) )
 						{
-							if ( NS_ATOM == nameElement.namespaceURI && 'name' == getLocalName( nameElement ) )
-								annotation.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+							for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
+							{
+								if ( NS_ATOM == nameElement.namespaceURI && 'name' == getLocalName( nameElement ) )
+									annotation.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+							}
 						}
+						else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'title' )
+							annotation.note = null == field.firstChild ? '' : getNodeText( field );
+						else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
+							annotation.quote = null == field.firstChild ? null : getNodeText( field );
+						else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
+						{
+							var format = field.getAttribute( 'format', 'block' );
+							// These ranges may throw parse errors
+							if ( 'block' == format )
+								annotation.blockRange = new BlockRange( getNodeText( field ) );
+							else if ( 'xpath' == format )
+								annotation.xpathRange = new XPathRange( getNodeText( field ) );
+						}
+						else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
+							annotation.access = null == field.firstChild ? 'private' : getNodeText( field );
+						else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'action' )
+							annotation.action = null == field.firstChild ? '' : getNodeText( field );
+						else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
+							annotation.updated = getNodeText( field );
 					}
-					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'title' )
-						annotation.note = null == field.firstChild ? '' : getNodeText( field );
-					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
-						annotation.quote = null == field.firstChild ? null : getNodeText( field );
-					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
-					{
-						var format = field.getAttribute( 'format', 'block' );
-						if ( 'block' == format )
-							annotation.blockRange = new BlockRange( getNodeText( field ) );
-						else if ( 'xpath' == format )
-							annotation.xpathRange = new XPathRange( getNodeText( field ) );
-					}
-					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
-						annotation.access = null == field.firstChild ? 'private' : getNodeText( field );
-					else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'action' )
-						annotation.action = null == field.firstChild ? '' : getNodeText( field );
-					else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
-						annotation.updated = getNodeText( field );
+					annotations[ annotations.length ] = annotation;
 				}
-				annotations[ annotations.length ] = annotation;
+				catch ( exception )
+				{
+					logError( "Annotation parse error:  " + exception );
+				}
 			}
 		}
 		annotations.sort( compareAnnotationRanges );

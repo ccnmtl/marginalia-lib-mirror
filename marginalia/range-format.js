@@ -28,8 +28,12 @@
 
 /** BlockRange
  *
- * Convert a word range to a string looking like this:
+ * Range representation represented as word+character offsets relative to a given nested
+ * block level element.  Somewhat slow (because nodes must be counted manually to ensure
+ * only block-level elements are included), but can be ordered:
+ *
  * /2/1/3/15.0;/2/1/3/16.4
+ *
  * The first portion locates the rel node as the nth breaking element child of its parent.
  * Non-element nodes are *not counted*;  this is necessary because we don't want to
  * count whitespace only text nodes which might vanish under different formatting.
@@ -42,7 +46,7 @@
  * Normalized paths should always be used so that word ranges can be ordered.
  *
  * I experimented with a format looking like /2/1/3+15.0 /2/1/3+16.4, but changed to this
- * because the plus sign and space are hard to read when urlencoded.
+ * because the plus sign and space are hard to read (hence hard to debug) when urlencoded.
  */
 function BlockRange( str )
 {
@@ -54,8 +58,37 @@ function BlockRange( str )
 BlockRange.prototype.fromString = function( path )
 {
 	var parts = path.split( ';' );
-	this.start = new BlockPoint( parts[ 0 ]);
-	this.end = new BlockPoint( parts[ 1 ] );
+	if ( parts && 2 == parts.length )
+	{
+		this.start = new BlockPoint( parts[ 0 ]);
+		this.end = new BlockPoint( parts[ 1 ] );
+		this.normalized = true;
+	}
+	else
+	{
+		// Possibly we have an old block range format with no end block, e.g. /5/2 1.0 1.5
+		parts = path.match( /^\s*(\/[\/0-9]*)\s+(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
+		if ( parts )
+		{
+			this.start = new BlockPoint( parts[0], parts[1], parts[2] );
+			this.end = newBlockPoint( parts[0], parts[3], parts[4] );
+			this.normalized = false;
+		}
+		// We might even have a really ancient word range with no blocks
+		// (words count from start of document), e.g. 204.0 204.5
+		else
+		{
+			parts = path.match( /^\s*(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
+			if ( parts )
+			{
+				this.start = new BlockPoint( '/', parts[0], parts[1] );
+				this.end = new BlockPoint( '/', parts[2], parts[3] );
+				this.normalized = false;
+			}
+			else
+				throw "BlockRange parse error";
+		}
+	}
 }
 
 BlockRange.prototype.toString = function( )
@@ -101,6 +134,7 @@ BlockPoint.prototype.fromString = function( path, words, chars )
 		{
 			this.path = path;
 			this.words = this.chars = 0;
+			throw "BlockPoint parse error";
 		}
 	}
 }
@@ -228,6 +262,9 @@ BlockPoint.prototype.compare = function( point2 )
 
 /**
  * XPath representation of a range
+ *
+ * XPath ranges are fast (assuming the document.evaluate function is implemented in the
+ * browser to resolve XPath expressions), but unlike block ranges cannot be ordered.
  */
 function XPathRange( str )
 {
@@ -239,6 +276,8 @@ function XPathRange( str )
 XPathRange.prototype.fromString = function( path )
 {
 	var parts = path.split( ';' );
+	if ( null == parts || 2 != parts.length )
+		throw "XPathRange parse error";
 	this.start = new XPathPoint( parts[ 0 ] );
 	this.end = new XPathPoint( parts[ 1 ] );
 }
@@ -266,7 +305,7 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 	}
 	else
 	{
-		var parts = path.match( /^(.*)\/word\((\d+),(\d+)\)$/ );
+		var parts = path.match( /^\s*(.*)\/word\((\d+)\)\/char\((\d+)\)\s*$/ );
 		if ( parts )
 		{
 			this.path = parts[ 1 ];
@@ -277,15 +316,15 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 		{
 			this.path = path;
 			this.words = this.chars = 0;
+			throw "XPathPoint parse error";
 		}
 	}
-	return this;
 }
 
 XPathPoint.prototype.toString = function( )
 {
 	if ( this.words )
-		return this.path + '/word(' + this.words + ',' + this.chars + ')';
+		return this.path + '/word(' + this.words + ')/char(' + this.chars + ')';
 	else
 		return this.path;
 }

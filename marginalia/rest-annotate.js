@@ -159,9 +159,9 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	if ( null != annotation.note )
 		body = 'note=' + encodeURIParameter( annotation.note );
 	if ( null != annotation.access )
-		body += ( body == '' ? '' : '&' ) + 'access=' + annotation.access;
+		body += ( body == '' ? '' : '&' ) + 'access=' + encodeURIParameter( annotation.access );
 	if ( null != annotation.link )
-		body += ( body == '' ? '' : '&' ) + 'link=' + annotation.link;
+		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.link );
 	if ( annotation.blockRange )
 		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
 	if ( annotation.xpathRange )

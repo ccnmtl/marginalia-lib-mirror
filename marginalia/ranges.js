@@ -942,12 +942,14 @@ function getContentOffset( rel, container, offset, fskip )
 function getPortableSelectionRange( )
 {
 	var range;
-	// W3C Range object (Mozilla)
+	// W3C Range object.  getSelection supported in Mozilla, proposed for HTML5
 	if ( window.getSelection )
 	{
 		var selection = window.getSelection( );
 		if ( null == selection.rangeCount || 0 == selection.rangeCount )
 			return null;
+		// TODO: it has never failed, but this may not work if there are multiple ranges.
+		// How to know which one is the focus?
 		return selection.getRangeAt( 0 );
 	}
 	// Internet Explorer

@@ -32,7 +32,6 @@ AN_HOVER_CLASS = 'hover';			// assigned to highlights and notes when the mouse i
 AN_ANNOTATED_CLASS = 'annotated';	// class added to fragment when annotation is on
 AN_SELFANNOTATED_CLASS = 'self-annotated';  // annotations are by the current user (and therefore editable)
 AN_DUMMY_CLASS = 'dummy';			// used for dummy item in note list
-AN_RANGEMISMATCH_ERROR_CLASS = 'annotation-range-mismatch';	// one or more annotations don't match the current state of the document
 AN_EDITINGNOTE_CLASS = 'editing-note';		// (on body) indicates a note is being edited
 AN_EDITINGLINK_CLASS = 'editing-link';
 AN_EDITCHANGED_CLASS = 'changed';	// indicates content of a text edit changed
@@ -143,33 +142,6 @@ Marginalia.prototype.listPosts = function( )
 	return this.posts;
 }
 
-/**
- * Return a list of all annotations for a given url (and possibly block).
- * Also delete any existing annotations.
- * TODO: separate these two functionalities into different, clearly-labeled functions
- */
-Marginalia.prototype.listAnnotations = function( url, block, f )
-{
-	var r = this.annotationService.listAnnotations( url, this.anusername, block, f );
-	// First strip out any existing annotations
-	// This used to be done by the callback function, but doing it here has the benefit
-	// of getting it done while the server is busy fetching the result.
-	var marginalia = window.marginalia;
-	var posts = marginalia.listPosts( ).getAllPosts( );
-	for ( var i = 0;  i < posts.length;  ++i )
-	{
-		var post = posts[ i ];
-		// Hide any range mismatch error
-		removeClass( posts[ i ].element, AN_RANGEMISMATCH_ERROR_CLASS );
-		// Should also destruct each annotation
-		var annotations = post.removeAnnotations( marginalia );
-		for ( var j = 0;  j < annotations.length;  ++j )
-			annotations[ j ].destruct( );
-		normalizeSpace( post.element );
-	}
-	return r;
-}
-
 Marginalia.prototype.createAnnotation = function( annotation, f )
 {
 	this.annotationService.createAnnotation( annotation, f );
@@ -177,6 +149,19 @@ Marginalia.prototype.createAnnotation = function( annotation, f )
 
 Marginalia.prototype.updateAnnotation = function( annotation )
 {
+	// Before storing the annotation, check whether it's using a denormalized block range.
+	// If it is, recalculate the block range and store the new (faster) format.
+	if ( annotation.blockRange && ! annotation.blockRange.normalized )
+	{
+		var post = this.listPosts( ).getPostByUrl( annotation.url );
+		if ( post )
+		{
+			var root = post.getContentElement( );
+			var wordRange = new WordRange( );
+			wordRange.fromBlockRange( annotation.blockRange, root, _skipContent );
+			annotation.blockRange = wordRange.toBlockRange( root );
+		}
+	}
 	this.annotationService.updateAnnotation( annotation, null );
 }
 
@@ -223,7 +208,10 @@ Marginalia.prototype.hideMarginalia = function( )
  */
 Marginalia.prototype.showAnnotations = function( url, block )
 {
-	this.listAnnotations( url, block, _showAnnotationsCallback );
+	this.annotationService.listAnnotations( url, this.anusername, block, _showAnnotationsCallback );
+	// This used to be done by the callback function, but doing it here has the benefit
+	// of getting it done while the server is busy fetching the result.
+	this.hideAnnotations( );
 }
 
 /**
@@ -276,14 +264,10 @@ function _annotationDisplayCallback( )
 				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].url );
 				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
 				{
-					// Make the error message visible by adding a class which can match a CSS
-					// rule to display the error appropriately.
-					// This doesn't work on... wait for it... Internet Explorer.  However, I don't
-					// want to directly display a specific element or add content, because that
-					// would be application-specific.  For now, IE will have to do without.
-					// TODO: instead of turning the error on or off, actually list the annotations
-					// in place (which we can  out from range info)
-					addClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
+					// Formerly displayed an error on the post saying one or more annotations
+					// could not be placed.  Now annotations are shown, but without highlights
+					// and with an error for each instead.
+					;
 				}
 				// I figure it's probably cheaper to null them rather than resizing the array
 				// each time
@@ -307,14 +291,16 @@ function _annotationDisplayCallback( )
  */
 Marginalia.prototype.hideAnnotations = function( )
 {
-	var posts = this.listPosts( ).getAllPosts( );
+	var marginalia = window.marginalia;
+	var posts = marginalia.listPosts( ).getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var post = posts[ i ];
-		removeClass( post.element, AN_RANGEMISMATCH_ERROR_CLASS );
-		var annotations = post.removeAnnotations( );
+		// Should also destruct each annotation
+		var annotations = post.removeAnnotations( marginalia );
 		for ( var j = 0;  j < annotations.length;  ++j )
 			annotations[ j ].destruct( );
+		// normalizeSpace( post.element );
 	}
 }
 
@@ -341,17 +327,6 @@ function getNodeByFragmentPath( url )
 	return node;
 }
 
-function scrollWindowToNode( node )
-{
-	if ( null != node )
-	{
-		var xoffset = getWindowXScroll( );
-		var yoffset = getElementYOffset( node, node.ownerDocument.documentElement );
-		window.scrollTo( xoffset, yoffset );
-	}
-}
-
- 
 /**
  * Get the list of notes.  It is a DOM element containing children,
  * each of which has an annotation field referencing an annotation.
