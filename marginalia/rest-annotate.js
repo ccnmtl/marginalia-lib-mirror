@@ -107,19 +107,19 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	var serviceUrl = this.serviceUrl;
 		
 	var body
-		= 'url=' + encodeURIParameter( annotation.url )
-		+ '&note=' + encodeURIParameter( annotation.note )
-		+ '&access=' + encodeURIParameter( annotation.access )
-		+ '&quote=' + encodeURIParameter( annotation.quote )
-		+ '&quote_title=' + encodeURIParameter( annotation.quote_title )
-		+ '&quote_author=' + encodeURIParameter( annotation.quote_author )
-		+ '&link=' + encodeURIParameter( annotation.link );
-	if ( annotation.action )
-		body += '&action=' + encodeURIParameter (annotation.action );
-	if ( annotation.blockRange )
-		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
-	if ( annotation.xpathRange )
-		body += '&xpath-range=' + encodeURIParameter( annotation.xpathRange.toString( ) );
+		= 'url=' + encodeURIParameter( annotation.getUrl() )
+		+ '&note=' + encodeURIParameter( annotation.getNote() )
+		+ '&access=' + encodeURIParameter( annotation.getAccess() )
+		+ '&quote=' + encodeURIParameter( annotation.getQuote() )
+		+ '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() )
+		+ '&quote_author=' + encodeURIParameter( annotation.getQuoteAuthor() )
+		+ '&link=' + encodeURIParameter( annotation.getLink() );
+	if ( annotation.getAction() )
+		body += '&action=' + encodeURIParameter (annotation.getAction() );
+	if ( annotation.getRange( BLOCK_RANGE ) )
+		body += '&block-range=' + encodeURIParameter( annotation.getRange( BLOCK_RANGE ).toString( ) );
+	if ( annotation.getRange( XPATH_RANGE ) )
+		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 	var xmlhttp = createAjaxRequest( );
 	
 	xmlhttp.open( 'POST', serviceUrl, true );
@@ -149,23 +149,24 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 
 /**
  * Update an annotation on the server
+ * Only updates the fields that have changed
  */
 RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 {
 	var serviceUrl = this.serviceUrl;
-	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotation.id ) : ( '?id=' + annotation.id );
+	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotation.getId() ) : ( '?id=' + annotation.getId() );
 	
 	var body = '';
-	if ( null != annotation.note )
-		body = 'note=' + encodeURIParameter( annotation.note );
-	if ( null != annotation.access )
-		body += ( body == '' ? '' : '&' ) + 'access=' + encodeURIParameter( annotation.access );
-	if ( null != annotation.link )
-		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.link );
-	if ( annotation.blockRange )
-		body += '&block-range=' + encodeURIParameter( annotation.blockRange.toString( ) );
-	if ( annotation.xpathRange )
-		body += '&xpath-range=' + encodeURIParameter( annotation.xpathRange.toString( ) );
+	if ( annotation.hasChanged( 'note' )  )
+		body = 'note=' + encodeURIParameter( annotation.getNote() );
+	if ( annotation.hasChanged( 'access' ) )
+		body += ( body == '' ? '' : '&' ) + 'access=' + encodeURIParameter( annotation.getAccess() );
+	if ( annotation.hasChanged( 'link' ) )
+		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.getLink() );
+	if ( annotation.hasChanged( 'range/' + BLOCK_RANGE ) )
+		body += '&block-range=' + encodeURIParameter( annotation.getRange( BLOCK_RANGE ).toString( ) );
+	if ( annotation.hasChanged( 'range/' + XPATH_RANGE ) )
+		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 
 	var xmlhttp = createAjaxRequest( );
 	xmlhttp.open( 'PUT', serviceUrl, true );

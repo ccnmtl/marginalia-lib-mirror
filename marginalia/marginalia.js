@@ -151,18 +151,26 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 {
 	// Before storing the annotation, check whether it's using a denormalized block range.
 	// If it is, recalculate the block range and store the new (faster) format.
-	if ( annotation.blockRange && ! annotation.blockRange.normalized )
+	var blockRange = annotation.getRange( BLOCK_RANGE );
+	if ( blockRange && ! blockRange.normalized )
 	{
-		var post = this.listPosts( ).getPostByUrl( annotation.url );
+		var post = this.listPosts( ).getPostByUrl( annotation.getUrl() );
 		if ( post )
 		{
 			var root = post.getContentElement( );
 			var wordRange = new WordRange( );
-			wordRange.fromBlockRange( annotation.blockRange, root, _skipContent );
-			annotation.blockRange = wordRange.toBlockRange( root );
+			wordRange.fromBlockRange( blockRange, root, _skipContent );
+			annotation.setRange( BLOCK_RANGE, wordRange.toBlockRange( root ) );
 		}
 	}
-	this.annotationService.updateAnnotation( annotation, null );
+	if ( annotation.hasChanged() )
+	{
+		var f = function( )
+		{
+			annotation.resetChanges();
+		}
+		this.annotationService.updateAnnotation( annotation, f );
+	}
 }
 
 Marginalia.prototype.deleteAnnotation = function( annotationId )
@@ -261,7 +269,7 @@ function _annotationDisplayCallback( )
 		{
 			if ( null != annotations[ i ] )
 			{
-				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].url );
+				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].getUrl() );
 				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
 				{
 					// Formerly displayed an error on the post saying one or more annotations
@@ -372,7 +380,7 @@ PostMicro.prototype.getAnnotationIndex = function( marginalia, annotation )
 		--pos;
 		if ( null != note.annotation )
 		{
-			if ( note.annotation.id == annotation.id )
+			if ( note.annotation.getId() == annotation.getId() )
 				break;
 			else if ( compareAnnotationRanges( note.annotation, annotation ) < 0 )
 				break;
@@ -415,7 +423,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	// Will need to align the note with the highlight.
 	// If the highlight is not found, then the quote doesn't match - display
 	// the annotation, but with an error and deactivate some behaviors.
-	var highlightElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
+	var highlightElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
 	var quoteFound = highlightElement != null;
 	
 	// Ensure we have a dummy first sibling
@@ -439,8 +447,8 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	// Create the list item
 	var postMicro = this;
 	var noteElement = document.createElement( 'li' );
-	noteElement.id = AN_ID_PREFIX + annotation.id;
-	noteElement.annotationId = annotation.id;
+	noteElement.id = AN_ID_PREFIX + annotation.getId();
+	noteElement.annotationId = annotation.getId();
 	noteElement.annotation = annotation;
 	if ( ! quoteFound )
 		addClass( noteElement, AN_QUOTENOTFOUND_CLASS );
@@ -474,7 +482,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	{
 		addClass( noteElement, AN_EDITINGLINK_CLASS );
 		
-		var controlId = AN_ID_PREFIX + annotation.id + '-linkedit';
+		var controlId = AN_ID_PREFIX + annotation.getId() + '-linkedit';
 		
 		// add the link label
 		var labelNode = document.createElement( 'label' );
@@ -486,7 +494,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		// Add the URL input field
 		var editNode = document.createElement( 'input' );
 		editNode.setAttribute( 'id', controlId );
-		editNode.setAttribute( 'value', annotation.link ? annotation.link : '' );
+		editNode.setAttribute( 'value', annotation.getLink() ? annotation.getLink() : '' );
 		if ( ANNOTATION_EXTERNAL_LINKING )
 		{
 			editNode.setAttribute( 'type', 'text' );
@@ -503,7 +511,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 		buttonNode.className = AN_DELETEBUTTON_CLASS;
 		buttonNode.setAttribute( 'title', getLocalized( 'delete annotation link button' ) );
 		buttonNode.appendChild( document.createTextNode( "x" ) );
-		buttonNode.annotationId = annotation.id;
+		buttonNode.annotationId = annotation.getId();
 		buttonNode.onclick = _deleteLink;
 		noteElement.appendChild( buttonNode );
 
@@ -517,7 +525,7 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	else
 	{
 		// Does this user have permission to edit this annotation?
-		var canEdit = null != marginalia.username && annotation.userid == marginalia.username;
+		var canEdit = null != marginalia.username && annotation.getUserId() == marginalia.username;
 		if ( canEdit )
 		{
 			var controls = document.createElement( 'div' );
@@ -532,12 +540,12 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 				buttonNode.className = AN_LINKBUTTON_CLASS;
 				buttonNode.setAttribute( 'title', getLocalized( 'annotation link button' ) );
 				buttonNode.appendChild( document.createTextNode( AN_LINK_EDIT_ICON ) );
-				buttonNode.setAttribute( 'href', annotation.link );
+				buttonNode.setAttribute( 'href', annotation.getLink() );
 				buttonNode.onclick = _editLink;
 				controls.appendChild( buttonNode );
 			}
 
-			if ( ANNOTATION_ACCESS || annotation.access != ANNOTATION_ACCESS_DEFAULT )
+			if ( ANNOTATION_ACCESS || annotation.getAccess() != ANNOTATION_ACCESS_DEFAULT )
 			{
 				// add the access button
 				// even if the feature is turned off, show this if the access is not
@@ -546,9 +554,9 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 				buttonNode = document.createElement( "button" );
 				buttonNode.setAttribute( 'type', "button" );
 				buttonNode.className = AN_ACCESSBUTTON_CLASS;
-				buttonNode.setAttribute( 'title', annotation.access == AN_PUBLIC_ACCESS ?
+				buttonNode.setAttribute( 'title', annotation.getAccess() == AN_PUBLIC_ACCESS ?
 					getLocalized( 'public annotation' ) : getLocalized( 'private annotation' ) );
-				buttonNode.appendChild( document.createTextNode( annotation.access == AN_PUBLIC_ACCESS ? AN_SUN_SYMBOL : AN_MOON_SYMBOL ) );
+				buttonNode.appendChild( document.createTextNode( annotation.getAccess() == AN_PUBLIC_ACCESS ? AN_SUN_SYMBOL : AN_MOON_SYMBOL ) );
 				buttonNode.annotation = annotation;
 				buttonNode.onclick = _toggleAnnotationAccess;
 				controls.appendChild( buttonNode );
@@ -560,24 +568,24 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 			buttonNode.className = AN_DELETEBUTTON_CLASS;
 			buttonNode.setAttribute( 'title', getLocalized( 'delete annotation button' ) );
 			buttonNode.appendChild( document.createTextNode( "x" ) );
-			buttonNode.annotationId = annotation.id;
+			buttonNode.annotationId = annotation.getId();
 			buttonNode.onclick = _deleteAnnotation;
 			controls.appendChild( buttonNode );
 		}
 		
 		// add the text content
 		var noteText = document.createElement( 'p' );
-		var keyword = marginalia.keywordService.getKeyword( annotation.note );
+		var keyword = marginalia.keywordService.getKeyword( annotation.getNote() );
 		if ( ! quoteFound )
-			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.quote + '"' );
+			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"' );
 		else if ( keyword )
 			noteText.setAttribute( 'title', keyword.description );
-		noteText.appendChild( document.createTextNode( annotation.note ) );
+		noteText.appendChild( document.createTextNode( annotation.getNote() ) );
 		noteElement.appendChild( noteText );
 		
 		// Mark the action
-		if ( ANNOTATION_ACTIONS && annotation.action && annotation.action )
-			addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.action );
+		if ( ANNOTATION_ACTIONS && annotation.getAction() )
+			addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.getAction() );
 		
 		if ( canEdit )
 		{
@@ -620,7 +628,7 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
 	{
 		if ( null == selectNode )
 		{
-			var value = annotation.note;
+			var value = annotation.getNote();
 			if ( editNode )
 			{
 				value = editNode.value;
@@ -633,13 +641,13 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
 			selectNode.onkeypress = _editNoteKeypress;
 			
 			// See if the current value of the note is a keyword
-			if ( ! marginalia.keywordService.isKeyword( annotation.note ) && annotation.note )
+			if ( ! marginalia.keywordService.isKeyword( annotation.getNote() ) && annotation.getNote() )
 			{
 				// First option is the freeform edit value for the note
 				var opt = document.createElement( 'option' );
 				opt.appendChild( document.createTextNode(
-					annotation.note.length > 12 ? annotation.note.substring( 0, 12 ) : annotation.note ) );
-				opt.setAttribute( 'value', annotation.note );
+					annotation.getNote().length > 12 ? annotation.getNote().substring( 0, 12 ) : annotation.getNote() ) );
+				opt.setAttribute( 'value', annotation.getNote() );
 				selectNode.appendChild( opt );
 			}
 			
@@ -660,7 +668,7 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
 	}
 	else if ( AN_EDIT_NOTE_FREEFORM == annotation.editing )
 	{
-		var value = annotation.note;
+		var value = annotation.getNote();
 		if ( selectNode )
 		{
 			if ( -1 != selectNode.selectedIndex )
@@ -677,7 +685,7 @@ PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
 
 			// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
 			//editNode.onkeyup = function( event ) { event = getEvent( event ); return postMicro.editKeyUp( event, this ); };
-			editNode.annotationId = annotation.id;
+			editNode.annotationId = annotation.getId();
 			editNode.onkeypress = _editNoteKeypress;
 			editNode.onkeyup = _editChangedKeyup;
 		}
@@ -704,20 +712,20 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		
 	// Word range needed for conversion to text range and for later calculations
 	var wordRange = new WordRange( );
-	if ( annotation.xpathRange )
+	if ( annotation.getRange( XPATH_RANGE ) )
 	{
-		var r = wordRange.fromXPathRange( annotation.xpathRange, this.contentElement, _skipContent );
+		var r = wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, _skipContent );
 		if ( false == r )
 		{
-			// trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
+			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
 			return false;
 		}
 	}
 	else
 	{
-		if ( ! wordRange.fromBlockRange( annotation.blockRange, this.contentElement, _skipContent ) )
+		if ( ! wordRange.fromBlockRange( annotation.getRange( BLOCK_RANGE ), this.contentElement, _skipContent ) )
 		{
-			trace( 'find-quote', 'Annotation ' + annotation.id + ' not within the content area.' );
+			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
 			return false;
 		}
 		// TODO: Store XPathRange back to annotation on server
@@ -765,15 +773,15 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	trace( 'show-highlight', 'Walked to end' );
 	
 	// Confirm whether the actual text matches what's expected in the annotation quote
-	var quote = annotation.quote ? annotation.quote : '';
+	var quote = annotation.getQuote() ? annotation.getQuote() : '';
 	actual = actual.replace( /\s+|\u00a0\s*/g, ' ' );
 	quote = quote.replace( /\s+|\u00a0\s*/g, ' ' );
 	if ( actual != quote )
 	{
 		// Older versions (before 2007-06-05) have some context calculation code which could be
 		// modified and used here.
-		var rangeStr = annotation.blockRange ? annotation.blockRange.toString() : '';
-		trace( 'find-quote', 'Annotation ' + annotation.id + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
+		var rangeStr = annotation.getRange( BLOCK_RANGE ) ? annotation.getRange( BLOCK_RANGE ).toString() : '';
+		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
 		return false;
 	}
 	else
@@ -807,15 +815,15 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			// replace node content with annotation
 			newNode = document.createElement( 'em' );
 			
-			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.id;
-			if ( ANNOTATION_ACTIONS && annotation.action && annotation.action )
-				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.action;
+			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.getId();
+			if ( ANNOTATION_ACTIONS && annotation.getAction() )
+				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.getAction();
 			newNode.onmouseover = _hoverAnnotation;
 			newNode.onmouseout = _unhoverAnnotation;
 			newNode.annotation = annotation;
 			node.parentNode.replaceChild( newNode, node );
 			
-			if ( ANNOTATION_ACTIONS && 'edit' == annotation.action && annotation.quote )
+			if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getQuote() )
 			{
 				var delNode = document.createElement( 'del' );
 				delNode.appendChild( node );
@@ -844,10 +852,10 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	{
 		addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
 		// If this was a substitution or insertion action, insert the text
-		if ( ANNOTATION_ACTIONS && 'edit' == annotation.action && annotation.note )
+		if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getNote() )
 			this.showActionInsert( marginalia, annotation );
 		// If there's a link from this annotation, add the link icon
-		if ( ANNOTATION_LINKING && annotation.link )
+		if ( ANNOTATION_LINKING && annotation.getLink() )
 			this.showLink( marginalia, annotation );
 	}
 	var endTime = new Date( );
@@ -863,13 +871,13 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 PostMicro.prototype.showLink = function( marginalia, annotation )
 {
 	// TODO: I don't think this works - should prefix with the AN_LINK_CLASS
-	var existingLink = getChildByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.id, _skipContent );
+	var existingLink = getChildByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.getId(), _skipContent );
 	if ( existingLink )
 		existingLink.parentNode.removeChild( existingLink );
 	
 	if ( null != annotation.link && '' != annotation.link )
 	{
-		var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null, _skipContent );
+		var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
 		for ( var i = 0;  i < highlights.length;  ++i )
 		{
 			if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
@@ -879,26 +887,26 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 				var lastHighlight = highlights[ i ];
 				var supNode = document.createElement( 'sup' );
 				var linkNode = document.createElement( 'a' );
-				linkNode.setAttribute( 'href', annotation.link );
+				linkNode.setAttribute( 'href', annotation.getLink() );
 				
-				if ( null != annotation.note && '' != annotation.note )
+				if ( null != annotation.getNote() && '' != annotation.getNote() )
 				{
-					var keyword = marginalia.keywordService.getKeyword( annotation.note );
+					var keyword = marginalia.keywordService.getKeyword( annotation.getNote() );
 					if ( keyword )
 						linkNode.setAttribute( 'title', keyword.name + ': ' + keyword.description );
 					else
 					{
 						linkNode.setAttribute( 'title',
-							annotation.note.length > MAX_NOTEHOVER_LENGTH
-							? annotation.note.substr( 0, MAX_NOTEHOVER_LENGTH ) + '...'
-							: annotation.note );
+							annotation.getNote().length > MAX_NOTEHOVER_LENGTH
+							? annotation.getNote().substr( 0, MAX_NOTEHOVER_LENGTH ) + '...'
+							: annotation.getNote() );
 					}
 				}
 				
 				linkNode.appendChild( document.createTextNode( AN_LINK_ICON ) );
 				supNode.appendChild( linkNode );
 				lastHighlight.appendChild( supNode );
-				addClass( linkNode, AN_LINK_CLASS + ' ' + AN_ID_PREFIX + annotation.id );
+				addClass( linkNode, AN_LINK_CLASS + ' ' + AN_ID_PREFIX + annotation.getId() );
 			}
 		}
 	}
@@ -909,8 +917,8 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
  */
 PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 {
-	trace( 'actions', 'showActionInsert for ' + annotation.quote );
-	var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null, _skipContent );
+	trace( 'actions', 'showActionInsert for ' + annotation.getQuote() );
+	var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
 		if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
@@ -918,15 +926,15 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 			// TODO: should check whether <ins> is valid in this position
 			var lastHighlight = highlights[ i ];
 			var insNode = document.createElement( 'ins' );
-			insNode.appendChild( document.createTextNode( annotation.note ) );
+			insNode.appendChild( document.createTextNode( annotation.getNote() ) );
 			lastHighlight.appendChild( insNode );
-			trace( 'actions', 'Insert text is ' + annotation.note );
+			trace( 'actions', 'Insert text is ' + annotation.getNote() );
 /*			// Insert *after* the annotation highlight
 			if ( lastHighlight.nextSibling )
 				lastHighlight.parentNode.insertBefore( insNode, lastHighlight.nextSibling );
 			else
 				lastHighlight.parentNode.appendChild( insNode );
-*/			addClass ( insNode, AN_ID_PREFIX + annotation.id );
+*/			addClass ( insNode, AN_ID_PREFIX + annotation.getId() );
 		}
 	}
 }
@@ -938,7 +946,7 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
  */
 PostMicro.prototype.positionNote = function( marginalia, annotation )
 {
-	var note = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var note = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	while ( null != note )
 	{
 		var alignElement = this.getNoteAlignElement( annotation );
@@ -958,12 +966,12 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 PostMicro.prototype.getNoteAlignElement = function( annotation )
 {
 	// Try to find the matching highlight element
-	var alignElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.id, null );
+	var alignElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
 	// If there is no matching highlight element, pick the paragraph.  Prefer XPath range representation.
-	if ( null == alignElement && annotation.xpathRange )
-		alignElement = annotation.xpathRange.start.getReferenceElement( this.contentElement );
-	if ( null == alignElement && annotation.blockRange )
-		alignElement = annotation.blockRange.start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.getRange( XPATH_RANGE ) )
+		alignElement = annotation.getRange( XPATH_RANGE ).start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.getRange( BLOCK_RANGE ) )
+		alignElement = annotation.getRange( BLOCK_RANGE ).start.getReferenceElement( this.contentElement );
 	return alignElement;
 }
 
@@ -1119,7 +1127,7 @@ PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
  */
 PostMicro.prototype.removeNote = function( marginalia, annotation )
 {
-	var listItem = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	var next = listItem.nextSibling;
 	listItem.parentNode.removeChild( listItem );
 	listItem.annotation = null; // dummy item won't have this field
@@ -1133,13 +1141,13 @@ PostMicro.prototype.removeNote = function( marginalia, annotation )
 PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 {
 	var contentElement = this.contentElement;
-	var highlights = getChildrenByTagClass( contentElement, 'em', AN_ID_PREFIX + annotation.id, null, null );
+	var highlights = getChildrenByTagClass( contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, null );
 	for ( var i = 0;  i < highlights.length;  ++i )
 		highlights[ i ].annotation = null;
 	// TODO: Properly handle removal of <del> and <ins> tags for annotations with actions
 	var micro = this;
 	var stripTest = function( tnode )
-		{ return micro.highlightStripTest( tnode, AN_ID_PREFIX + annotation.id ); };
+		{ return micro.highlightStripTest( tnode, AN_ID_PREFIX + annotation.getId() ); };
 	stripMarkup( contentElement, stripTest, true );
 	// This normalization was (erroneously) commented out - I think because it's so slow.
 	// The best solution would be to a) modify stripMarkup to join adjacent text elements
@@ -1179,7 +1187,7 @@ function stripLinks( node )
 PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
 {
 	// Activate the note
-	var noteNode = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var noteNode = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	if ( flag )
 		addClass( noteNode, AN_HOVER_CLASS );
 	else
@@ -1217,7 +1225,7 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation )
 	// Show the annotation and highlight
 	this.addAnnotation( marginalia, annotation );
 	// Focus on the text edit
-	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	var editElement = ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
 		? getChildByTagClass( noteElement, 'select', null, null )
 		: getChildByTagClass( noteElement, 'textarea', null, null );
@@ -1240,7 +1248,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 {
 	// Remove events
 	removeAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotation );
-	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	removeAnonBubbleEventListener( noteElement, 'click', stopPropagation );
 	
 	marginalia.preferences.setPreference( PREF_NOTEEDIT_MODE, annotation.editing );
@@ -1249,7 +1257,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	var scrollY = getWindowYScroll( );
 	var scrollX = getWindowXScroll( );
 	
-	var listItem = document.getElementById( AN_ID_PREFIX + annotation.id );
+	// TODO: listItem is an alias for noteElement
+	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	
 	var noteStr = annotation.note;
 	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
@@ -1279,7 +1288,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		return false;
 	this.hoverAnnotation( marginalia, annotation, false );
 	delete annotation.editing;
-	annotation.note = noteStr;
+	annotation.setNote( noteStr );
 
 	// Update the link hover (if present)
 	this.showLink( marginalia, annotation );
@@ -1300,35 +1309,36 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		var f = function( url ) {
 			// update the annotation with the created ID
 			var id = url.substring( url.lastIndexOf( '/' ) + 1 );
-			annotation.id = id;
+			annotation.setId( id );
+			annotation.resetChanges( );
 			annotation.isLocal = false;
 			var noteElement = document.getElementById( AN_ID_PREFIX + '0' );
-			noteElement.id = AN_ID_PREFIX + annotation.id;
+			noteElement.id = AN_ID_PREFIX + annotation.getId();
 			var highlightElements = getChildrenByTagClass( postMicro.contentElement, 'em', AN_ID_PREFIX + '0', null, null );
 			for ( var i = 0;  i < highlightElements.length;  ++i )
 			{
 				removeClass( highlightElements[ i ], AN_ID_PREFIX + '0' );
-				addClass( highlightElements[ i ], AN_ID_PREFIX + annotation.id );
+				addClass( highlightElements[ i ], AN_ID_PREFIX + annotation.getId() );
 			}
 		};
-		annotation.url = this.url;
+		annotation.setUrl( this.url );
 		
 		// IE may have made a relative URL absolute, which could cause problems
 		if ( null != marginalia.urlBase
 			&& annotation.url.substring( 0, marginalia.urlBase.length ) == marginalia.UrlBase )
 		{
-			annotation.url = annotation.url.substring( marginalia.urlBase.length );
+			annotation.setUrl( annotation.getUrl().substring( marginalia.urlBase.length ) );
 		}
 
-		annotation.note = noteStr;
-		annotation.title = this.title;
-		annotation.author = this.author;
+		annotation.setNote( noteStr );
+		annotation.setTitle( this.title );
+		annotation.setAuthor( this.author );
 		marginalia.createAnnotation( annotation, f );
 	}
 	// The annotation already exists and needs to be updated
 	else
 	{
-		annotation.note = noteStr;
+		annotation.setNote( noteStr );
 		marginalia.updateAnnotation( annotation, null );
 	}
 	
@@ -1346,7 +1356,7 @@ PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 	var scrollX = getWindowXScroll( );
 
 	// Delete it on the server
-	marginalia.deleteAnnotation( annotation.id, null );
+	marginalia.deleteAnnotation( annotation.getId(), null );
 	
 	// Find the annotation
 	var next = this.removeAnnotation( marginalia, annotation );
@@ -1386,7 +1396,7 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 {
 	// Remove events
 	removeAnonBubbleEventListener( document.documentElement, 'click', _saveAnnotationLink );
-	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	removeAnonBubbleEventListener( noteElement, 'click', stopPropagation );
 
 	// don't allow this to happen more than once
@@ -1397,7 +1407,8 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 	var scrollY = getWindowYScroll( );
 	var scrollX = getWindowXScroll( );
 	
-	var listItem = document.getElementById( AN_ID_PREFIX + annotation.id );	
+	// TODO: listItem is an alias of noteElement above
+	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );	
 	var editNode = getChildByTagClass( listItem, 'input', null, null );
 	
 	// Check the length of the link.  If it's too long, do nothing, but restore focus to the note
@@ -1412,7 +1423,7 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 	
 	this.hoverAnnotation( marginalia, annotation, false );
 	delete annotation.editing;
-	annotation.link = editNode.value;
+	annotationsetLink( editNode.value );
 	marginalia.updateAnnotation( annotation, null );
 
 	// Update the link display
@@ -1467,7 +1478,7 @@ PostMicro.prototype.deleteLink = function( marginalia, annotation )
 
 	// Delete the link on the server
 	annotation.link = '';
-	marginalia.updateAnnotation( marginalia, annotation.id, null );
+	marginalia.updateAnnotation( marginalia, annotation.getId(), null );
 	
 	this.showLink( marginalia, annotation );
 	
@@ -1689,7 +1700,7 @@ function _deleteLink( event )
 	stopPropagation( event );
 	var post = getNestedFieldValue( this, AN_POST_FIELD );
 	var annotation = getNestedFieldValue( this, AN_ANNOTATION_FIELD );
-	var annotationNode = document.getElementById( AN_ID_PREFIX + annotation.id );
+	var annotationNode = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	var editNode = getChildByTagClass( annotationNode, 'input', null, null );
 	editNode.value = '';
 	post.saveAnnotationLink( window.marginalia, annotation );
@@ -1723,9 +1734,9 @@ function _expandEdit( event )
 		// If the text is too long, just chop it (popping up a dialog is too
 		// complex and wrecks the flow)
 		if ( editNode.value.length > MAX_NOTE_LENGTH )
-			annotation.note = editNode.value.substr( 0, MAX_NOTE_LENGTH );
+			annotation.setNote( editNode.value.substr( 0, MAX_NOTE_LENGTH ) );
 		else
-			annotation.note = editNode.value;
+			annotation.setNote( editNode.value );
 		expandControl.appendChild( document.createTextNode( AN_COLLAPSED_ICON ) );
 		annotation.editing = AN_EDIT_NOTE_KEYWORDS;
 	}
@@ -1744,12 +1755,12 @@ function _toggleAnnotationAccess( event )
 	var annotation = getNestedFieldValue( this, AN_ANNOTATION_FIELD );
 	var accessButton = getEventTarget( event );
 
-	annotation.access = annotation.access == 'public' ? 'private' : 'public';
+	annotation.setAccess( annotation.getAccess() == 'public' ? 'private' : 'public' );
 	window.marginalia.updateAnnotation( annotation, null );
 	while ( accessButton.firstChild )
 		accessButton.removeChild( accessButton.firstChild );
-	accessButton.appendChild( document.createTextNode( annotation.access == 'public' ? AN_SUN_SYMBOL : AN_MOON_SYMBOL ) );
-	accessButton.setAttribute( 'title', annotation.access == 'public' ?
+	accessButton.appendChild( document.createTextNode( annotation.getAccess() == 'public' ? AN_SUN_SYMBOL : AN_MOON_SYMBOL ) );
+	accessButton.setAttribute( 'title', annotation.getAccess() == 'public' ?
 		getLocalized( 'public annotation' ) : getLocalized( 'private annotation' ) );
 }
 
@@ -1903,35 +1914,38 @@ function createAnnotation( postId, warn, action )
 	var marginalia = window.marginalia;
 	var post = document.getElementById( postId ).post;
 	var annotation = new Annotation( post.url );
-	annotation.userid = marginalia.username;
+	annotation.setUserId( marginalia.username );
 	if ( action )
-		annotation.action = action;
+		annotation.setAction( action );
 	
 	var wordRange = new WordRange( );
 	wordRange.fromTextRange( textRange, post.contentElement, _skipContent );
-	annotation.blockRange = wordRange.toBlockRange( post.contentElement );
-	annotation.xpathRange = wordRange.toXPathRange( post.contentElement );
+	var blockRange = wordRange.toBlockRange( post.contentElement );
+	var xpathRange = wordRange.toXPathRange( post.contentElement );
 	
-	annotation.quote = getTextRangeContent( textRange, _skipContent );
-	if ( 0 == annotation.quote.length )
+	annotation.setQuote( getTextRangeContent( textRange, _skipContent ) );
+	if ( 0 == annotation.getQuote().length )
 	{
 		if ( ANNOTATION_ACTIONS && 'edit' == action )
 		{
 			// zero-length quotes are ok for edit actions
 			// Collapse ranges to points
-			annotation.blockRange.start = annotation.blockRange.end;
-			annotation.xpathRange.start = annotation.xpathRange.end;
+			blockRange.start = blockRange.end;
+			xpathRange.start = xpathRange.end;
 		}
 		else
 		{
 			annotation.destruct( );
 			if ( warn )
 				alert( '3' + getLocalized( 'zero length quote' ) );
-			trace( null, "zero length quote '" + annotation.quote + "'" );
+			trace( null, "zero length quote '" + annotation.getQuote() + "'" );
 			return false;
 		}
 	}
 	
+	annotation.setRange( BLOCK_RANGE, blockRange );
+	annotation.setRange( XPATH_RANGE, xpathRange );
+
 	// TODO: test selection properly
 	if ( null == annotation )
 	{
@@ -1942,7 +1956,7 @@ function createAnnotation( postId, warn, action )
 	
 	// Check to see whether the quote is too long (don't do this based on the raw text 
 	// range because the quote strips leading and trailing spaces)
-	if ( annotation.quote.length > MAX_QUOTE_LENGTH )
+	if ( annotation.getQuote().length > MAX_QUOTE_LENGTH )
 	{
 		annotation.destruct( );
 		if ( warn )

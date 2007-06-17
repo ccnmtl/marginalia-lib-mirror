@@ -121,7 +121,7 @@ MarginaliaDirect.prototype.annotationDeleted = function( id )
 	var annotationList = document.getElementById( 'md-annotation-list' );
 	for ( var item = annotationList.firstChild;  item;  item = item.nextSibling )
 	{
-		if ( item.annotation && item.annotation.id == id )
+		if ( item.annotation && item.annotation.getId() == id )
 		{
 			item.annotation = null;
 			annotationList.removeChild( item );
@@ -133,12 +133,12 @@ MarginaliaDirect.prototype.updateAnnotation = function( listItem )
 {
 	var direct = this;
 	var annotation = listItem.annotation;
-	annotation.url = this.getFieldInput( listItem, 'md-annotation-url' ).value;
-	annotation.blockRange = new BlockRange( this.getFieldInput( listItem, 'md-annotation-block-range' ).value );
-	annotation.xpathRange = new XPathRange( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value );
-	annotation.quote = this.getFieldInput( listItem, 'md-annotation-quote' ).value;
-	annotation.note = this.getFieldInput( listItem, 'md-annotation-note' ).value;
-	annotation.link = this.getFieldInput( listItem, 'md-annotation-link' ).value;
+	annotation.setUrl( this.getFieldInput( listItem, 'md-annotation-url' ).value );
+	annotation.setRange( BLOCK_RANGE, new BlockRange( this.getFieldInput( listItem, 'md-annotation-block-range' ).value ) );
+	annotation.setRange( XPATH_RANGE, new XPathRange( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value ) );
+	annotation.setQuote( this.getFieldInput( listItem, 'md-annotation-quote' ).value );
+	annotation.setNote( this.getFieldInput( listItem, 'md-annotation-note' ).value );
+	annotation.setLink( this.getFieldInput( listItem, 'md-annotation-link' ).value );
 	this.marginaliaService.updateAnnotation( annotation, null );
 }
 
@@ -167,20 +167,22 @@ MarginaliaDirect.prototype.showAnnotation = function( annotation )
 	
 	// ID, User
 	var legend = document.createElement( 'legend' );
-	legend.appendChild( document.createTextNode( '#' + annotation.id + ' by ' + annotation.userid ) );
+	legend.appendChild( document.createTextNode( '#' + annotation.getId() + ' by ' + annotation.getUserId() ) );
 	listItem.appendChild( legend );
 	
 	// URL, Range, Access
-	listItem.appendChild( this.newInputField( null, 'md-annotation-url', 'URL', annotation.url, true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-block-range', 'Block Range', annotation.blockRange.toString(), true ) );
+	var xpathRange = annotation.getRange( XPATH_RANGE );
+	var blockRange = annotation.getRange( BLOCK_RANGE );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-url', 'URL', annotation.getUrl(), true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-block-range', 'Block Range', blockRange.toString(), true ) );
 	listItem.appendChild( this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', 
-		annotation.xpathRange ? annotation.xpathRange.toString() : '', true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-access', 'Access', annotation.access, true ) );
+		xpathRange ? xpathRange.toString() : '', true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-access', 'Access', annotation.getAccess(), true ) );
 	
 	// Quote, Note, Link
-	listItem.appendChild( this.newInputField( null, 'md-annotation-quote', 'Quote', annotation.quote ? annotation.quote : '', true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-note', 'Note', annotation.note ? annotation.note : '', true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-link', 'Link', annotation.link ? annotation.link : '', true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-quote', 'Quote', annotation.getQuote(), true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-note', 'Note', annotation.getNote(), true ) );
+	listItem.appendChild( this.newInputField( null, 'md-annotation-link', 'Link', annotation.getLink(), true ) );
 	
 	// Last updated
 	var p = document.createElement( 'p' );

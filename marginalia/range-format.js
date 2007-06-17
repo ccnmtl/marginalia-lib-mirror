@@ -105,6 +105,10 @@ BlockRange.prototype.compare = function( range2 )
 		return this.end.compare( range2.end );
 }
 
+BlockRange.prototype.equals = function( range2 )
+{
+	return 0 == this.compare( range2 );
+}
 
 function BlockPoint( str )
 {
@@ -287,6 +291,10 @@ XPathRange.prototype.toString = function( )
 	return this.start.toString( ) + ';' + this.end.toString( );
 }
 
+XPathRange.prototype.equals = function( range2 )
+{
+	return this.start.equals( range2.start ) && this.end.equals( range2.end );
+}
 
 function XPathPoint( str )
 {
@@ -319,6 +327,11 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 			throw "XPathPoint parse error";
 		}
 	}
+}
+
+XPathPoint.prototype.equals = function( point2 )
+{
+	return this.path == point2.path && this.words == point2.words && this.chars == point2.chars;
 }
 
 XPathPoint.prototype.toString = function( )
