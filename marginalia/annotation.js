@@ -27,6 +27,7 @@
 // namespaces
 NS_PTR = 'http://www.geof.net/code/annotation/';
 NS_ATOM = 'http://www.w3.org/2005/Atom';
+NS_XHTML = 'http://www.w3.org/1999/xhtml';
 
 // values for annotation.access
 AN_PUBLIC_ACCESS = 'public';
@@ -55,6 +56,8 @@ ORDERED_RANGE = BLOCK_RANGE;
  */
 function Annotation( url )
 {
+	// Used to track which fields have changed.  Must precede following code (esp. setUrl)
+	this.changes = new Object( );
 	if ( url )
 		this.setUrl( url );
 	this.blockRange = null;
@@ -67,8 +70,6 @@ function Annotation( url )
 	this.isLocal = false;
 	// this.editing = null; -- deleted when not needed
 	this.link = '';
-	// Used to track which fields have changed:
-	this.changes = new Object( );
 	return this;
 }
 
@@ -237,14 +238,14 @@ Annotation.prototype.setLink = function( link )
 }
 
 Annotation.prototype.getQuoteAuthor = function( )
-{ return this.quote_author ? this.quote_author : ''; }
+{ return this.quoteAuthor ? this.quoteAuthor : ''; }
 
 Annotation.prototype.setQuoteAuthor = function( author )
 {
-	if ( this.quote_author != author )
+	if ( this.quoteAuthor != author )
 	{
-		this.quote_author = author;
-		this.changes[ 'quote_author' ] = true;
+		this.quoteAuthor = author;
+		this.changes[ 'quoteAuthor' ] = true;
 	}
 }
 
@@ -253,10 +254,10 @@ Annotation.prototype.getQuoteTitle = function( )
 
 Annotation.prototype.setQuoteTitle = function( title )
 {
-	if ( this.quote_title != title )
+	if ( this.quoteTitle != title )
 	{
-		this.quote_title = title;
-		this.changes[ 'quote_title' ] = true;
+		this.quoteTitle = title;
+		this.changes[ 'quoteTitle' ] = true;
 	}
 }
 
@@ -336,7 +337,20 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 	var rangeStr = null;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
-		if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'link' )
+		if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'content' )
+		{
+			if ( 'xhtml' == field.getAttribute( 'type' ) )
+			{
+				// Find the enclosed div
+				var child;
+				for ( child = field.firstChild;  child;  child = child.nextSibling )
+					if ( child.namespaceURI == NS_XHTML && child.nodeName == 'div' && hasClass( child, 'annotation' ) )
+						break;
+				if ( child )
+					this.fromAtomContent( child );	
+			}
+		}
+		else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'link' )
 		{
 			var rel = field.getAttribute( 'rel' );
 			var href = field.getAttribute( 'href' );
@@ -366,10 +380,6 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 					this.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
 			}
 		}
-		else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'title' )
-			this.note = null == field.firstChild ? '' : getNodeText( field );
-		else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'summary' )
-			this.quote = null == field.firstChild ? null : getNodeText( field );
 		else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
 		{
 			var format = field.getAttribute( 'format', '' );
@@ -391,6 +401,62 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 	// In future who knows, this might not be the case - and the reset would have to
 	// be moved elsewhere.
 	this.resetChanges( );	
+}
+
+/**
+ * Pull annotation fields from the content area of the Atom entry
+ * Now this is truly tedious code.  Some good DOM parsing routines would help a lot.
+ * But for now I just want to get it working.
+ */
+Annotation.prototype.fromAtomContent = function( parent, mode )
+{
+	for ( var node = parent.firstChild;  node;  node = node.nextSibling )
+	{
+		var childMode = mode;
+		if ( ELEMENT_NODE == node.nodeType && NS_XHTML == node.namespaceURI )
+		{
+			if ( ! mode )
+			{
+				// Quote, URL
+				if ( ( 'blockquote' == node.nodeName || 'q' == node.nodeName ) && node.getAttribute( 'cite' ) )
+				{
+					this.quote = getNodeText( node );
+					this.url = node.getAttribute( 'cite' );
+				}
+				// QuoteTitle
+				else if ( 'cite' == node.nodeName )
+					this.quoteTitle = getNodeText( node );
+				else
+				{
+					// Check class values
+					var className = node.getAttribute( 'class' );
+					if ( className )
+					{
+						var classNames = className.split( /\s+/ );
+						for ( var i = 0;  i < classNames.length;  ++i )
+						{
+							className = classNames[ i ];
+							// Note
+							if ( 'note' == className )
+							{
+								this.note = getNodeText( node );
+								childMode = 'note';
+							}
+							if ( 'quoteAuthor' == className )
+								this.quoteAuthor = getNodeText( node );
+						}
+					}
+				}
+			}
+			else if ( 'note' == mode )
+			{
+				// Link
+				if ( 'a' == node.nodeName )
+					this.link = node.getAttribute( 'href' );
+			}
+			this.fromAtomContent( node, childMode );
+		}
+	}
 }
 
 /**

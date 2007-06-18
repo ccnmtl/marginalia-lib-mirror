@@ -70,7 +70,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, point
 {
 	// exclude content to lighten the size across the wire
 	var serviceUrl = this.serviceUrl;
-	serviceUrl += '?format=atom&exclude=content';
+	serviceUrl += '?format=atom';
 	if ( point )
 		serviceUrl += '&point=' + encodeURIParameter( point );
 	serviceUrl += '&user=' + encodeURIParameter( username ) + '&url=' + encodeURIParameter( url );

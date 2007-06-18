@@ -172,7 +172,14 @@ function hasClass( element, className )
 {
 	if ( null == className )
 		return false;
-	var classNames = element.className.split( ' ' );
+	// Check both className and the class attribute (just in case)
+	var classNames;
+	if ( element.className )
+		classNames = element.className.split( ' ' );
+	else if ( element.getAttribute( 'class' ) )
+		classNames = element.getAttribute( 'class' ).split( ' ' );
+	else
+		return false;
 	for ( var i = 0;  i < classNames.length;  ++i )
 	{
 		if ( classNames[ i ] == className )

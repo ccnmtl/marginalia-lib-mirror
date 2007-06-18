@@ -1331,8 +1331,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		}
 
 		annotation.setNote( noteStr );
-		annotation.setTitle( this.title );
-		annotation.setAuthor( this.author );
+		annotation.setQuoteTitle( this.title );
+		annotation.setQuoteAuthor( this.author );
 		marginalia.createAnnotation( annotation, f );
 	}
 	// The annotation already exists and needs to be updated
