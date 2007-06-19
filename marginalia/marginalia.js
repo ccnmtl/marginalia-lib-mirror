@@ -299,8 +299,7 @@ function _annotationDisplayCallback( )
  */
 Marginalia.prototype.hideAnnotations = function( )
 {
-	var marginalia = window.marginalia;
-	var posts = marginalia.listPosts( ).getAllPosts( );
+	var posts = this.listPosts( ).getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var post = posts[ i ];
@@ -309,6 +308,44 @@ Marginalia.prototype.hideAnnotations = function( )
 		for ( var j = 0;  j < annotations.length;  ++j )
 			annotations[ j ].destruct( );
 		// normalizeSpace( post.element );
+	}
+}
+
+/**
+ * Show Per-Block User Counts
+ */
+Marginalia.prototype.showPerBlockUserCounts = function( url )
+{
+	this.annotationService.listPerBlockUsers( url, _showPerBlockUserCountsCallback );
+}
+
+function _showPerBlockUserCountsCallback( xmldoc )
+{
+	var userCounts = parseBlockUserCountsXml( xmldoc );
+	for ( var i = 0;  i < userCounts.length;  ++i )
+	{
+		var userCount = userCounts[ i ];
+		var post = window.marginalia.listPosts( ).getPostByUrl( userCount.url );
+		var block = userCount.resolveBlock( post.contentElement );
+		if ( block )
+		{
+			var countElement = getChildByTagClass( block, 'span', 'annotation-user-count', _skipContent );
+			if ( countElement )
+			{
+				while ( countElement.firstChild )
+					countElement.removeChild( countElement.firstChild );
+			}
+			else
+			{
+				countElement = document.createElement( 'span' );
+				countElement.setAttribute( 'class', 'annotation-user-count' );
+				trace( null, 'block=' + block );
+				block.insertBefore( countElement, block.firstChild );
+			}
+			countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
+			trace( null, 'title=' + userCount.users.join( ' ' ) );
+			countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
+		}
 	}
 }
 

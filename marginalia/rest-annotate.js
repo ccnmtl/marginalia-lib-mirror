@@ -63,6 +63,38 @@ function RestAnnotationService( serviceUrl )
 	return this;
 }
 
+
+/**
+ * Fetch a list of per-block users from the server
+ */
+RestAnnotationService.prototype.listPerBlockUsers = function( url, f )
+{
+	var serviceUrl = this.serviceUrl + '?format=block-users&url=' + encodeURIParameter( url );
+	
+	var xmlhttp = createAjaxRequest( );
+	xmlhttp.open( 'GET', serviceUrl );
+	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
+	xmlhttp.onreadystatechange = function( ) {
+		if ( xmlhttp.readyState == 4 ) {
+			if ( xmlhttp.status == 200 ) {
+				if ( null != f )
+				{
+					trace( 'block-users-xml', "listPerBlockUsers result:\n" + xmlhttp.responseText );
+					// alert( serviceUrl + "\n" + xmlhttp.responseText );
+					f( xmlhttp.responseXML );
+				}
+			}
+			else {
+				trace( "listPerBlockUsers Server request failed with code " + xmlhttp.status + ":\n" + serviceUrl );
+			}
+			xmlhttp = null;
+		}
+	}
+	trace( 'annotation-service', "AnnotationService.listPerBlockUsers " + serviceUrl)
+	xmlhttp.send( null );
+}
+
+
 /**
  * Fetch a list of annotations from the server
  */
