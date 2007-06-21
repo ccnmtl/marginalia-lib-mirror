@@ -457,7 +457,7 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		{
 			if ( ' ' != c )
 			{
-				this.chars = 1;		// should be 0?
+				this.chars = 1;
 				this.words += 1;
 				this.state = STATE_WORD;
 			}
@@ -486,7 +486,7 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		{
 			if ( ' ' != c )
 			{
-				this.chars = 1;			// should be 0?
+				this.chars = 1;
 				this.words += 1;
 				this.state = STATE_TARGET_WORD;
 				trace( 'word-range', 'TARGET_SPACE -> TARGET_WORD, offset=' + (this.offset + 1) );
