@@ -498,10 +498,13 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 				{
 					if ( this.state == STATE_TARGET_SPACE )
 					{
+						// We now know the node point immediately precedes a space, so 
+						// execute a fall forward (i.e. place the point at the start of the
+						// next word).  Don't sent fall forward state, because that will look
+						// ahead one more character and will produce a different (incorrect)
+						// result if that character is non-whitespace.
 						this.words += 1;
 						this.chars = 0;
-						// TODO: I'm not 100% sure about the next two lines, but I believe they're
-						// safe and fix a bug.
 						this.state = STATE_DONE;
 						return;
 					}
@@ -550,6 +553,10 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		{
 			if ( ' ' == c )
 			{
+				// TODO: Uh, does this work if the selection ends on a space and that's
+				// the end of the document or content area?  Or is it safe because
+				// this.fallForward is only set for start points, not end points?  (So
+				// that a start point at document end would be represented this way)
 				this.words += 1;
 				this.chars = 0;
 			}
