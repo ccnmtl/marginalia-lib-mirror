@@ -269,6 +269,14 @@ Annotation.prototype.fieldsFromPost = function( post )
 }	
 
 
+Annotation.prototype.compareRange = function( a2 )
+{
+	if ( this.blockRange && a2.blockRange )
+		return this.blockRange.compare( a2.blockRange );
+	else
+		return 0;
+}
+
 function compareAnnotationRanges( a1, a2 )
 {
 	// Note: don't use getters for efficiency.

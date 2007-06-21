@@ -261,11 +261,56 @@ function _annotationDisplayCallback( )
 	}
 	
 	// Display cached annotations
+	// Do this by merging the new annotations with those already displayed
+	// For this to work, annotations must be sorted by URL
 	var annotations = marginalia.annotationCache;
 	if ( annotations )
 	{
-		var i;
-		for ( i = 0;  i < annotations.length;  ++i )
+		var url = null;			// there may be annotations for multiple URLs;  this is the current one
+		var post = null;		// post for the current url
+		var notes = null;		// current notes element
+		var nextNode = null;
+		for ( var annotation_i = 0;  annotation_i < annotations.length;  ++annotation_i )
+		{
+			// Don't want to fail completely just because one or more annotations are malformed
+			if ( null != annotations[ annotation_i ] )
+			{
+				var annotation = annotations[ annotation_i ];
+				
+				// Determine whether we're moving on to a new post (hence a new note list)
+				if ( annotation.getUrl( ) != url )
+				{
+					url = annotation.getUrl( );
+					post = marginalia.listPosts( ).getPostByUrl( url );
+					// Find the first note in the list (if there is one)
+					notes = post.getNotesElement( );
+					nextNode = notes.firstCild;
+				}
+				
+				// Find the position of the annotation by walking through the note list
+				// (binary search would be nice here, but not practical unless the list is
+				// stored somewhere other than in the DOM - plus, since multiple annotations
+				// are dealt with here at once, the speed hit shouldn't be too bad)
+				while ( nextNode )
+				{
+					if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+					{
+						if ( annotation.compareRange( nextNode.annotation ) < 0 )
+							break;
+					}
+					nextNode = nextNode.nextSibling;
+				}
+				
+				// Now insert before beforeNote
+				post.addAnnotation( marginalia, annotation, nextNode );
+			}
+			
+			annotations[ annotation_i ] = null;
+			if ( curTime - startTime >= AN_COOP_MAXTIME )
+				break;
+		}
+		
+/* 		for ( i = 0;  i < annotations.length;  ++i )
 		{
 			if ( null != annotations[ i ] )
 			{
@@ -290,8 +335,8 @@ function _annotationDisplayCallback( )
 					break;
 			}
 		}
-		
-		if ( annotations.length == i )
+*/		
+		if ( annotations.length == annotation_i )
 			delete marginalia.annotationCache;
 		else
 			setTimeout( _annotationDisplayCallback, AN_COOP_TIMEOUT );
@@ -409,49 +454,53 @@ PostMicro.prototype.getNotesElement = function( marginalia )
  */
 
 /**
- * Get the index where an annotation is or where it would display
+ * Get the node that will follow this one once it is inserted in the node list
+ * Slow, but necessary when the annotation has not yet been inserted in the node list
+ * A return value of null indicates the annotation would be at the end of the list
  */
-PostMicro.prototype.getAnnotationIndex = function( marginalia, annotation )
+PostMicro.prototype.getAnnotationNextNote = function( marginalia, annotation )
 {
 	var notesElement = this.getNotesElement( marginalia );
 	// Go from last to first, on the assumption that this function will be called repeatedly
 	// in order.  Calling in reverse order gives worst-case scenario O(n^2) behavior.
-	// Don't forget the first node in the list is a dummy with no annotation.
-	var pos = notesElement.childNodes.length;
-	for ( var note = notesElement.lastChild;  null != note;  note = note.previousSibling )
+	for ( var prevNode = notesElement.lastChild;  null != prevNode;  prevNode = prevNode.previousSibling )
 	{
-		--pos;
-		if ( null != note.annotation )
+		// In case it's a dummy list item or other
+		if ( ELEMENT_NODE == prevNode.nodeType && prevNode.annotation )
 		{
-			if ( note.annotation.getId() == annotation.getId() )
+			// Why on earth would this happen??
+			if ( prevNode.annotation.getId() == annotation.getId() )
 				break;
-			else if ( compareAnnotationRanges( note.annotation, annotation ) < 0 )
+			else if ( annotation.compareRange( prevNode.annotation ) >= 0 )
 				break;
 		}
 	}
-	return pos;
-}
-
-/**
- * Add an annotation to the local annotation list and display at
- * a given position in the annotation list.  This position must
- * be correct;  passing it makes this faster than addAnnotation().
- */
-PostMicro.prototype.addAnnotationPos = function( marginalia, annotation, pos )
-{
-	var quoteFound = this.showHighlight( marginalia, annotation );
-	// Go ahead and show the note even if the quote wasn't found
-	this.showNote( marginalia, pos, annotation );
-	return pos;
+	
+	if ( prevNode )
+		return prevNode.nextSibling;
+	else
+	{
+		// Insert at the beginning of the list - but after any initial dummy nodes!
+		var nextNode;
+		for ( nextNode = notesElement.firstChild;  nextNode;  nextNode = nextNode.nextSibling )
+		{
+			if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+				break;
+		}
+		return nextNode;	// will be null if no annotations in the list
+	}
 }
 
 /**
  * Add an annotation to the local annotation list and display.
  */
-PostMicro.prototype.addAnnotation = function( marginalia, annotation )
+PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode )
 {
-	var pos = this.getAnnotationIndex( marginalia, annotation );
-	return this.addAnnotationPos( marginalia, annotation, pos );
+	if ( ! nextNode )
+		nextNode = this.getAnnotationNextNote( marginalia, annotation )
+	var quoteFound = this.showHighlight( marginalia, annotation );
+	// Go ahead and show the note even if the quote wasn't found
+	return this.showNote( marginalia, annotation, nextNode );
 }
 
 /**
@@ -459,7 +508,7 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation )
  * pos - the position in the list
  * annotation - the annotation
  */
-PostMicro.prototype.showNote = function( marginalia, pos, annotation )
+PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 {
 	var noteList = this.getNotesElement( marginalia );
 
@@ -469,24 +518,6 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	var highlightElement = getChildByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
 	var quoteFound = highlightElement != null;
 	
-	// Ensure we have a dummy first sibling
-	if ( null == noteList.firstChild )
-	{
-		var dummy = document.createElement( 'li' );
-		dummy.setAttribute( 'class', AN_DUMMY_CLASS );
-		dummy.className = AN_DUMMY_CLASS;
-		noteList.appendChild( dummy );
-	}
-	
-	// Find the notes that will precede and follow this one
-	var prevNode = noteList.firstChild; // the dummy first node
-	var nextNode = noteList.firstChild.nextSibling; // skip dummy first node
-	for ( var j = 0;  j < pos && null != nextNode;  ++j )
-	{
-		prevNode = nextNode;
-		nextNode = nextNode.nextSibling;
-	}
-
 	// Create the list item
 	var postMicro = this;
 	var noteElement = document.createElement( 'li' );
@@ -644,6 +675,26 @@ PostMicro.prototype.showNote = function( marginalia, pos, annotation )
 	var alignElement = highlightElement ? highlightElement : this.getNoteAlignElement( annotation );
 	if ( null != alignElement )
 	{
+		// The margin must be relative to a preceding list item.
+		var prevNode = null;
+		if ( nextNode )
+		{
+			// Need a preceding *element*
+			for ( prevNode = nextNode.previousSibling;  prevNode;  prevNode = prevNode.previousSibling )
+			{
+				if ( ELEMENT_NODE == prevNode.nodeType && 'li' == prevNode.tagName.toLowerCase( ) )
+					break;
+			}
+		}
+		// If there is no preceding note, create a dummy
+		if ( null == prevNode )
+		{
+			prevNode = document.createElement( 'li' );
+			prevNode.setAttribute( 'class', AN_DUMMY_CLASS );
+			prevNode.className = AN_DUMMY_CLASS;
+			noteList.insertBefore( prevNode, nextNode );
+		}
+		
 		var pushdown = this.calculateNotePushdown( marginalia, prevNode, alignElement );
 		noteElement.style.marginTop = '' + ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
 	}
@@ -996,7 +1047,7 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 		// Don't push down if no align element was found
 		if ( null != alignElement )
 		{
-			var pushdown = this.calculateNotePushdown( note.previousSibling, alignElement );
+			var pushdown = this.calculateNotePushdown( marginalia, note.previousSibling, alignElement );
 			note.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
 		}
 		note = note.nextSibling;
@@ -1081,10 +1132,10 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 					element.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
 					removeClass( element, AN_NOTECOLLAPSED_CLASS );
 					element.pushdown = pushdown;
-					element = element.nextSibling;
 				}
 			}
 		}
+		element = element.nextSibling;
 	}
 }
 
@@ -1337,8 +1388,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	this.showLink( marginalia, annotation );
 	
 	// Replace the editable note display
-	this.removeNote( marginalia, annotation );
-	noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
+	var nextNode = this.removeNote( marginalia, annotation );
+	noteElement = this.showNote( marginalia, annotation, nextNode );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	removeClass( getBodyElement( document ), AN_EDITINGNOTE_CLASS );
@@ -1421,8 +1472,8 @@ PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
 {
 	annotation.editing = AN_EDIT_LINK;
-	this.removeNote( marginalia, annotation );
-	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
+	var nextNode = this.removeNote( marginalia, annotation );
+	var noteElement = this.showNote( marginalia, annotation, nextNode );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	addClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
 	createCookie( AN_LINKING_COOKIE, annotation.id, 1 );
@@ -1473,8 +1524,8 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation )
 	this.showLink( marginalia, annotation );
 	
 	// Replace the editable note display
-	this.removeNote( marginalia, annotation );
-	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
+	var nextNode = this.removeNote( marginalia, annotation );
+	var noteElement = this.showNote( marginalia, annotation, nextNode );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	_disableLinkTargets( );
@@ -1500,8 +1551,8 @@ PostMicro.prototype.updateLink = function( marginalia, annotation )
 
 	// Replace the editable note display
 	delete annotation.editing;
-	this.removeNote( marginalia, annotation );
-	var noteElement = this.showNote( marginalia, this.getAnnotationIndex( marginalia, annotation ), annotation );
+	var nextNode = this.removeNote( marginalia, annotation );
+	var noteElement = this.showNote( marginalia, annotation, nextNode );
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	removeClass( getBodyElement( document ), AN_EDITINGLINK_CLASS );
@@ -1572,8 +1623,8 @@ function _editAnnotation( event )
 		var scrollX = getWindowXScroll( );
 		
 		annotation.editing = annotation.defaultNoteEditMode( );
-		var next = post.removeNote( marginalia, annotation );
-		var noteElement = post.showNote( marginalia, post.getAnnotationIndex( marginalia, annotation ), annotation );
+		var nextNode = post.removeNote( marginalia, annotation );
+		var noteElement = post.showNote( marginalia, annotation, nextNode );
 		post.repositionNotes( marginalia, noteElement.nextSibling );
 		
 		var editElement = ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
