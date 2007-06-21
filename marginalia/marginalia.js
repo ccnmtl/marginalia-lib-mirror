@@ -270,7 +270,11 @@ function _annotationDisplayCallback( )
 			if ( null != annotations[ i ] )
 			{
 				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].getUrl() );
-				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], i ) )
+				// TODO: To allow multiple fetches to merge annotations into the display
+				// (e.g. when the user grabs notes for a paragraph), calculate the position
+				// using a binary search:
+				var pos = i;
+				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], pos ) )
 				{
 					// Formerly displayed an error on the post saying one or more annotations
 					// could not be placed.  Now annotations are shown, but without highlights
@@ -340,10 +344,12 @@ function _showPerBlockUserCountsCallback( xmldoc )
 				countElement = document.createElement( 'span' );
 				countElement.setAttribute( 'class', 'annotation-user-count' );
 				trace( null, 'block=' + block );
+//				block.appendChild( countElement );
 				block.insertBefore( countElement, block.firstChild );
 			}
 			countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
 			trace( null, 'title=' + userCount.users.join( ' ' ) );
+			countElement.onClick = 
 			countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
 		}
 	}

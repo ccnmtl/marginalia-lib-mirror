@@ -95,7 +95,7 @@ TextRange.prototype.fromWordRange = function( wordRange, fskip )
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' );
 		// TODO: proper exceptions
-		throw "Unable to find point"
+		throw "Unable to find point";
 	}
 	var startPoint = new NodePoint( walker.currNode, walker.currChars );
 
@@ -105,7 +105,7 @@ TextRange.prototype.fromWordRange = function( wordRange, fskip )
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' );
 		// TODO: proper exceptions
-		throw "Unable to find point"
+		throw "Unable to find point";
 	}
 	var endPoint = new NodePoint( walker.currNode, walker.currChars );
 
@@ -126,93 +126,6 @@ TextRange.prototype.destroy = function( )
 {
 	this.startContainer = null;
 	this.endContainer = null;
-}
-
-/*
- * Convert a (container,offset) pair into a word count from containing node named rel
- * container must be the text node containing the point
- * The first representation is browser-specific, but a word count is not.
- * A word is defined as a continuous sequence of non-space characters.  Inline elements
- * are not considered word separators, but block-level elements are.
- * fallBack - if position ends following whitespace, count an extra word?
- */
-function nodePointToWordPoint( container, offset, rel, fallForward, fskip )
-{
-	trace( 'word-range', 'nodePointToWordPoint( ' + container + ',' + offset + ',' + rel + ')' );
-	var state = new NodeToWordPoint_Machine( container, offset, rel, fallForward );
-	RecurseOnElement( state, rel, fskip );
-	var node = rel;
-	while ( STATE_DONE != state.state )
-	{
-		while ( ! node.nextSibling )
-			node = node.parentNode;
-		if ( null == node )
-		{
-			state.destroy( );
-			return null;
-		}
-		node = node.nextSibling;
-		RecurseOnElement( state, node, fskip )
-	}
-	var point = state.getPoint( );
-	state.destroy( );
-	return point;
-}
-
-NodeToWordPoint_Machine.prototype.trace = function( input )
-{
-	trace( 'word-range', 'State ' + this.state + ' at ' + this.words + '.' + this.chars + ' (' + this.offset + ' offset) input "' + input + '"' );
-}
-
-function RecurseOnElement( state, node, fskip )
-{
-	if ( null == node )
-		throw( "RecurseOnElement: node is null" );
-	if ( ELEMENT_NODE == node.nodeType && ( null == fskip || ! fskip( node ) ) )
-	{
-		var r = state.startElement( node );
-		if ( STATE_DONE == state.state )
-			return true;
-		if ( r )
-		{
-			for ( var child = node.firstChild;  null != child;  child = child.nextSibling )
-			{
-				RecurseOnElement( state, child, fskip )
-				if ( STATE_DONE == state.state )
-					return true;
-			}
-			state.endElement( node );
-		}
-		if ( STATE_DONE == state.state )
-			return true;
-	}
-	else if ( TEXT_NODE == node.nodeType || CDATA_SECTION_NODE == node.nodeType )
-	{
-		state.text( node );
-		if ( STATE_DONE == state.state )
-			return true;
-	}
-	return false;
-}
-
-
-function NodeToWordPoint_Machine( container, offset, rel, fallForward )
-{
-	this.targetContainer = container;
-	this.targetOffset = offset;
-	this.fallForward = fallForward;
-	this.container = rel;
-	this.words = 0;
-	this.chars = 0;
-	this.state = STATE_SPACE;
-	this.offset = 0;
-	return this;
-}
-
-NodeToWordPoint_Machine.prototype.destroy = function( )
-{
-	this.targetContainer = null;
-	this.container = null;
 }
 
 
@@ -363,6 +276,95 @@ WordRange.prototype.destroy = function( )
 		this.end.destroy( );
 }
 
+
+/*
+ * Convert a (container,offset) pair into a word count from containing node named rel
+ * container must be the text node containing the point
+ * The first representation is browser-specific, but a word count is not.
+ * A word is defined as a continuous sequence of non-space characters.  Inline elements
+ * are not considered word separators, but block-level elements are.
+ * fallBack - if position ends following whitespace, count an extra word?
+ */
+function nodePointToWordPoint( container, offset, rel, fallForward, fskip )
+{
+	trace( 'word-range', 'nodePointToWordPoint( ' + container + ',' + offset + ',' + rel + ')' );
+	var state = new NodeToWordPoint_Machine( container, offset, rel, fallForward );
+	RecurseOnElement( state, rel, fskip );
+	var node = rel;
+	while ( STATE_DONE != state.state )
+	{
+		while ( ! node.nextSibling )
+			node = node.parentNode;
+		if ( null == node )
+		{
+			state.destroy( );
+			return null;
+		}
+		node = node.nextSibling;
+		RecurseOnElement( state, node, fskip )
+	}
+	var point = state.getPoint( );
+	state.destroy( );
+	return point;
+}
+
+NodeToWordPoint_Machine.prototype.trace = function( input )
+{
+	trace( 'word-range', 'State ' + this.state + ' at ' + this.words + '.' + this.chars + ' (' + this.offset + ' offset) input "' + input + '"' );
+}
+
+function RecurseOnElement( state, node, fskip )
+{
+	if ( null == node )
+		throw( "RecurseOnElement: node is null" );
+	if ( ELEMENT_NODE == node.nodeType && ( null == fskip || ! fskip( node ) ) )
+	{
+		var r = state.startElement( node );
+		if ( STATE_DONE == state.state )
+			return true;
+		if ( r )
+		{
+			for ( var child = node.firstChild;  null != child;  child = child.nextSibling )
+			{
+				RecurseOnElement( state, child, fskip )
+				if ( STATE_DONE == state.state )
+					return true;
+			}
+			state.endElement( node );
+		}
+		if ( STATE_DONE == state.state )
+			return true;
+	}
+	else if ( TEXT_NODE == node.nodeType || CDATA_SECTION_NODE == node.nodeType )
+	{
+		state.text( node );
+		if ( STATE_DONE == state.state )
+			return true;
+	}
+	return false;
+}
+
+
+function NodeToWordPoint_Machine( container, offset, rel, fallForward )
+{
+	this.targetContainer = container;
+	this.targetOffset = offset;
+	this.fallForward = fallForward;
+	this.container = rel;
+	this.words = 0;
+	this.chars = 0;
+	this.state = STATE_SPACE;
+	this.offset = 0;
+	return this;
+}
+
+NodeToWordPoint_Machine.prototype.destroy = function( )
+{
+	this.targetContainer = null;
+	this.container = null;
+}
+
+
 /**
  * Convert a node relative to a root element to a path.  This is like an xpath
  * except that only breaking element nodes are counted.
@@ -445,7 +447,7 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		trace( 'word-range', 'In container, state ' + this.state + ' at ' + this.words + '.' + this.chars + ' looking for offset ' + this.targetOffset );
 	}
 	
-	s = node.nodeValue.replace( /(\s|\u00a0)/g, ' ' );
+	var s = node.nodeValue.replace( /(\s|\u00a0)/g, ' ' );
 	trace( 'word-range', "Searching in:\n" + s );
 	for ( var i = 0;  i < s.length;  ++i )
 	{
@@ -455,7 +457,7 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		{
 			if ( ' ' != c )
 			{
-				this.chars = 1;
+				this.chars = 1;		// should be 0?
 				this.words += 1;
 				this.state = STATE_WORD;
 			}
@@ -484,7 +486,7 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 		{
 			if ( ' ' != c )
 			{
-				this.chars = 1;
+				this.chars = 1;			// should be 0?
 				this.words += 1;
 				this.state = STATE_TARGET_WORD;
 				trace( 'word-range', 'TARGET_SPACE -> TARGET_WORD, offset=' + (this.offset + 1) );
@@ -498,6 +500,10 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 					{
 						this.words += 1;
 						this.chars = 0;
+						// TODO: I'm not 100% sure about the next two lines, but I believe they're
+						// safe and fix a bug.
+						this.state = STATE_DONE;
+						return;
 					}
 					else
 						this.state = STATE_FALL_FORWARD;
@@ -538,6 +544,8 @@ NodeToWordPoint_Machine.prototype.text = function( node )
 				}
 			}
 		}
+		// Try to fall forward to the next word if there is one, otherwise stick with
+		// the current one.
 		else if ( STATE_FALL_FORWARD == this.state )
 		{
 			if ( ' ' == c )
