@@ -343,7 +343,49 @@ function getParentByTagClass( theNode, tagName, className, topDown, fskip )
 	}
 	return topDown ? topResult : bottomResult;
 }
- 
+
+/**
+ * Get the next sibling element matchin ga tag and/or class name value
+ */
+function getNextByTagClass( theNode, tagName, className, fskip )
+{
+	var prev = null;
+	for ( next = theNode.nextSibling;  next;  next = next.nextSibling )
+	{
+		if ( ! fskip || ! fskip( next ) )
+		{
+			if ( ELEMENT_NODE == next.nodeType
+				&& ( ! tagName || tagName.toLowerCase( ) == next.tagName.toLowerCase( ) )
+				&& ( ! className || hasClass( next, className ) ) )
+			{
+				break;
+			}
+		}
+	}
+	return next;
+}
+
+/**
+ * Get the previous sibling element matching a tag and/or class name value
+ */
+function getPrevByTagClass( theNode, tagName, className, fskip )
+{
+	var prev = null;
+	for ( prev = theNode.previousSibling;  prev;  prev = prev.previousSibling )
+	{
+		if ( ! fskip || ! fskip( prev ) )
+		{
+			if ( ELEMENT_NODE == prev.nodeType
+				&& ( ! tagName || tagName.toLowerCase( ) == prev.tagName.toLowerCase( ) )
+				&& ( ! className || hasClass( prev, className ) ) )
+			{
+				break;
+			}
+		}
+	}
+	return prev;
+}
+
 /*
  * Check whether a node is a descendant of another node
  */

@@ -678,14 +678,14 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 		// The margin must be relative to a preceding list item.
 		var prevNode = null;
 		if ( nextNode )
+			prevNode = getPrevByTagClass( nextNode, 'li' );
+		else
 		{
-			// Need a preceding *element*
-			for ( prevNode = nextNode.previousSibling;  prevNode;  prevNode = prevNode.previousSibling )
-			{
-				if ( ELEMENT_NODE == prevNode.nodeType && 'li' == prevNode.tagName.toLowerCase( ) )
-					break;
-			}
+			prevNode = getChildrenByTagClass( noteList, 'li' );
+			if ( prevNode )
+				prevNode = prevNode[ prevNode.length - 1 ];
 		}
+
 		// If there is no preceding note, create a dummy
 		if ( null == prevNode )
 		{
@@ -1222,7 +1222,7 @@ PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
 PostMicro.prototype.removeNote = function( marginalia, annotation )
 {
 	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
-	var next = listItem.nextSibling;
+	var next = getNextByTagClass( listItem, 'li' );
 	listItem.parentNode.removeChild( listItem );
 	listItem.annotation = null; // dummy item won't have this field
 	clearEventHandlers( listItem, true );	
