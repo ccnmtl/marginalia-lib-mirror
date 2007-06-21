@@ -825,7 +825,7 @@ function DOMWalker( startNode )
 {
 	this.node = startNode;
 	this.endTag = false;
-	this.startTag = false;
+	this.startTag = true;
 }
 
 DOMWalker.prototype.destroy = function( )

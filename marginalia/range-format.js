@@ -346,40 +346,115 @@ XPathPoint.prototype.toString = function( )
  * Notice the lack of an fskip function.  None of the parent nodes of the current node
  * can be skippable for this to work.
  */
-XPathPoint.prototype.pathFromNode = function( root, rel )
+XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 {
 	var node = rel;
 	var path = '';
-	while ( null != node && root != node )
+	var foundId = false;
+	outer: while ( null != node && root != node )
 	{
-		var count = 1;
-		for ( var prev = node.previousSibling; prev;  prev = prev.previousSibling )
+		if ( foundId )
 		{
-			if ( ELEMENT_NODE == prev.nodeType && prev.tagName == node.tagName )
-				count += 1;
+			// If we found an ID, short-circuit to produce a path like .//div[@id='id1']/p[5]
+			path = './/' + path;
+			break;
 		}
-		if ( '' != path )
-			path = '/' + path;
-		path = node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
-		node = node.parentNode;
+		else
+		{
+			// Check whether we can use this node's ID as a start point
+			var id = node.getAttribute( 'id', null );
+			if ( id && idTest && idTest( id ) && -1 == id.indexOf( "'" ) )
+			{
+				path = "*[@id='" + id + "']" + ( '' == path ? '' : '/' + path );
+				foundId = true;
+			}
+			else
+			{
+				var count = 1;
+				for ( var prev = node.previousSibling; prev && ! foundId;  prev = prev.previousSibling )
+				{
+					if ( ELEMENT_NODE == prev.nodeType && prev.tagName == node.tagName )
+					{
+						id = prev.getAttribute( 'id', null );
+						if ( id && idTest && idTest( id ) && -1 == id.indexOf( "'" ) )
+							foundId = true;
+						else
+							count += 1;
+					}
+				}
+				if ( '' != path )
+					path = '/' + path;
+				
+				if ( foundId )
+				{
+					{
+						path = "*[@id='" + id + "']"
+							+ '/following-sibling::' + node.tagName.toLowerCase( )
+								+ '[' + String( count ) + ']'
+							+ path;
+						break outer;
+					}
+				}
+				else
+				{
+					path = node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
+					node = node.parentNode;
+				}
+			}
+		}
 	}
 	this.path = path;
 }
 
+/*
+ * This doesn't do much checking on the incoming xpath.
+ * TODO: Figure out how to handle tag case name inconsistencies between HTML and XHTML
+ */
 XPathPoint.prototype.getReferenceElement = function( root )
 {
+	var rel;	// will be the result	
+	var xpath = this.path;
+	var myroot = root;
+	
+	var startTime = new Date( );
+	trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + xpath );
+
+	// Screen out document(), as it is a security risk
+	// I would prefer to use a whitelist, but full processing of the xpath
+	// expression is expensive and complex.  I'm doing some of this on the
+	// server, so unless someone can hijack the returned xpath expressions
+	// this should never happen anyway.
+	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
+		return null;
+	
+/*	// Short-circuit paths starting with IDs
+	// TODO: Test whether this is or is not faster than the browser XPath
+	// evaluation of this kind of path
+	var matches = xpath.match( /^\.\/\/\*\[@id\s*=\s*\'([^\']+)\'\](.*)$/ );
+	if ( matches )
+	{
+		myroot = document.getElementById( matches[ 1 ] );
+		xpath = matches[ 2 ];
+	}
+*/	
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
-		var startTime = new Date( );
-		// TODO: Figure out how to handle tag case name inconsistencies between HTML and XHTML
-		// TODO: add security check here to ensure now unsafe xpath function calls (e.g. document())
-		trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + this.path );
-		var node = root.ownerDocument.evaluate( this.path, root, null, XPathResult.ANY_TYPE, null );
-		node = node.iterateNext( );
-		trace( 'range-timing', 'XPathPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
-		return node;
+		rel = root.ownerDocument.evaluate( xpath, myroot, null, XPathResult.ANY_TYPE, null );
+		rel = rel.iterateNext( );
 	}
-	else
-		throw "No XPath support";
+	// Internet Explorer's xpath support:
+	else if ( root.selectSingleNode )
+		rel = root.selectSingleNode( xpath );
+
+	trace( 'range-timing', 'XPathPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
+		
+	// Ensure that the found node is a child of the root
+	// This is necessary to reject xpath attempts to get at secure information
+	// elsewhere in the page.  It could happen by accident if an ID is used in the xpath,
+	// and that ID is used or moved to outside the root.
+	if ( ! isElementDescendant( rel, root ) )
+		return null;
+	
+	return rel;
 }
