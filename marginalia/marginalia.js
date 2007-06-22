@@ -222,6 +222,11 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	this.hideAnnotations( );
 }
 
+Marginalia.prototype.showBlockAnnotations = function( url, block )
+{
+	this.annotationService.listAnnotations( url, null, block, _showAnnotationsCallback );
+}
+
 /**
  * This is the callback function called by listAnnotations when data first comes back
  * from the server.
@@ -375,31 +380,41 @@ function _showPerBlockUserCountsCallback( xmldoc )
 	{
 		var userCount = userCounts[ i ];
 		var post = window.marginalia.listPosts( ).getPostByUrl( userCount.url );
-		var block = userCount.resolveBlock( post.contentElement );
-		if ( block )
-		{
-			var countElement = getChildByTagClass( block, 'span', 'annotation-user-count', _skipContent );
-			if ( countElement )
-			{
-				while ( countElement.firstChild )
-					countElement.removeChild( countElement.firstChild );
-			}
-			else
-			{
-				countElement = document.createElement( 'span' );
-				countElement.setAttribute( 'class', 'annotation-user-count' );
-				trace( null, 'block=' + block );
-//				block.appendChild( countElement );
-				block.insertBefore( countElement, block.firstChild );
-			}
-			countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
-			trace( null, 'title=' + userCount.users.join( ' ' ) );
-			countElement.onClick = 
-			countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
-		}
+		post.showPerBlockUserCount( marginalia, userCount );
 	}
 }
 
+/**
+ * Show a perBlockCount marker
+ */
+PostMicro.prototype.showPerBlockUserCount = function( marginalia, userCount )
+{
+	var block = userCount.resolveBlock( this.contentElement );
+	if ( block )
+	{
+		var countElement = getChildByTagClass( block, 'span', 'annotation-user-count', _skipContent );
+		if ( countElement )
+		{
+			while ( countElement.firstChild )
+				countElement.removeChild( countElement.firstChild );
+		}
+		else
+		{
+			countElement = document.createElement( 'span' );
+			countElement.setAttribute( 'class', 'annotation-user-count' );
+			trace( null, 'block=' + block );
+//				block.appendChild( countElement );
+			block.insertBefore( countElement, block.firstChild );
+		}
+		countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
+		trace( null, 'title=' + userCount.users.join( ' ' ) );
+		var marginalia = window.marginalia;
+		var url = userCount.url;
+		var blockpath = userCount.blockpath;
+		countElement.onclick = function() { marginalia.showBlockAnnotations( url, blockpath ); };
+		countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
+	}
+}
 
 /**
  * Check the location value for the window for a fragment identifier starting
@@ -497,7 +512,11 @@ PostMicro.prototype.getAnnotationNextNote = function( marginalia, annotation )
 PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode )
 {
 	if ( ! nextNode )
-		nextNode = this.getAnnotationNextNote( marginalia, annotation )
+		nextNode = this.getAnnotationNextNote( marginalia, annotation );
+	// If the annotation is already displayed, remove the existing display
+	var existing = document.getElementById( AN_ID_PREFIX + annotation.getId( ) );
+	if ( existing )
+		this.removeAnnotation( marginalia, existing.annotation );
 	var quoteFound = this.showHighlight( marginalia, annotation );
 	// Go ahead and show the note even if the quote wasn't found
 	return this.showNote( marginalia, annotation, nextNode );

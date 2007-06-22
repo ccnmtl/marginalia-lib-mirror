@@ -22,6 +22,7 @@ function UserCount( xpath, blockpath )
 	this.users = new Array();
 	this.xpath = xpath;
 	this.blockpath = blockpath;
+	this.url = null;
 }
 
 UserCount.prototype.fromXml = function( element )

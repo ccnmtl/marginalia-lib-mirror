@@ -98,14 +98,16 @@ RestAnnotationService.prototype.listPerBlockUsers = function( url, f )
 /**
  * Fetch a list of annotations from the server
  */
-RestAnnotationService.prototype.listAnnotations = function( url, username, point, f )
+RestAnnotationService.prototype.listAnnotations = function( url, username, block, f )
 {
 	// exclude content to lighten the size across the wire
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += '?format=atom';
-	if ( point )
-		serviceUrl += '&point=' + encodeURIParameter( point );
-	serviceUrl += '&user=' + encodeURIParameter( username ) + '&url=' + encodeURIParameter( url );
+	if ( block )
+		serviceUrl += '&block=' + encodeURIParameter( block );
+	if ( username )
+		serviceUrl += '&user=' + encodeURIParameter( username );
+	serviceUrl += '&url=' + encodeURIParameter( url );
 	
 	var xmlhttp = createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
