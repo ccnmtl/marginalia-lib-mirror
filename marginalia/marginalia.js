@@ -224,6 +224,8 @@ Marginalia.prototype.showAnnotations = function( url, block )
 
 Marginalia.prototype.showBlockAnnotations = function( url, block )
 {
+	// TODO: Push down calculations must be repaired where new annotations are added.
+	// Ideally this would happen automatically.
 	this.annotationService.listAnnotations( url, null, block, _showAnnotationsCallback );
 }
 
@@ -519,7 +521,9 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode )
 		this.removeAnnotation( marginalia, existing.annotation );
 	var quoteFound = this.showHighlight( marginalia, annotation );
 	// Go ahead and show the note even if the quote wasn't found
-	return this.showNote( marginalia, annotation, nextNode );
+	var r = this.showNote( marginalia, annotation, nextNode );
+	// Reposition any following notes that need it
+	this.repositionSubsequentNotes( marginalia, nextNode );
 }
 
 /**
@@ -1158,6 +1162,29 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 	}
 }
 
+
+/**
+ * Reposition a note and any following notes that need it
+ * Stop when a note is found that doesn't need to be pushed down
+ */
+PostMicro.prototype.repositionSubsequentNotes = function( marginalia, firstNote )
+{
+	for ( note = firstNote;  note;  note = note.nextSibling )
+	{
+		if ( ELEMENT_NODE == note.nodeType && note.annotation )
+		{
+			var alignElement = this.getNoteAlignElement( note.annotation );
+			if ( alignElement )
+			{
+				var pushdown = this.calculateNotePushdown( marginalia, note.previousSibling, alignElement );
+				if ( note.pushdown && note.pushdown == pushdown )
+					break;
+				note.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
+				note.pushdown = pushdown;
+			}
+		}
+	}
+}
 
 /**
  * Get all annotations on a post by looking at HTML (no check with server)
