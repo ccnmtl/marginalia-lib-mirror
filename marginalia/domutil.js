@@ -930,7 +930,7 @@ DOMWalker.prototype.walk = function( gointo, reverse )
 
 /*
  * Return the next node after the current one while walking
- * I'm wrying to replace this with the DOMWalker
+ * I'm trying to replace this with the DOMWalker
  */
 function walkNextNode( node, fskip )
 {

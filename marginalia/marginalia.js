@@ -26,6 +26,7 @@
 
 // The names of HTML/CSS classes used by the annotation code.
 AN_NOTES_CLASS = 'notes';			// the notes portion of a fragment
+AN_MARKERS_CLASS = 'markers';		// markers column (usually on the left)
 AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
 AN_LINK_CLASS = 'annotation-link';	// class given to a nodes for link annotations
 AN_HOVER_CLASS = 'hover';			// assigned to highlights and notes when the mouse is over the other
@@ -317,32 +318,6 @@ function _annotationDisplayCallback( )
 				break;
 		}
 		
-/* 		for ( i = 0;  i < annotations.length;  ++i )
-		{
-			if ( null != annotations[ i ] )
-			{
-				var post = marginalia.listPosts( ).getPostByUrl( annotations[ i ].getUrl() );
-				// TODO: To allow multiple fetches to merge annotations into the display
-				// (e.g. when the user grabs notes for a paragraph), calculate the position
-				// using a binary search:
-				var pos = i;
-				if ( -1 == post.addAnnotationPos( marginalia, annotations[ i ], pos ) )
-				{
-					// Formerly displayed an error on the post saying one or more annotations
-					// could not be placed.  Now annotations are shown, but without highlights
-					// and with an error for each instead.
-					;
-				}
-				// I figure it's probably cheaper to null them rather than resizing the array
-				// each time
-				annotations[ i ] = null;
-				
-				curTime = new Date( );
-				if ( curTime - startTime >= AN_COOP_MAXTIME )
-					break;
-			}
-		}
-*/		
 		if ( annotations.length == annotation_i )
 			delete marginalia.annotationCache;
 		else
@@ -388,33 +363,56 @@ function _showPerBlockUserCountsCallback( xmldoc )
 
 /**
  * Show a perBlockCount marker
+ * Assumes that markers are being shown in order
  */
 PostMicro.prototype.showPerBlockUserCount = function( marginalia, userCount )
 {
 	var block = userCount.resolveBlock( this.contentElement );
-	if ( block )
+	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	if ( markers && block )
 	{
-		var countElement = getChildByTagClass( block, 'span', 'annotation-user-count', _skipContent );
-		if ( countElement )
+		var markerElement = document.createElement( 'div' );
+		markerElement.setAttribute( 'class', 'marker' );
+		var countElement = document.createElement( 'span' );
+		countElement.setAttribute( 'class', 'annotation-user-count' );
+		markerElement.appendChild( countElement );
+		markers.appendChild( markerElement );
+
+		var blockOffset = getElementYOffset( block, this.element );
+		var markersOffset = getElementYOffset( markers, this.element );
+		var offset = blockOffset - markersOffset;
+		var nextBlock;
+		// Walk forward to the next breaking element
+		var walker = new DOMWalker( block );
+		while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
+			;
+		// Walk back to the previous node
+		if ( walker.node )
 		{
-			while ( countElement.firstChild )
-				countElement.removeChild( countElement.firstChild );
+			walker.walk( true, true );
+			nextBlock = walker.node;
 		}
 		else
 		{
-			countElement = document.createElement( 'span' );
-			countElement.setAttribute( 'class', 'annotation-user-count' );
-			trace( null, 'block=' + block );
-//				block.appendChild( countElement );
-			block.insertBefore( countElement, block.firstChild );
+			// TODO: handle the case where this is at the end of the document
 		}
+		var height =
+			getElementYOffset( nextBlock, this.contentElement )
+			+ nextBlock.offsetHeight
+			- getElementYOffset( block, this.contentElement );
+		markerElement.style.top = offset + 'px';
+		markerElement.style.height = height + 'px';
+
 		countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
-		trace( null, 'title=' + userCount.users.join( ' ' ) );
 		var marginalia = window.marginalia;
 		var url = userCount.url;
 		var blockpath = userCount.blockpath;
 		countElement.onclick = function() { marginalia.showBlockAnnotations( url, blockpath ); };
 		countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
+	}
+	else
+	{
+		trace( null, 'No markers for url=' + userCount.url + ', ' + block + ' ( ' + markers + ' ) ' );
 	}
 }
 
