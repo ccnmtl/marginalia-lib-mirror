@@ -31,6 +31,9 @@ ANNOTATION_NICE_URLS = false;
 
 
 /**
+ * Oops.  This didn't conform to the URI spec - all those nice juice characters are
+ * reserved.  So now all it does is replace %20 with + to make URIs easier to read.
+ *
  * I'm tired of the standard Javascript encodeURIComponent encoding slashes
  * and colons in query parameters.  This makes debugging information difficult
  * to read, and there's really no point to it (at least for URI parameters).  
@@ -40,13 +43,13 @@ ANNOTATION_NICE_URLS = false;
 function encodeURIParameter( s )
 {
 	s = encodeURIComponent( s );
-	s = s.replace( /%2[fF]/g, '/' );
-	s = s.replace( /%3[aA]/g, ':' );
+//	s = s.replace( /%2[fF]/g, '/' );
+//	s = s.replace( /%3[aA]/g, ':' );
 	s = s.replace( /%20/g, '+' );
-	s = s.replace( /%5[bB]/g, '[' );
-	s = s.replace( /%5[dD]/g, ']' );
-	s = s.replace( /%2[cC]/g, ',' );
-	s = s.replace( /%3[bB]/g, ';' );
+//	s = s.replace( /%5[bB]/g, '[' );
+//	s = s.replace( /%5[dD]/g, ']' );
+//	s = s.replace( /%2[cC]/g, ',' );
+//	s = s.replace( /%3[bB]/g, ';' );
 	return s;
 }
 
@@ -65,11 +68,11 @@ function RestAnnotationService( serviceUrl )
 
 
 /**
- * Fetch a list of per-block users from the server
+ * Fetch a list of annotated blocks
  */
-RestAnnotationService.prototype.listPerBlockUsers = function( url, f )
+RestAnnotationService.prototype.listBlocks = function( url, f )
 {
-	var serviceUrl = this.serviceUrl + '?format=block-users&url=' + encodeURIParameter( url );
+	var serviceUrl = this.serviceUrl + '?format=blocks&url=' + encodeURIParameter( url );
 	
 	var xmlhttp = createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -79,18 +82,19 @@ RestAnnotationService.prototype.listPerBlockUsers = function( url, f )
 			if ( xmlhttp.status == 200 ) {
 				if ( null != f )
 				{
-					trace( 'block-users-xml', "listPerBlockUsers result:\n" + xmlhttp.responseText );
+					trace( 'block-users-xml', "listBlocks result:\n" + xmlhttp.responseText );
 					// alert( serviceUrl + "\n" + xmlhttp.responseText );
 					f( xmlhttp.responseXML );
 				}
 			}
 			else {
-				trace( "listPerBlockUsers Server request failed with code " + xmlhttp.status + ":\n" + serviceUrl );
+				trace( "listBlocks Server request failed with code " + xmlhttp.status + ":\n" + serviceUrl );
 			}
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.listPerBlockUsers " + serviceUrl)
+	// Decode the URI to make it easier to read and debug
+	trace( 'annotation-service', "AnnotationService.listBlocks " + decodeURI( serviceUrl ));
 	xmlhttp.send( null );
 }
 
@@ -128,7 +132,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.listAnnotations " + serviceUrl)
+	trace( 'annotation-service', "AnnotationService.listAnnotations " + decodeURI( serviceUrl ) );
 	xmlhttp.send( null );
 }
 
@@ -177,7 +181,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.createAnnotation " + serviceUrl + "\n" + body );
+	trace( 'annotation-service', "AnnotationService.createAnnotation " + decodeURI( serviceUrl ) + "\n" + body );
 	xmlhttp.send( body );
 }
 
@@ -221,7 +225,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.updateAnnotation " + serviceUrl );
+	trace( 'annotation-service', "AnnotationService.updateAnnotation " + decodeURI( serviceUrl ) );
 	trace( 'annotation-service', "  " + body );
 	xmlhttp.send( body );
 }
@@ -250,7 +254,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + serviceUrl );
+	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + decodeURI( serviceUrl ) );
 	xmlhttp.send( null );
 }
 

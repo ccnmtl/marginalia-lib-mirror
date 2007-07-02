@@ -347,17 +347,17 @@ Marginalia.prototype.hideAnnotations = function( )
  */
 Marginalia.prototype.showPerBlockUserCounts = function( url )
 {
-	this.annotationService.listPerBlockUsers( url, _showPerBlockUserCountsCallback );
+	this.annotationService.listBlocks( url, _showPerBlockUserCountsCallback );
 }
 
 function _showPerBlockUserCountsCallback( xmldoc )
 {
-	var userCounts = parseBlockUserCountsXml( xmldoc );
-	for ( var i = 0;  i < userCounts.length;  ++i )
+	var blockInfoArray = parseBlockInfoXml( xmldoc );
+	for ( var i = 0;  i < blockInfoArray.length;  ++i )
 	{
-		var userCount = userCounts[ i ];
-		var post = window.marginalia.listPosts( ).getPostByUrl( userCount.url );
-		post.showPerBlockUserCount( marginalia, userCount );
+		var blockInfo = blockInfoArray[ i ];
+		var post = window.marginalia.listPosts( ).getPostByUrl( blockInfo.url );
+		post.showPerBlockUserCount( marginalia, blockInfo );
 	}
 }
 
@@ -365,54 +365,66 @@ function _showPerBlockUserCountsCallback( xmldoc )
  * Show a perBlockCount marker
  * Assumes that markers are being shown in order
  */
-PostMicro.prototype.showPerBlockUserCount = function( marginalia, userCount )
+PostMicro.prototype.showPerBlockUserCount = function( marginalia, blockInfo )
 {
-	var block = userCount.resolveBlock( this.contentElement );
-	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
-	if ( markers && block )
+	// Produce a user count list excluding the current user
+	var userListStr = '';
+	for ( var i = 0;  i < blockInfo.users.length;  ++i )
 	{
-		var markerElement = document.createElement( 'div' );
-		markerElement.setAttribute( 'class', 'marker' );
-		var countElement = document.createElement( 'span' );
-		countElement.setAttribute( 'class', 'annotation-user-count' );
-		markerElement.appendChild( countElement );
-		markers.appendChild( markerElement );
-
-		var blockOffset = getElementYOffset( block, this.element );
-		var markersOffset = getElementYOffset( markers, this.element );
-		var offset = blockOffset - markersOffset;
-		var nextBlock;
-		// Walk forward to the next breaking element
-		var walker = new DOMWalker( block );
-		while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
-			;
-		// Walk back to the previous node
-		if ( walker.node )
+		var user = blockInfo.users[ i ];
+		if ( user != marginalia.anusername )
+			userListStr = userListStr == '' ? user : userListStr + ', ' + user;
+	}
+	
+	if ( '' != userListStr )
+	{
+		var block = blockInfo.resolveBlock( this.contentElement );
+		var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+		if ( markers && block )
 		{
-			walker.walk( true, true );
-			nextBlock = walker.node;
+			var markerElement = document.createElement( 'div' );
+			markerElement.setAttribute( 'class', 'marker' );
+			var countElement = document.createElement( 'span' );
+			countElement.setAttribute( 'class', 'annotation-user-count' );
+			markerElement.appendChild( countElement );
+			markers.appendChild( markerElement );
+	
+			var blockOffset = getElementYOffset( block, this.element );
+			var markersOffset = getElementYOffset( markers, this.element );
+			var offset = blockOffset - markersOffset;
+			var nextBlock;
+			// Walk forward to the next breaking element
+			var walker = new DOMWalker( block );
+			while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
+				;
+			// Walk back to the previous node
+			if ( walker.node )
+			{
+				walker.walk( true, true );
+				nextBlock = walker.node;
+			}
+			else
+			{
+				// TODO: handle the case where this is at the end of the document
+			}
+			var height =
+				getElementYOffset( nextBlock, this.contentElement )
+				+ nextBlock.offsetHeight
+				- getElementYOffset( block, this.contentElement );
+			markerElement.style.top = offset + 'px';
+			markerElement.style.height = height + 'px';
+	
+			countElement.setAttribute( 'title', blockInfo.users.join( ' ' ) );
+			var marginalia = window.marginalia;
+			var url = blockInfo.url;
+			var blockpath = blockInfo.blockpath;
+			countElement.onclick = function() { marginalia.showBlockAnnotations( url, blockpath ); };
+			countElement.appendChild( document.createTextNode( String( blockInfo.users.length ) ) );
 		}
 		else
 		{
-			// TODO: handle the case where this is at the end of the document
+			trace( null, 'No markers for url=' + blockInfo.url + ', ' + block + ' ( ' + markers + ' ) ' );
 		}
-		var height =
-			getElementYOffset( nextBlock, this.contentElement )
-			+ nextBlock.offsetHeight
-			- getElementYOffset( block, this.contentElement );
-		markerElement.style.top = offset + 'px';
-		markerElement.style.height = height + 'px';
-
-		countElement.setAttribute( 'title', userCount.users.join( ' ' ) );
-		var marginalia = window.marginalia;
-		var url = userCount.url;
-		var blockpath = userCount.blockpath;
-		countElement.onclick = function() { marginalia.showBlockAnnotations( url, blockpath ); };
-		countElement.appendChild( document.createTextNode( String( userCount.users.length ) ) );
-	}
-	else
-	{
-		trace( null, 'No markers for url=' + userCount.url + ', ' + block + ' ( ' + markers + ' ) ' );
 	}
 }
 
