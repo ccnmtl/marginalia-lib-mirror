@@ -26,7 +26,7 @@
  * $Id$
  */
 
-/** BlockRange
+/** SequenceRange
  *
  * Range representation represented as word+character offsets relative to a given nested
  * block level element.  Somewhat slow (because nodes must be counted manually to ensure
@@ -48,30 +48,30 @@
  * I experimented with a format looking like /2/1/3+15.0 /2/1/3+16.4, but changed to this
  * because the plus sign and space are hard to read (hence hard to debug) when urlencoded.
  */
-function BlockRange( str )
+function SequenceRange( str )
 {
 	if ( str )
 		this.fromString( str );
 	return this;
 }
 
-BlockRange.prototype.fromString = function( path )
+SequenceRange.prototype.fromString = function( path )
 {
 	var parts = path.split( ';' );
 	if ( parts && 2 == parts.length )
 	{
-		this.start = new BlockPoint( parts[ 0 ]);
-		this.end = new BlockPoint( parts[ 1 ] );
+		this.start = new SequencePoint( parts[ 0 ]);
+		this.end = new SequencePoint( parts[ 1 ] );
 		this.normalized = true;
 	}
 	else
 	{
-		// Possibly we have an old block range format with no end block, e.g. /5/2 1.0 1.5
+		// Possibly we have an old sequence range format with no end block, e.g. /5/2 1.0 1.5
 		parts = path.match( /^\s*(\/[\/0-9]*)\s+(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
 		if ( parts )
 		{
-			this.start = new BlockPoint( parts[0], parts[1], parts[2] );
-			this.end = newBlockPoint( parts[0], parts[3], parts[4] );
+			this.start = new SequencePoint( parts[0], parts[1], parts[2] );
+			this.end = new SequencePoint( parts[0], parts[3], parts[4] );
 			this.normalized = false;
 		}
 		// We might even have a really ancient word range with no blocks
@@ -81,22 +81,22 @@ BlockRange.prototype.fromString = function( path )
 			parts = path.match( /^\s*(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
 			if ( parts )
 			{
-				this.start = new BlockPoint( '/', parts[0], parts[1] );
-				this.end = new BlockPoint( '/', parts[2], parts[3] );
+				this.start = new SequencePoint( '/', parts[0], parts[1] );
+				this.end = new SequencePoint( '/', parts[2], parts[3] );
 				this.normalized = false;
 			}
 			else
-				throw "BlockRange parse error";
+				throw "SequenceRange parse error";
 		}
 	}
 }
 
-BlockRange.prototype.toString = function( )
+SequenceRange.prototype.toString = function( )
 {
 	return this.start.toString( ) + ';' + this.end.toString( );
 }
 
-BlockRange.prototype.compare = function( range2 )
+SequenceRange.prototype.compare = function( range2 )
 {
 	var r = this.start.compare( range2.start );
 	if ( 0 != r )
@@ -105,19 +105,26 @@ BlockRange.prototype.compare = function( range2 )
 		return this.end.compare( range2.end );
 }
 
-BlockRange.prototype.equals = function( range2 )
+SequenceRange.prototype.equals = function( range2 )
 {
 	return 0 == this.compare( range2 );
 }
 
-function BlockPoint( str )
+// Strip word and character information
+SequenceRange.prototype.makeBlockLevel = function( )
+{
+	this.start.makeBlockLevel( );
+	this.end.makeBlockLevel( );
+}
+
+function SequencePoint( str )
 {
 	if ( str )
 		this.fromString( str );
 	return this;
 }
 
-BlockPoint.prototype.fromString = function( path, words, chars )
+SequencePoint.prototype.fromString = function( path, words, chars )
 {
 	if ( words )
 	{
@@ -138,12 +145,12 @@ BlockPoint.prototype.fromString = function( path, words, chars )
 		{
 			this.path = path;
 			this.words = this.chars = 0;
-			throw "BlockPoint parse error";
+			throw "SequencePoint parse error";
 		}
 	}
 }
 
-BlockPoint.prototype.toString = function( )
+SequencePoint.prototype.toString = function( )
 {
 	if ( this.words )
 		return this.path + '/' + this.words + '.' + this.chars;
@@ -151,7 +158,13 @@ BlockPoint.prototype.toString = function( )
 		return this.path;
 }
 
-BlockPoint.prototype.pathFromNode = function( root, rel, fskip )
+SequencePoint.prototype.makeBlockLevel = function( )
+{
+	this.words = None;
+	this.chars = None;
+}
+
+SequencePoint.prototype.pathFromNode = function( root, rel, fskip )
 {
 	var node = rel;
 	var path = '';
@@ -175,7 +188,7 @@ BlockPoint.prototype.pathFromNode = function( root, rel, fskip )
 /**
  * Find the DOM node corresponding to the path portion of the point
  */
-BlockPoint.prototype.getReferenceElement = function( root, fskip )
+SequencePoint.prototype.getReferenceElement = function( root, fskip )
 {
 	var node;
 	var startTime = new Date( );
@@ -215,7 +228,7 @@ BlockPoint.prototype.getReferenceElement = function( root, fskip )
 	return node;
 }
 
-BlockPoint.prototype.compare = function( point2 )
+SequencePoint.prototype.compare = function( point2 )
 {
 	var p1 = this.path;
 	var p2 = point2.path;
@@ -237,29 +250,29 @@ BlockPoint.prototype.compare = function( point2 )
 		{
 			if ( i >= p2.length )
 			{
-				trace( 'BlockPoint.compare', 'Compare ' + p1 + ' > ' + p2 );
+				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' > ' + p2 );
 				return 1;
 			}
 			var x1 = Number( p1[ i ] );
 			var x2 = Number( p2[ i ] );
 			if ( x1 < x2 )
 			{
-				trace( 'BlockPoint.compare', 'Compare ' + p1 + ' < ' + p2 );
+				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' < ' + p2 );
 				return -1;
 			}
 			if ( x1 > x2 )
 			{
-				trace( 'BlockPoint.compare', 'Compare ' + p1 + ' > ' + p2 );
+				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' > ' + p2 );
 				return 1;
 			}
 		}
 		if ( i < p2.length )
 		{
-			trace( 'BlockPoint.compare', 'Compare ' + p1 + ' < ' + p2 );
+			trace( 'SequencePoint.compare', 'Compare ' + p1 + ' < ' + p2 );
 			return -1;
 		}
 		else
-			throw "Error in BlockPoint.compare";
+			throw "Error in SequencePoint.compare";
 	}
 }
 
@@ -294,6 +307,12 @@ XPathRange.prototype.toString = function( )
 XPathRange.prototype.equals = function( range2 )
 {
 	return this.start.equals( range2.start ) && this.end.equals( range2.end );
+}
+
+XPathRange.prototype.makeBlockLevel = function( )
+{
+	this.start.makeBlockLevel( )
+	this.end.makeBlockLevel( )
 }
 
 function XPathPoint( str )
@@ -340,6 +359,12 @@ XPathPoint.prototype.toString = function( )
 		return this.path + '/word(' + this.words + ')/char(' + this.chars + ')';
 	else
 		return this.path;
+}
+
+XPathPoint.prototype.makeBlockLevel = function( )
+{
+	this.words = null;
+	this.chars = null;
 }
 
 /**

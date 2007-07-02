@@ -39,11 +39,8 @@ AN_EDIT_NOTE_KEYWORDS = 'note keywords';
 AN_EDIT_LINK = 'link';
 
 // Range formats
-BLOCK_RANGE = 'block';
+SEQUENCE_RANGE = 'sequence';
 XPATH_RANGE = 'xpath';
-PREFERRED_RANGE = 'preferred';		// pick the best available range type
-AUTHORITATIVE_RANGE = XPATH_RANGE;
-ORDERED_RANGE = BLOCK_RANGE;
 
 
 /* ************************ Annotation Class ************************ */
@@ -60,7 +57,7 @@ function Annotation( url )
 	this.changes = new Object( );
 	if ( url )
 		this.setUrl( url );
-	this.blockRange = null;
+	this.sequenceRange = null;
 	this.xpathRange = null;
 	this.id = 0;
 	this.note = '';
@@ -115,16 +112,16 @@ Annotation.prototype.getPreferredRangeType = function( )
 {
 	if ( this.xpathRange )
 		return XPATH_RANGE;
-	else if ( this.blockRange )
-		return BLOCK_RANGE;
+	else if ( this.sequenceRange )
+		return SEQUENCE_RANGE;
 	else
 		return null;
 }
 
 Annotation.prototype.getRange = function( format )
 {
-	if ( BLOCK_RANGE == format )
-		return this.blockRange;
+	if ( SEQUENCE_RANGE == format )
+		return this.sequenceRange;
 	else if ( XPATH_RANGE == format )
 		return this.xpathRange;
 	else
@@ -133,12 +130,12 @@ Annotation.prototype.getRange = function( format )
 
 Annotation.prototype.setRange = function( format, range )
 {
-	if ( BLOCK_RANGE == format )
+	if ( SEQUENCE_RANGE == format )
 	{
-		if ( this.blockRange == null && range != null || ! this.blockRange.equals( range ) )
+		if ( this.sequenceRange == null && range != null || ! this.sequenceRange.equals( range ) )
 		{
-			this.blockRange = range;
-			this.changes[ 'range/' + BLOCK_RANGE ] = true;
+			this.sequenceRange = range;
+			this.changes[ 'range/' + SEQUENCE_RANGE ] = true;
 		}
 	}
 	else if ( 'xpath' == format )
@@ -271,8 +268,8 @@ Annotation.prototype.fieldsFromPost = function( post )
 
 Annotation.prototype.compareRange = function( a2 )
 {
-	if ( this.blockRange && a2.blockRange )
-		return this.blockRange.compare( a2.blockRange );
+	if ( this.sequenceRange && a2.sequenceRange )
+		return this.sequenceRange.compare( a2.sequenceRange );
 	else
 		return 0;
 }
@@ -280,7 +277,7 @@ Annotation.prototype.compareRange = function( a2 )
 function compareAnnotationRanges( a1, a2 )
 {
 	// Note: don't use getters for efficiency.
-	return a1.blockRange.compare( a2.blockRange );
+	return a1.sequenceRange.compare( a2.sequenceRange );
 }
 
 function annotationFromTextRange( post, textRange )
@@ -289,7 +286,7 @@ function annotationFromTextRange( post, textRange )
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation( post.url );
-	annotation.setRange( BLOCK_RANGE, textRange.toBlockRange( ) );
+	annotation.setRange( SEQUENCE_RANGE, textRange.toSequenceRange( ) );
 	annotation.setRange( XPATH_RANGE, textRange.toXPathRange( ) );
 	// Can't just call toString() to grab the quote from the text range, because that would
 	// include any smart copy text.
@@ -303,7 +300,7 @@ function annotationFromTextRange( post, textRange )
  */
 Annotation.prototype.destruct = function( )
 {
-	this.blockRange = null;
+	this.sequenceRange = null;
 	this.xpathRange = null;
 }
 
@@ -316,7 +313,7 @@ Annotation.prototype.toString = function( )
 	if ( this.xpathRange )
 		return this.xpathRange.toString( );
 	else
-		return this.blockRange.toString( );
+		return this.sequenceRange.toString( );
 }
 
 /**
@@ -392,8 +389,8 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 		{
 			var format = field.getAttribute( 'format', '' );
 			// These ranges may throw parse errors
-			if ( 'block' == format )
-				this.setRange( format, new BlockRange( getNodeText( field ) ) );
+			if ( 'sequence' == format )
+				this.setRange( format, new SequenceRange( getNodeText( field ) ) );
 			else if ( 'xpath' == format )
 				this.setRange( format, new XPathRange( getNodeText( field ) ) );
 			// ignore unknown formats
@@ -429,6 +426,11 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 				if ( ( 'blockquote' == node.nodeName || 'q' == node.nodeName ) && node.getAttribute( 'cite' ) )
 				{
 					this.quote = getNodeText( node );
+					if ( this.quote )
+					{
+						this.quote = this.quote.replace( /^\s+/, '' );
+						this.quote = this.quote.replace( /\s+$/, '' );
+					}
 					this.url = node.getAttribute( 'cite' );
 				}
 				// QuoteTitle
@@ -448,6 +450,8 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 							if ( 'note' == className )
 							{
 								this.note = getNodeText( node );
+								this.note = this.note.replace( /^\s+/, '' );
+								this.note = this.note.replace( /\s+$/, '' );
 								childMode = 'note';
 							}
 							if ( 'quoteAuthor' == className )
@@ -491,17 +495,17 @@ function parseAnnotationXml( xmlDoc )
 				// don't want to parse or list the annotation - if we did, it might cause
 				// the whole application to fail, making it impossible to view other annotations
 				// or to fix the problem (e.g. through Marginalia Direct).
-				try
-				{
+//				try
+//				{
 					var annotation = new Annotation( );
 					annotation.fromAtom( child, window.annotationUrlBase );
 					annotations[ annotations.length ] = annotation;
-				}
+/*				}
 				catch ( exception )
 				{
 					logError( "Annotation parse error:  " + exception );
 				}
-			}
+*/			}
 		}
 		annotations.sort( compareAnnotationRanges );
 		return annotations;

@@ -150,18 +150,18 @@ Marginalia.prototype.createAnnotation = function( annotation, f )
 
 Marginalia.prototype.updateAnnotation = function( annotation )
 {
-	// Before storing the annotation, check whether it's using a denormalized block range.
+	// Before storing the annotation, check whether it's using a denormalized sequence range.
 	// If it is, recalculate the block range and store the new (faster) format.
-	var blockRange = annotation.getRange( BLOCK_RANGE );
-	if ( blockRange && ! blockRange.normalized )
+	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
+	if ( sequenceRange && ! sequenceRange.normalized )
 	{
 		var post = this.listPosts( ).getPostByUrl( annotation.getUrl() );
 		if ( post )
 		{
 			var root = post.getContentElement( );
 			var wordRange = new WordRange( );
-			wordRange.fromBlockRange( blockRange, root, _skipContent );
-			annotation.setRange( BLOCK_RANGE, wordRange.toBlockRange( root ) );
+			wordRange.fromSequenceRange( sequenceRange, root, _skipContent );
+			annotation.setRange( SEQUENCE_RANGE, wordRange.toSequenceRange( root ) );
 		}
 	}
 	if ( annotation.hasChanged() )
@@ -352,6 +352,7 @@ Marginalia.prototype.showPerBlockUserCounts = function( url )
 
 function _showPerBlockUserCountsCallback( xmldoc )
 {
+	trace( 'markers', 'Show Markers' );
 	var blockInfoArray = parseBlockInfoXml( xmldoc );
 	for ( var i = 0;  i < blockInfoArray.length;  ++i )
 	{
@@ -369,15 +370,22 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, blockInfo )
 {
 	// Produce a user count list excluding the current user
 	var userListStr = '';
-	for ( var i = 0;  i < blockInfo.users.length;  ++i )
+	if ( true )	// for debugging
+		userListStr = blockInfo.users.join( ', ' )
+	else
 	{
-		var user = blockInfo.users[ i ];
-		if ( user != marginalia.anusername )
-			userListStr = userListStr == '' ? user : userListStr + ', ' + user;
+		for ( var i = 0;  i < blockInfo.users.length;  ++i )
+		{
+			var user = blockInfo.users[ i ];
+			if ( user != marginalia.anusername )
+				userListStr = userListStr == '' ? user : userListStr + ', ' + user;
+		}
 	}
 	
 	if ( '' != userListStr )
 	{
+		trace( 'markers', 'Show markers for block ' + blockInfo.xpathBlock );
+		
 		var block = blockInfo.resolveBlock( this.contentElement );
 		var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
 		if ( markers && block )
@@ -417,8 +425,8 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, blockInfo )
 			countElement.setAttribute( 'title', blockInfo.users.join( ' ' ) );
 			var marginalia = window.marginalia;
 			var url = blockInfo.url;
-			var blockpath = blockInfo.blockpath;
-			countElement.onclick = function() { marginalia.showBlockAnnotations( url, blockpath ); };
+			var sequenceBlock = blockInfo.sequenceBlock;
+			countElement.onclick = function() { marginalia.showBlockAnnotations( url, sequenceBlock ); };
 			countElement.appendChild( document.createTextNode( String( blockInfo.users.length ) ) );
 		}
 		else
@@ -850,7 +858,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	}
 	else
 	{
-		if ( ! wordRange.fromBlockRange( annotation.getRange( BLOCK_RANGE ), this.contentElement, _skipContent ) )
+		if ( ! wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, _skipContent ) )
 		{
 			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
 			return false;
@@ -907,7 +915,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	{
 		// Older versions (before 2007-06-05) have some context calculation code which could be
 		// modified and used here.
-		var rangeStr = annotation.getRange( BLOCK_RANGE ) ? annotation.getRange( BLOCK_RANGE ).toString() : '';
+		var rangeStr = annotation.getRange( SEQUENCE_RANGE ) ? annotation.getRange( SEQUENCE_RANGE ).toString() : '';
 		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
 		return false;
 	}
@@ -1097,8 +1105,8 @@ PostMicro.prototype.getNoteAlignElement = function( annotation )
 	// If there is no matching highlight element, pick the paragraph.  Prefer XPath range representation.
 	if ( null == alignElement && annotation.getRange( XPATH_RANGE ) )
 		alignElement = annotation.getRange( XPATH_RANGE ).start.getReferenceElement( this.contentElement );
-	if ( null == alignElement && annotation.getRange( BLOCK_RANGE ) )
-		alignElement = annotation.getRange( BLOCK_RANGE ).start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.getRange( SEQUENCE_RANGE ) )
+		alignElement = annotation.getRange( SEQUENCE_RANGE ).start.getReferenceElement( this.contentElement );
 	return alignElement;
 }
 
@@ -2070,7 +2078,7 @@ function createAnnotation( postId, warn, action )
 	
 	var wordRange = new WordRange( );
 	wordRange.fromTextRange( textRange, post.contentElement, _skipContent );
-	var blockRange = wordRange.toBlockRange( post.contentElement );
+	var sequenceRange = wordRange.toSequenceRange( post.contentElement );
 	var xpathRange = wordRange.toXPathRange( post.contentElement );
 	
 	annotation.setQuote( getTextRangeContent( textRange, _skipContent ) );
@@ -2080,7 +2088,7 @@ function createAnnotation( postId, warn, action )
 		{
 			// zero-length quotes are ok for edit actions
 			// Collapse ranges to points
-			blockRange.start = blockRange.end;
+			sequenceRange.start = sequenceRange.end;
 			xpathRange.start = xpathRange.end;
 		}
 		else
@@ -2093,7 +2101,7 @@ function createAnnotation( postId, warn, action )
 		}
 	}
 	
-	annotation.setRange( BLOCK_RANGE, blockRange );
+	annotation.setRange( SEQUENCE_RANGE, sequenceRange );
 	annotation.setRange( XPATH_RANGE, xpathRange );
 
 	// TODO: test selection properly

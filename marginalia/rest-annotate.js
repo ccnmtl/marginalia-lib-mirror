@@ -154,8 +154,8 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&link=' + encodeURIParameter( annotation.getLink() );
 	if ( annotation.getAction() )
 		body += '&action=' + encodeURIParameter (annotation.getAction() );
-	if ( annotation.getRange( BLOCK_RANGE ) )
-		body += '&block-range=' + encodeURIParameter( annotation.getRange( BLOCK_RANGE ).toString( ) );
+	if ( annotation.getRange( SEQUENCE_RANGE ) )
+		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
 	if ( annotation.getRange( XPATH_RANGE ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 	var xmlhttp = createAjaxRequest( );
@@ -201,8 +201,8 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 		body += ( body == '' ? '' : '&' ) + 'access=' + encodeURIParameter( annotation.getAccess() );
 	if ( annotation.hasChanged( 'link' ) )
 		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.getLink() );
-	if ( annotation.hasChanged( 'range/' + BLOCK_RANGE ) )
-		body += '&block-range=' + encodeURIParameter( annotation.getRange( BLOCK_RANGE ).toString( ) );
+	if ( annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) )
+		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
 	if ( annotation.hasChanged( 'range/' + XPATH_RANGE ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 

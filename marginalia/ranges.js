@@ -84,7 +84,7 @@ function TextRange( startContainer, startOffset, endContainer, endOffset )
  */
 TextRange.prototype.fromWordRange = function( wordRange, fskip )
 {
-	// These trace statements used to output the BlockRange string for the word range,
+	// These trace statements used to output the SequenceRange string for the word range,
 	// but with that code moved out and without a root parameter, that no longer works
 	trace( 'word-range', 'wordRangeToTextRange' );
 
@@ -142,20 +142,20 @@ function WordPoint( )
 	return this;
 }
 
-WordPoint.prototype.toBlockPoint = function( root )
+WordPoint.prototype.toSequencePoint = function( root )
 {
-	var point = new BlockPoint( );
+	var point = new SequencePoint( );
 	point.pathFromNode( root, this.rel );
 	point.words = this.words;
 	point.chars = this.chars;
 	return point;
 }
 	
-WordPoint.prototype.fromBlockPoint = function( blockPoint, root, fskip )
+WordPoint.prototype.fromSequencePoint = function( sequencePoint, root, fskip )
 {
-	this.rel = blockPoint.getReferenceElement( root, fskip )
-	this.words = blockPoint.words;
-	this.chars = blockPoint.chars;
+	this.rel = sequencePoint.getReferenceElement( root, fskip )
+	this.words = sequencePoint.words;
+	this.chars = sequencePoint.chars;
 	return null != this.rel;
 }
 
@@ -218,27 +218,27 @@ WordRange.prototype.fromTextRange = function( textRange, root, fskip )
 }
 
 /**
- * Convert a WordRange to a BlockRange
+ * Convert a WordRange to a SequenceRange
  */
-WordRange.prototype.toBlockRange = function( root )
+WordRange.prototype.toSequenceRange = function( root )
 {
-	var blockRange = new BlockRange( );
-	blockRange.start = this.start.toBlockPoint( root );
-	blockRange.end = this.end.toBlockPoint( root );
-	return blockRange;
+	var sequenceRange = new SequenceRange( );
+	sequenceRange.start = this.start.toSequencePoint( root );
+	sequenceRange.end = this.end.toSequencePoint( root );
+	return sequenceRange;
 }
 
 /**
- * Convert an BlockRange to a WordRange
+ * Convert an SequenceRange to a WordRange
  * Returns false if the start and/or end poin could not be resolved
  */
-WordRange.prototype.fromBlockRange = function( blockRange, root, fskip )
+WordRange.prototype.fromSequenceRange = function( sequenceRange, root, fskip )
 {
 	var r = true;
 	this.start = new WordPoint( );
-	r = r && this.start.fromBlockPoint( blockRange.start, root, fskip );
+	r = r && this.start.fromSequencePoint( sequenceRange.start, root, fskip );
 	this.end = new WordPoint( );
-	r = r && this.end.fromBlockPoint( blockRange.end, root, fskip );
+	r = r && this.end.fromSequencePoint( sequenceRange.end, root, fskip );
 	return r;
 }
 
@@ -365,18 +365,6 @@ NodeToWordPoint_Machine.prototype.destroy = function( )
 }
 
 
-/**
- * Convert a node relative to a root element to a path.  This is like an xpath
- * except that only breaking element nodes are counted.
- * NodeToPath: replaced by BlockPoint.pathFromNode()
- */
-
-/**
- * Convert a path expression (as produced by NodeToPath()) to a node reference
- * PathToNode: replaced by (Block|XPath)Point.getReferenceElement( )
- */
-
-	
 /** Produce a point based on the state of a NodeToWordPoint_Machine */
 NodeToWordPoint_Machine.prototype.getPoint = function( )
 {

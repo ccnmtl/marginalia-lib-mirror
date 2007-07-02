@@ -17,18 +17,18 @@ function parseBlockInfoXml( xmldoc )
 	return blockInfoArray;
 }
 
-function AnnotatedBlockInfo( xpath, blockpath )
+function AnnotatedBlockInfo( xpathBlock, sequenceBlock )
 {
 	this.users = new Array();
-	this.xpath = xpath;
-	this.blockpath = blockpath;
+	this.xpathBlock = xpathBlock;
+	this.sequenceBlock = sequenceBlock;
 	this.url = null;
 }
 
 AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
 {
-	this.xpath = blockElement.getAttribute( 'xpath' );
-	this.blockpath = blockElement.getAttribute( 'block' );
+	this.xpathBlock = blockElement.getAttribute( 'xpath-block' );
+	this.sequenceBlock = blockElement.getAttribute( 'sequence-block' );
 	this.url = blockElement.getAttribute( 'url' );
 	for ( var userElement = blockElement.firstChild;  userElement;  userElement = userElement.nextSibling )
 	{
@@ -39,9 +39,11 @@ AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
 
 AnnotatedBlockInfo.prototype.resolveBlock = function( root )
 {
-	if ( this.xpath )
+	if ( this.xpathBlock )
 	{
-		var node = root.ownerDocument.evaluate( this.xpath, root, null, XPathResult.ANY_TYPE, null );
+		var node = root.ownerDocument.evaluate( this.xpathBlock, root, null, XPathResult.ANY_TYPE, null );
 		return node.iterateNext();
 	}
+	else
+		return null;
 }
