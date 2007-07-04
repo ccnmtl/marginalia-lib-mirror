@@ -277,6 +277,104 @@ SequencePoint.prototype.compare = function( point2 )
 
 
 /**
+ * A resolver is used for locating and walking sequence paths (paths without regard to words and characters)
+ *
+ * path - the starting path
+ * node - the node corresponding to that starting path
+ */
+function SequencePathResolver( node, path )
+{
+	this.walker = new DOMWalker( node );
+	parts = path.split( '/' );
+	this.path = [ ];
+	for ( var i = 1;  i < parts.length;  ++i )
+		this.path[ i - 1 ] = Number( parts[ i ] );
+	return this;	
+}
+
+/**
+ * Move to the next node in the document
+ * Return the current path (which can be compared with a destination to see whether
+ * the path has been resolved)
+ */
+SequencePathResolver.prototype.next = function( )
+{
+	while ( this.walker.walk( true, false ) )
+	{
+		switch ( this.walker.lastMove )
+		{
+			case LAST_WALK_PARENT:	
+				this.path.pop( );
+				return true;
+				
+			case LAST_WALK_CHILD:
+				this.path.push( 1 );
+				return true;
+				
+			case LAST_WALK_NEXT:
+				this.path[ this.path.length - 1 ] += 1;
+				return true;
+				
+			case LAST_WALK_PREV:
+				this.path[ this.path.length - 1 ] -= 1;
+				return true;
+		}
+	}
+	return false;
+}
+
+SequencePathResolver.prototype.getPath = function( )
+{
+	return '/' + this.path.join( '/' );	
+}
+
+SequencePathResolver.prototype.getNode = function( )
+{
+	return this.walker.node;
+}
+
+/**
+ * Move forward until the passed path is resolved
+ * TODO: Doesn't make sense unless relative to a passed root
+ * (backward would be possible, but is not implemented)
+ * Faster than calling next() because there's no need to drop down into subtrees
+ *
+SequencePathResolver.prototype.resolve( path )
+{
+	var node = walker.node;
+	// Locate the rel node based on the path
+	// The simple case:  rel is root
+	if ( '/' == path || '' == path )
+		;
+	else
+	{
+		var nodes = this.path.split( '/' );
+		for ( var i = 1;  i < nodes.length;  ++i )
+		{
+			var count = Number( nodes[ i ] );
+			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
+			{
+				if ( fskip && ! fskip( node ) )
+				{
+					if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
+					{
+						count -= 1;
+						if ( 0 == count )
+							break;
+					}
+				}
+			}
+			if ( 0 != count )
+				return null;
+		}
+	}
+
+	this.walker = new DOMWalker( node );
+	return node;
+}
+*/
+
+/**
  * XPath representation of a range
  *
  * XPath ranges are fast (assuming the document.evaluate function is implemented in the

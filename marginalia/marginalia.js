@@ -386,53 +386,68 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, blockInfo )
 	{
 		trace( 'markers', 'Show markers for block ' + blockInfo.xpathBlock );
 		
-		var block = blockInfo.resolveBlock( this.contentElement );
-		var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
-		if ( markers && block )
+		var node = blockInfo.resolveStart( this.contentElement );
+		if ( node )
 		{
-			var markerElement = document.createElement( 'div' );
-			markerElement.setAttribute( 'class', 'marker' );
-			var countElement = document.createElement( 'span' );
-			countElement.setAttribute( 'class', 'annotation-user-count' );
-			markerElement.appendChild( countElement );
-			markers.appendChild( markerElement );
-	
-			var blockOffset = getElementYOffset( block, this.element );
-			var markersOffset = getElementYOffset( markers, this.element );
-			var offset = blockOffset - markersOffset;
-			var nextBlock;
-			// Walk forward to the next breaking element
-			var walker = new DOMWalker( block );
-			while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
-				;
-			// Walk back to the previous node
-			if ( walker.node )
+			var resolver = new SequencePathResolver( node, blockInfo.sequenceRange.start.path );
+			do
 			{
-				walker.walk( true, true );
-				nextBlock = walker.node;
+				// TODO: Inefficient to create so many SequencePath objects
+				var point = new SequencePoint( resolver.getPath() );
+				if ( point.compare( blockInfo.sequenceRange.end ) > 0 )
+					break;
+				if ( ELEMENT_NODE == node.nodeType )
+					this.showBlockMarker( marginalia, blockInfo, resolver.getNode() );
 			}
-			else
-			{
-				// TODO: handle the case where this is at the end of the document
-			}
-			var height =
-				getElementYOffset( nextBlock, this.contentElement )
-				+ nextBlock.offsetHeight
-				- getElementYOffset( block, this.contentElement );
-			markerElement.style.top = offset + 'px';
-			markerElement.style.height = height + 'px';
-	
-			countElement.setAttribute( 'title', blockInfo.users.join( ' ' ) );
-			var marginalia = window.marginalia;
-			var url = blockInfo.url;
-			var sequenceBlock = blockInfo.sequenceBlock;
-			countElement.onclick = function() { marginalia.showBlockAnnotations( url, sequenceBlock ); };
-			countElement.appendChild( document.createTextNode( String( blockInfo.users.length ) ) );
+			while ( resolver.next( ) );
+		}
+	}
+}
+
+PostMicro.prototype.showBlockMarker = function( marginalia, blockInfo, block )
+{
+	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	if ( markers )
+	{
+		// TODO: If this element already has a marker, update it instead of making a new one
+		var markerElement = document.createElement( 'div' );
+		markerElement.setAttribute( 'class', 'marker' );
+		var countElement = document.createElement( 'span' );
+		countElement.setAttribute( 'class', 'annotation-user-count' );
+		markerElement.appendChild( countElement );
+		markers.appendChild( markerElement );
+
+		var blockOffset = getElementYOffset( block, this.element );
+		var markersOffset = getElementYOffset( markers, this.element );
+		var offset = blockOffset - markersOffset;
+		var nextBlock;
+		// Walk forward to the next breaking element
+		var walker = new DOMWalker( block );
+		while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
+			;
+		// Walk back to the previous node
+		if ( walker.node )
+		{
+			walker.walk( true, true );
+			nextBlock = walker.node;
 		}
 		else
 		{
-			trace( null, 'No markers for url=' + blockInfo.url + ', ' + block + ' ( ' + markers + ' ) ' );
+			// TODO: handle the case where this is at the end of the document
 		}
+		var height =
+			getElementYOffset( nextBlock, this.contentElement )
+			+ nextBlock.offsetHeight
+			- getElementYOffset( block, this.contentElement );
+		markerElement.style.top = offset + 'px';
+		markerElement.style.height = height + 'px';
+
+		countElement.setAttribute( 'title', blockInfo.users.join( ' ' ) );
+		var marginalia = window.marginalia;
+		var url = blockInfo.url;
+		var sequenceBlock = blockInfo.sequenceBlock;
+		countElement.onclick = function() { marginalia.showBlockAnnotations( url, sequenceBlock ); };
+		countElement.appendChild( document.createTextNode( String( blockInfo.users.length ) ) );
 	}
 }
 

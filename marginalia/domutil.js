@@ -877,6 +877,14 @@ DOMWalker.prototype.destroy = function( )
 
 WALK_REVERSE = true; /* Pass this to DOMWalker.walk for clarity */
 
+/* These indicate what the last walk was (useful for keeping a path up-to-date while walking) */
+LAST_WALK_NEXT = 1;
+LAST_WALK_PREV = 2;
+LAST_WALK_PARENT = 3;
+LAST_WALK_CHILD = 4;
+LAST_WALK_STARTTAG = 5;
+LAST_WALK_ENDTAG = 6;
+
 /** Walk through nodes
  * reverse - if true, walk *backwards* instead of forwards
  * I don't know whether it's safe to alternate backward and forward movement with a single walker
@@ -891,38 +899,49 @@ DOMWalker.prototype.walk = function( gointo, reverse )
 			this.node = this.node.nextSibling;
 			this.endTag = false;
 			this.startTag = true;
+			this.lastMove = LAST_WALK_NEXT;
 		}
 		else if ( reverse && this.node.previousSibling )
 		{
 			this.node = this.node.previousSibling;
 			this.startTag = false;
 			this.endTag = true;
+			this.lastMove = LAST_WALK_PREV;
 		}
 		else
 		{
 			this.node = this.node.parentNode;
 			this.endTag = ! reverse;
 			this.startTag = reverse;
+			this.lastMove = LAST_WALK_PARENT;
 		}
 	}
 	else if ( reverse ) // ( reverse && ELEMENT_NODE == this.node.nodeType && gointo )
 	{
 		if ( this.node.lastChild )
+		{
 			this.node = this.node.lastChild;
+			this.lastMove = LAST_WALK_CHILD;
+		}
 		else
 		{
 			this.startTag = true;
 			this.endTag = false;
+			this.lastMove = LAST_WALK_STARTTAG;
 		}
 	}
 	else // ( ! reverse && ELEMENT_NODE == this.node.nodeType && gointo )
 	{
 		if ( this.node.firstChild )
+		{
 			this.node = this.node.firstChild;
+			this.lastMove = LAST_WALK_CHILD;
+		}
 		else
 		{
 			this.endTag = true;
 			this.startTag = false;
+			this.lastMove = LAST_WALK_ENDTAG;
 		}
 	}
 	return null == this.node ? false : true;

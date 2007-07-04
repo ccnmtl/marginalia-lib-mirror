@@ -9,7 +9,7 @@ function parseBlockInfoXml( xmldoc )
 	{
 		if ( ELEMENT_NODE == blockElement.nodeType && 'block' == blockElement.tagName )
 		{
-			var info = new AnnotatedBlockInfo( );
+			var info = new BlockInfo( );
 			info.fromXml( blockElement );
 			blockInfoArray[ blockInfoArray.length ] = info;
 		}
@@ -17,7 +17,7 @@ function parseBlockInfoXml( xmldoc )
 	return blockInfoArray;
 }
 
-function AnnotatedBlockInfo( xpathRange, sequenceRange )
+function BlockInfo( xpathRange, sequenceRange )
 {
 	this.users = new Array();
 	this.xpathRange = xpathRange;
@@ -25,7 +25,15 @@ function AnnotatedBlockInfo( xpathRange, sequenceRange )
 	this.url = null;
 }
 
-AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
+BlockInfo.prototype.resolveStart = function( root )
+{
+	if ( this.xpathRange && this.xpathRange.start)
+		return this.xpathRange.start.getReferenceElement( root );
+	else
+		return this.sequenceRange.start.getReferenceElement( root );
+}
+
+BlockInfo.prototype.fromXml = function( blockElement )
 {
 	this.url = blockElement.getAttribute( 'url' );
 	for ( var node = blockElement.firstChild;  node;  node = node.nextSibling )
@@ -40,8 +48,8 @@ AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
 				else if ( 'sequence' == format )
 					this.sequenceRange = new SequenceRange( getNodeText( node ) );
 			}
-			else if ( 'user' == userElement.tagName )
-				this.users[ this.users.length ] = getNodeText( userElement );
+			else if ( 'user' == node.tagName )
+				this.users[ this.users.length ] = getNodeText( node );
 		}
 	}
 }
