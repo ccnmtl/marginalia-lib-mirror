@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+	<title>Test Word Counting</title>
+	<link rel="stylesheet" type="text/css" href="example.css"/>
+	<script type="text/javascript" src="../marginalia/log.js"></script>
+	<script type="text/javascript" src="../marginalia/html-model.js"></script>
+	<script type="text/javascript" src="../marginalia/domutil.js"></script>
+	<script type="text/javascript" src="../marginalia/ranges.js"></script>
+	<script type="text/javascript" src="../marginalia/range-format.js"></script>
+	<script type="text/javascript" src="TestFrame.js"></script>
+	<script type="text/javascript" src="range-test.js"></script>
+	<style type="text/css">
+		#results {
+			font-family: monospace;
+		}
+	</style>
+</head>
+<body onload='test()'>
+
+<div id="word-data">
+<p id="p1">one</p>
+<p id="p2"> two three  </p>
+<p id="p3"> four <em id="em1">five</em> six </p>
+<p id="p4"> <em id="em2">seven</em><em id="em3">seven</em> </p>
+</div>
+
+<ul id="results">
+	<li></li>
+</ul>
+<p id="total"></p>
+
+</body>
+</html>
+
+
+

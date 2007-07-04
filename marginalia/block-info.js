@@ -1,7 +1,7 @@
 function parseBlockInfoXml( xmldoc )
 {
 	var listElement = xmldoc.documentElement;
-	if ( listElement.tagName != 'blocks' )
+	if ( listElement.tagName != 'block-info' )
 		return null;
 	
 	var blockInfoArray = new Array();
@@ -17,33 +17,32 @@ function parseBlockInfoXml( xmldoc )
 	return blockInfoArray;
 }
 
-function AnnotatedBlockInfo( xpathBlock, sequenceBlock )
+function AnnotatedBlockInfo( xpathRange, sequenceRange )
 {
 	this.users = new Array();
-	this.xpathBlock = xpathBlock;
-	this.sequenceBlock = sequenceBlock;
+	this.xpathRange = xpathRange;
+	this.sequenceRange = sequenceRange;
 	this.url = null;
 }
 
 AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
 {
-	this.xpathBlock = blockElement.getAttribute( 'xpath-block' );
-	this.sequenceBlock = blockElement.getAttribute( 'sequence-block' );
 	this.url = blockElement.getAttribute( 'url' );
-	for ( var userElement = blockElement.firstChild;  userElement;  userElement = userElement.nextSibling )
+	for ( var node = blockElement.firstChild;  node;  node = node.nextSibling )
 	{
-		if ( ELEMENT_NODE == userElement.nodeType && 'user' == userElement.tagName )
-			this.users[ this.users.length ] = getNodeText( userElement );
+		if ( ELEMENT_NODE == node.nodeType)
+		{
+			if ( 'range' == node.tagName )
+			{
+				var format = node.getAttribute( 'format' );
+				if ( 'xpath' == format )
+					this->xpathRange = new XPathRange( getNodeText( node ) );
+				else if ( 'sequence' == format )
+					this->sequenceRange = new SequenceRange( getNodeText( node ) );
+			}
+			else if ( 'user' == userElement.tagName )
+				this.users[ this.users.length ] = getNodeText( userElement );
+		}
 	}
 }
 
-AnnotatedBlockInfo.prototype.resolveBlock = function( root )
-{
-	if ( this.xpathBlock )
-	{
-		var node = root.ownerDocument.evaluate( this.xpathBlock, root, null, XPathResult.ANY_TYPE, null );
-		return node.iterateNext();
-	}
-	else
-		return null;
-}

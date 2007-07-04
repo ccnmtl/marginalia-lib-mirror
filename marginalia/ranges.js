@@ -175,6 +175,15 @@ WordPoint.prototype.fromXPathPoint = function( xpathPoint, root, fskip )
 	this.chars = xpathPoint.chars;
 	return null != this.rel;
 }
+
+/*
+ * Test whether two WordPoints are equal
+ * doesn't account for multiple equivalent representations
+ */
+WordPoint.prototype.equals = function( point2 )
+{
+	return this.rel == point2.rel && this.words == point2.words && this.chars == point2.chars;
+}
 	
 WordPoint.prototype.destroy = function( )
 {
@@ -267,6 +276,15 @@ WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
 	return r;
 }
 
+
+/*
+ * Test whether two word ranges are the same
+ * doesn't account for different ways of specifying the same location
+ */
+WordRange.prototype.equals = function( range2 )
+{
+	return this.start.equals( range2.start ) && this.end.equals( range2.end );
+}
 
 WordRange.prototype.destroy = function( )
 {
