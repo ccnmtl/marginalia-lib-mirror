@@ -1,23 +1,23 @@
-function parseBlockInfoXml( xmldoc )
+function parseRangeInfoXml( xmldoc )
 {
 	var listElement = xmldoc.documentElement;
-	if ( listElement.tagName != 'block-info' )
+	if ( listElement.tagName != 'ranges' )
 		return null;
 	
-	var blockInfoArray = new Array();
+	var infoArray = new Array();
 	for ( var blockElement = listElement.firstChild;  blockElement;  blockElement = blockElement.nextSibling )
 	{
-		if ( ELEMENT_NODE == blockElement.nodeType && 'block' == blockElement.tagName )
+		if ( ELEMENT_NODE == blockElement.nodeType && 'range-info' == blockElement.tagName )
 		{
-			var info = new BlockInfo( );
+			var info = new RangeInfo( );
 			info.fromXml( blockElement );
-			blockInfoArray[ blockInfoArray.length ] = info;
+			infoArray[ infoArray.length ] = info;
 		}
 	}
-	return blockInfoArray;
+	return infoArray;
 }
 
-function BlockInfo( xpathRange, sequenceRange )
+function RangeInfo( xpathRange, sequenceRange )
 {
 	this.users = new Array();
 	this.xpathRange = xpathRange;
@@ -25,7 +25,7 @@ function BlockInfo( xpathRange, sequenceRange )
 	this.url = null;
 }
 
-BlockInfo.prototype.resolveStart = function( root )
+RangeInfo.prototype.resolveStart = function( root )
 {
 	if ( this.xpathRange && this.xpathRange.start)
 		return this.xpathRange.start.getReferenceElement( root );
@@ -33,7 +33,7 @@ BlockInfo.prototype.resolveStart = function( root )
 		return this.sequenceRange.start.getReferenceElement( root );
 }
 
-BlockInfo.prototype.fromXml = function( blockElement )
+RangeInfo.prototype.fromXml = function( blockElement )
 {
 	this.url = blockElement.getAttribute( 'url' );
 	for ( var node = blockElement.firstChild;  node;  node = node.nextSibling )
