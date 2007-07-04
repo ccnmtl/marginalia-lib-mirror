@@ -36,9 +36,9 @@ AnnotatedBlockInfo.prototype.fromXml = function( blockElement )
 			{
 				var format = node.getAttribute( 'format' );
 				if ( 'xpath' == format )
-					this->xpathRange = new XPathRange( getNodeText( node ) );
+					this.xpathRange = new XPathRange( getNodeText( node ) );
 				else if ( 'sequence' == format )
-					this->sequenceRange = new SequenceRange( getNodeText( node ) );
+					this.sequenceRange = new SequenceRange( getNodeText( node ) );
 			}
 			else if ( 'user' == userElement.tagName )
 				this.users[ this.users.length ] = getNodeText( userElement );

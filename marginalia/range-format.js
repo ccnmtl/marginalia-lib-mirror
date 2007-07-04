@@ -145,7 +145,6 @@ SequencePoint.prototype.fromString = function( path, words, chars )
 		{
 			this.path = path;
 			this.words = this.chars = 0;
-			throw "SequencePoint parse error";
 		}
 	}
 }
@@ -343,7 +342,6 @@ XPathPoint.prototype.fromString = function( path, words, chars )
 		{
 			this.path = path;
 			this.words = this.chars = 0;
-			throw "XPathPoint parse error";
 		}
 	}
 }
