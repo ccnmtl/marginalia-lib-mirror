@@ -384,7 +384,7 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 	
 	if ( '' != userListStr )
 	{
-		trace( 'markers', 'Show markers for block ' + info.xpathBlock );
+		trace( 'markers', 'Show markers for block ' + info.sequenceRange.toString() );
 		
 		var node = info.resolveStart( this.contentElement );
 		if ( node )
@@ -406,47 +406,89 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
+	trace( null, '  Show marker at ' + point.toString( ) );
 	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
 	if ( markers )
 	{
-		// TODO: If this element already has a marker, update it instead of making a new one
-		var markerElement = document.createElement( 'div' );
-		markerElement.setAttribute( 'class', 'marker' );
-		var countElement = document.createElement( 'span' );
-		countElement.setAttribute( 'class', 'annotation-user-count' );
-		markerElement.appendChild( countElement );
-		markers.appendChild( markerElement );
-
-		var blockOffset = getElementYOffset( block, this.element );
-		var markersOffset = getElementYOffset( markers, this.element );
-		var offset = blockOffset - markersOffset;
-		var nextBlock;
-		// Walk forward to the next breaking element
-		var walker = new DOMWalker( block );
-		while ( walker.walk( true ) && ELEMENT_NODE == walker.node.nodeType && ! isBreakingElement( walker.node.tagName ) )
-			;
-		// Walk back to the previous node
-		if ( walker.node )
+		var markerElement = block.markerElement;
+		
+		// Create the marker
+		if ( ! markerElement )
 		{
-			walker.walk( true, true );
-			nextBlock = walker.node;
+			var markerElement = document.createElement( 'div' );
+			markerElement.setAttribute( 'class', 'marker' );
+			var countElement = document.createElement( 'span' );
+			countElement.setAttribute( 'class', 'annotation-user-count' );
+			markerElement.appendChild( countElement );
+			markers.appendChild( markerElement );
+	
+			var blockOffset = getElementYOffset( block, this.element );
+			var markersOffset = getElementYOffset( markers, this.element );
+			var offset = blockOffset - markersOffset;
+			markerElement.style.top = String( offset ) + 'px';
+
+			var height;
+			var nextBlock;
+			// Walk forward to the next breaking element
+			var walker = new DOMWalker( block );
+			while ( walker.walk( true, false ) )
+			{
+				if ( ELEMENT_NODE == walker.node.nodeType && ! walker.endTag && isBreakingElement( walker.node.tagName ) )
+					break;
+			}
+			
+			// Was one found?  If so, don't extend this far down.
+			if ( walker.node && ELEMENT_NODE == walker.node.nodeType && isBreakingElement( walker.node.tagName ) )
+			{
+				var nextTop = getElementYOffset( walker.node, this.contentElement );
+				var thisTop = getElementYOffset( block, this.contentElement );
+				height = nextTop - thisTop;
+				trace( null, '  Height=' + height + ' (' + thisTop + '), next=' + walker.node + '(' + nextTop + ")" );
+			}
+			else
+			{
+				height = block.offsetHeight;
+			}
+/*			
+			// Walk back to the previous node
+			if ( walker.node )
+			{
+				walker.walk( true, true );
+				nextBlock = walker.node;
+				height =
+					getElementYOffset( nextBlock, this.contentElement )
+					- getElementYOffset( block, this.contentElement )
+					+ nextBlock.offsetBottom
+					- nextBlock.offsetTop;
+//					+ nextBlock.offsetHeight
+			trace( null, 'height=' + height + ', nextBlock=' + nextBlock + ', nextBlock.bottom=' + nextBlock.offsetBottom
+				+ ', nextBlock.yoffset=' + getElementYOffset( nextBlock, this.contentElement ) );
+			}
+			else
+			{
+				// TODO: this may not be correct in some rare cases
+				// should calculate height of following text blocks
+				height = block.offsetHeight( );
+			}
+*/			markerElement.style.height = String( height ) + 'px';
+			block.markerElement = markerElement;
+			block.blockMarkerUsers = [ ];
+			var marginalia = window.marginalia;
+			var url = info.url;
+			countElement.onclick = function() { marginalia.showBlockAnnotations( url, point.toString() ); };
 		}
+		// The marker already exists - prepare to update it
 		else
 		{
-			// TODO: handle the case where this is at the end of the document
+			var countElement = getChildByTagClass( markerElement, 'span', null );
+			while ( countElement.firstChild )
+				countElement.removeChild( countElement.firstChild );
 		}
-		var height =
-			getElementYOffset( nextBlock, this.contentElement )
-			+ nextBlock.offsetHeight
-			- getElementYOffset( block, this.contentElement );
-		markerElement.style.top = offset + 'px';
-		markerElement.style.height = height + 'px';
-
-		countElement.setAttribute( 'title', info.users.join( ' ' ) );
-		var marginalia = window.marginalia;
-		var url = info.url;
-		countElement.onclick = function() { marginalia.showBlockAnnotations( url, point.toString() ); };
-		countElement.appendChild( document.createTextNode( String( info.users.length ) ) );
+		
+		for ( var i = 0;  i < info.users.length;  ++i )
+			block.blockMarkerUsers[ block.blockMarkerUsers.length ] = info.users[ i ];
+		countElement.setAttribute( 'title', block.blockMarkerUsers.join( ', ' ) );
+		countElement.appendChild( document.createTextNode( String( block.blockMarkerUsers.length ) ) );
 	}
 }
 

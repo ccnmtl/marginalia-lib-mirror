@@ -289,6 +289,10 @@ function SequencePathResolver( node, path )
 	this.path = [ ];
 	for ( var i = 1;  i < parts.length;  ++i )
 		this.path[ i - 1 ] = Number( parts[ i ] );
+	if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
+		this.depth = this.path.length;
+	else
+		this.depth = this.path.length - 1;
 	return this;	
 }
 
@@ -296,30 +300,49 @@ function SequencePathResolver( node, path )
  * Move to the next node in the document
  * Return the current path (which can be compared with a destination to see whether
  * the path has been resolved)
+ * Reverse walking doesn't work
  */
 SequencePathResolver.prototype.next = function( )
 {
-	while ( this.walker.walk( true, false ) )
+	while ( this.walker.walk( true, false ) && this.depth >= 0 )
 	{
-		switch ( this.walker.lastMove )
+		var node = this.walker.node;
+		
+		if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
 		{
-			case LAST_WALK_PARENT:	
-				this.path.pop( );
+			if ( this.walker.startTag )
+			{
+				if ( this.path.length < this.depth )
+				{
+					this.path.push( 1 );
+					this.path.splice( this.depth );
+				}
+				else
+					this.path[ this.depth ] += 1;
+				this.depth += 1;
 				return true;
-				
-			case LAST_WALK_CHILD:
-				this.path.push( 1 );
-				return true;
-				
-			case LAST_WALK_NEXT:
-				this.path[ this.path.length - 1 ] += 1;
-				return true;
-				
-			case LAST_WALK_PREV:
-				this.path[ this.path.length - 1 ] -= 1;
-				return true;
+			}
+			if ( this.walker.endTag )
+				this.depth -= 1;
 		}
-	}
+		
+/*		// Child is sent when first entering child nodes, which may or may not be elements
+		if ( LAST_WALK_CHILD == this.walker.lastMove && isBreakingElement( this.walker.node.parentNode.tagName ) )
+			this.depth += 1;
+		// Parent is sent when an end-of-element tag is encountered
+		else if ( LAST_WALK_PARENT == this.walker.lastMove && isBreakingElement( this.walker.node.tagName ) )
+			this.depth -= 1;
+		
+		// Child and Next can both produce an element
+		if ( ( LAST_WALK_NEXT == this.walker.lastMove || LAST_WALK_CHILD == this.walker.lastMove ) && ! this.walker.endTag )
+		{
+			if ( this.path.length > this.depth )
+				this.path.splice( this.path.depth );
+			else while ( this.path.length < this.depth )
+				this.path.push( 0 );
+			this.path[ this.path.length - 1 ] += 1;
+		}
+*/	}
 	return false;
 }
 
