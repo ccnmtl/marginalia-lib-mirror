@@ -535,7 +535,6 @@ STRIP_TAG = 1;		// remove the start and end tags, but leave the content in place
 STRIP_CONTENT = 2; 	// remove the start and end tags and the content
 function stripMarkup( node, test, doNormalize )
 {
-	var strippedThisNode = false;
 	var child = node.firstChild;
 	while ( null != child )
 	{
@@ -543,33 +542,79 @@ function stripMarkup( node, test, doNormalize )
 		// only interested in element nodes
 		if ( child.nodeType == ELEMENT_NODE )
 		{
-			stripMarkup( child, test, doNormalize );
 			var testR = test( child );
 			
-			if ( testR )
+			// If this and its content are to be stripped, to so immediately - don't bother with children
+			if ( STRIP_CONTENT == testR )
 			{
-				// make a list of child nodes so we're not modifying and walking at the same time
-				var grandchildren = new Array();
-				for ( var j = 0;  j < child.childNodes.length;  ++j )
-					grandchildren[ j ] = child.childNodes[ j ];
-				
-				for ( var j = 0;  j < grandchildren.length; ++j )
+				clearEventHandlers( child, true );
+				var prevNode = child.previousSibling;
+				child.parentNode.removeChild( child );
+				if ( doNormalize )
 				{
-					child.removeChild( grandchildren[ j ] );
-					if ( STRIP_CONTENT == testR )
-						clearEventHandlers( grandchildren[ j ], false );
-					else
-						node.insertBefore( grandchildren[ j ], child );
+					normalizeNodePair( prevNode );
+					nextChild = prevNode.nextSibling;
 				}
-				clearEventHandlers( child, false );
-				node.removeChild( child );
-				strippedThisNode = true;
+			}
+			// If this is to be unwrapped, first recurse on children
+			else if ( STRIP_TAG == testR )
+			{
+				stripMarkup( child, test, doNormalize );
+				unwrapElementChildren( child, doNormalize );
 			}
 		}
 		child = nextChild;
 	}
-	if ( doNormalize && strippedThisNode )
-		portableNormalize( node );
+}
+
+/**
+ * Remove an element, replacing it with its children
+ * Returns the next element following where the element and its children used to be
+ * (might not be what's expected if it was normalized away)
+ */
+function unwrapElementChildren( node, doNormalize )
+{
+	var next = node.nextSibling;
+	if ( node.firstChild )
+	{
+		var firstChild = node.firstChild;
+		var lastChild = node.lastChild;
+		for ( var child = firstChild, nextChild = child.nextSibling;  child;  child = nextChild )
+		{
+			node.removeChild( child );
+			clearEventHandlers( child, false );
+			node.parentNode.insertBefore( child, node );
+		}
+		node.parentNode.removeChild( node );
+		clearEventHandlers( node, false );
+		
+		// Normalize by merging first and last children with any adjacent identical text nodes
+		if ( doNormalize )
+		{
+			normalizeNodePair( lastChild );
+			next = lastChild.nextSibling;
+			normalizeNodePair( firstChild.previousSibling );
+		}
+	}
+	return next;
+}
+	
+/**
+ * Normalize a pair of adjacent text nodes - if that's what they are
+ * The passed node will not be removed, but the one that follows it might be.
+ * Returns the next node after the passed node.
+ */
+function normalizeNodePair( firstNode )
+{
+	if ( firstNode && TEXT_NODE == firstNode.nodeType )
+	{
+		var nextNode = firstNode.nextSibling;
+		if ( nextNode && TEXT_NODE == nextNode.nodeType )
+		{
+			firstNode.nodeValue += nextNode.nodeValue;
+			nextNode.parentNode.removeChild( nextNode );
+		}
+	}
 }
 
 /**
@@ -877,14 +922,6 @@ DOMWalker.prototype.destroy = function( )
 
 WALK_REVERSE = true; /* Pass this to DOMWalker.walk for clarity */
 
-/* These indicate what the last walk was (useful for keeping a path up-to-date while walking) */
-LAST_WALK_NEXT = 1;
-LAST_WALK_PREV = 2;
-LAST_WALK_PARENT = 3;
-LAST_WALK_CHILD = 4;
-LAST_WALK_STARTTAG = 5;
-LAST_WALK_ENDTAG = 6;
-
 /** Walk through nodes
  * reverse - if true, walk *backwards* instead of forwards
  * I don't know whether it's safe to alternate backward and forward movement with a single walker
@@ -899,49 +936,38 @@ DOMWalker.prototype.walk = function( gointo, reverse )
 			this.node = this.node.nextSibling;
 			this.endTag = false;
 			this.startTag = true;
-			this.lastMove = LAST_WALK_NEXT;
 		}
 		else if ( reverse && this.node.previousSibling )
 		{
 			this.node = this.node.previousSibling;
 			this.startTag = false;
 			this.endTag = true;
-			this.lastMove = LAST_WALK_PREV;
 		}
 		else
 		{
 			this.node = this.node.parentNode;
 			this.endTag = ! reverse;
 			this.startTag = reverse;
-			this.lastMove = LAST_WALK_PARENT;
 		}
 	}
 	else if ( reverse ) // ( reverse && ELEMENT_NODE == this.node.nodeType && gointo )
 	{
 		if ( this.node.lastChild )
-		{
 			this.node = this.node.lastChild;
-			this.lastMove = LAST_WALK_CHILD;
-		}
 		else
 		{
 			this.startTag = true;
 			this.endTag = false;
-			this.lastMove = LAST_WALK_STARTTAG;
 		}
 	}
 	else // ( ! reverse && ELEMENT_NODE == this.node.nodeType && gointo )
 	{
 		if ( this.node.firstChild )
-		{
 			this.node = this.node.firstChild;
-			this.lastMove = LAST_WALK_CHILD;
-		}
 		else
 		{
 			this.endTag = true;
 			this.startTag = false;
-			this.lastMove = LAST_WALK_ENDTAG;
 		}
 	}
 	return null == this.node ? false : true;
