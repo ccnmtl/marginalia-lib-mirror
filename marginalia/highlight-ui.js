@@ -1,0 +1,285 @@
+/*
+ * highlight-ui.js
+ *
+ * Marginalia has been developed with funding and support from
+ * BC Campus, Simon Fraser University, and the Government of
+ * Canada, and units and individuals within those organizations.
+ * Many thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ * $Id$
+ */
+
+AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
+
+ /**
+ * Display a single highlighted range
+ * Inserts em tags of class annotation were appropriate
+ */
+PostMicro.prototype.showHighlight = function( marginalia, annotation )
+{
+	var startTime = new Date( );
+	
+	// TODO: How to handle zero-length ranges?  (Currently Marginalia hangs.)
+	// I think the answer is to fix all these conversion functions etc. so that they
+	// work consistently and correctly when dealing with zero-length ranges.
+	// A zero-length range should be represented by an <em> element in the text with
+	// no content;  for insert edit actions this code would then do the right thing.
+	
+	trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.toString( ) );
+		
+	// Word range needed for conversion to text range and for later calculations
+	var wordRange = new WordRange( );
+	if ( annotation.getRange( XPATH_RANGE ) )
+	{
+		var r = wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, _skipContent );
+		if ( false == r )
+		{
+			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
+			return false;
+		}
+	}
+	else
+	{
+		if ( ! wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, _skipContent ) )
+		{
+			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
+			return false;
+		}
+		// TODO: Store XPathRange back to annotation on server
+	}
+	trace( 'show-highlight', 'WordRange constructed' );
+	
+	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
+	// TODO: check whether the range even falls within the content element
+	var walker = new WordPointWalker( wordRange.start.rel, _skipContent );
+	walker.walkToPoint( wordRange.start );
+	var initialOffset = walker.currChars;
+	var initialRel = walker.currNode;
+	
+	trace( 'show-highlight', 'Walked to start' );
+
+	var highlightRanges = new Array();
+	walker.setPoint( wordRange.end );
+	var rangeNum = 0;
+	var done = false;
+	var actual = '';	// actual quote text
+	while ( ! done )
+	{
+		done = walker.walk( );
+		if ( 0 == rangeNum )
+		{
+			highlightRanges[ rangeNum ] = new TextRange( 
+				walker.currNode, initialOffset,
+				walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( initialOffset, walker.currChars );
+		}
+		else
+		{
+			highlightRanges[ rangeNum ] = new TextRange(
+				walker.currNode, 0,
+				walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( 0, walker.currChars );
+		}
+		trace( 'show-highlight', 'HRange: ' + highlightRanges[ rangeNum ].startOffset + ' ' 
+			+ highlightRanges[ rangeNum ].endOffset + " [" + walker.currNode + "]\n" ); //+ getNodeText( walker.currNode ) );
+		rangeNum += 1;
+	}
+	walker.destroy();
+	trace( 'show-highlight', 'Walked to end' );
+	
+	// Confirm whether the actual text matches what's expected in the annotation quote
+	var quote = annotation.getQuote() ? annotation.getQuote() : '';
+	actual = actual.replace( /\s+|\u00a0\s*/g, ' ' );
+	quote = quote.replace( /\s+|\u00a0\s*/g, ' ' );
+	if ( actual != quote )
+	{
+		// Older versions (before 2007-06-05) have some context calculation code which could be
+		// modified and used here.
+		var rangeStr = annotation.getRange( SEQUENCE_RANGE ) ? annotation.getRange( SEQUENCE_RANGE ).toString() : '';
+		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
+		return false;
+	}
+	else
+		trace( 'find-quote', 'Quote found: ' + actual );
+	trace( 'show-highlight', 'Found quote' );
+	
+//setTrace( 'WordPointWalker', false );		// Show return values from WordPointWalker
+	
+	// Now iterate over the ranges and highlight each one
+	var lastHighlight = null;  // stores the last highlighted area
+	for ( var i = 0;  i < highlightRanges.length;  ++i )
+	{
+		var range = highlightRanges[ i ];
+		var node = range.startContainer;
+		
+		//trace( 'show-highlight', 'Range ' + String(i) + ': ' + range.startContainer.nodeValue.substr(0,40) );
+
+		// Is <em> valid in this position in the document?  (It might well not be if
+		// this is a script or style element, or if this is whitespace text in
+		// certain other nodes (ul, ol, table, tr, etc.))
+		if ( isValidHtmlContent( node.parentNode.tagName, 'em' ) )
+		{
+			var newNode;
+			var text = node.nodeValue + "";
+			// break the portion of the node before the annotation off and insert it
+			if ( range.startOffset > 0 )
+			{
+				newNode = document.createTextNode( text.substring( 0, range.startOffset ) );
+				node.parentNode.insertBefore( newNode, node );
+			}
+			// replace node content with annotation
+			newNode = document.createElement( 'em' );
+			
+			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.getId();
+			if ( ANNOTATION_ACTIONS && annotation.getAction() )
+				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.getAction();
+			newNode.onmouseover = _hoverAnnotation;
+			newNode.onmouseout = _unhoverAnnotation;
+			newNode.annotation = annotation;
+			node.parentNode.replaceChild( newNode, node );
+			
+			if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getQuote() )
+			{
+				var delNode = document.createElement( 'del' );
+				delNode.appendChild( node );
+				newNode.appendChild( delNode );
+			}
+			else
+				newNode.appendChild( node );
+			
+			node.nodeValue = text.substring( range.startOffset, range.endOffset );
+			lastHighlight = newNode;
+			node = newNode;	// necessary for the next bit to work right
+
+			// break the portion of the node after the annotation off and insert it
+			if ( range.endOffset < text.length )
+			{
+				newNode = document.createTextNode( text.substring( range.endOffset ) );
+				if ( node.nextSibling )
+					node.parentNode.insertBefore( newNode, node.nextSibling );
+				else
+					node.parentNode.appendChild( newNode );
+			}
+		}
+	}
+	
+	if ( lastHighlight )
+	{
+		addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
+		// If this was a substitution or insertion action, insert the text
+		if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getNote() )
+			this.showActionInsert( marginalia, annotation );
+		// If there's a link from this annotation, add the link icon
+		if ( ANNOTATION_LINKING && annotation.getLink() )
+			this.showLink( marginalia, annotation );
+	}
+	var endTime = new Date( );
+	trace( 'highlight-timing', 'ShowAnnotation took ' + ( endTime - startTime ) + 'ms for ' + annotation.toString( ) );
+	return true;
+}
+
+/**
+ * Display insertion text for insert or substitute actions
+ */
+PostMicro.prototype.showActionInsert = function( marginalia, annotation )
+{
+	trace( 'actions', 'showActionInsert for ' + annotation.getQuote() );
+	var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
+	for ( var i = 0;  i < highlights.length;  ++i )
+	{
+		if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
+		{
+			// TODO: should check whether <ins> is valid in this position
+			var lastHighlight = highlights[ i ];
+			var insNode = document.createElement( 'ins' );
+			insNode.appendChild( document.createTextNode( annotation.getNote() ) );
+			lastHighlight.appendChild( insNode );
+			trace( 'actions', 'Insert text is ' + annotation.getNote() );
+/*			// Insert *after* the annotation highlight
+			if ( lastHighlight.nextSibling )
+				lastHighlight.parentNode.insertBefore( insNode, lastHighlight.nextSibling );
+			else
+				lastHighlight.parentNode.appendChild( insNode );
+*/			addClass ( insNode, AN_ID_PREFIX + annotation.getId() );
+		}
+	}
+}
+
+
+/**
+ * Test function for removing highlights, edits, and annotation links
+ */
+PostMicro.prototype.highlightStripTest = function( tnode, emclass )
+{
+	if ( matchTagClass( tnode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode, emclass ) ) )
+		return STRIP_TAG;
+	else if ( tnode.parentNode && hasClass( tnode.parentNode, AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode.parentNode, emclass ) ) )
+	{
+		if ( matchTagClass( tnode, 'ins', null ) || matchTagClass( tnode, 'a', null ) )
+			return STRIP_CONTENT;
+		else if ( matchTagClass( tnode, 'del', null ) )
+			return STRIP_TAG;
+	}
+	return STRIP_NONE;
+}
+
+/**
+ * Recursively remove highlight markup for an annotation
+ */
+PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
+{
+	var post = this;
+	var contentElement = this.contentElement;
+	var emClass = annotation ? AN_ID_PREFIX + annotation.getId() : AN_HIGHLIGHT_CLASS;
+	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, emClass );  };
+
+	var highlights = getChildrenByTagClass( contentElement, 'em', emClass, null, null );
+	for ( var i = 0;  i < highlights.length;  ++i )
+	{
+		highlights[ i ].annotation = null;
+		if ( highlights[ i ].parentNode) // might already have been stripped
+		{
+			stripMarkup( highlights[ i ], stripTest, true );
+			unwrapElementChildren( highlights[ i ], true );
+		}
+	}
+	
+	// This normalization was (erroneously) commented out - I think because it's so slow.
+	// The best solution would be to a) modify stripMarkup to join adjacent text elements
+	// as it goes, or b) write a walker to join relevant text elements.
+	// Frankly, it seems fast enough to me.  Perhaps I removed it while making necessary
+	// removals elsewhere, or perhaps my short document isn't a sufficient speed test.
+	// 
+	// No longer necessary - stripMarkup does normalization itself
+	//portableNormalize( contentElement );
+}
+
+
+/** 
+ * Recursively remove all highlights
+ */
+PostMicro.prototype.removeAllHighlights = function( marginalia )
+{
+	var contentElement = this.contentElement;
+	for ( var i = 0;  i < highlights.length;  ++i )
+		highlights[ i ].annotation = null;
+	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, null );  };
+	stripMarkup( contentElement, stripTest, true );	
+}
