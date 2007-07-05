@@ -208,7 +208,7 @@ SequencePoint.prototype.getReferenceElement = function( root, fskip )
 			var count = Number( nodes[ i ] );
 			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
 			{
-				if ( fskip && ! fskip( node ) )
+				if ( ! fskip || ! fskip( node ) )
 				{
 					if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
 					{

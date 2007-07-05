@@ -56,7 +56,7 @@ RangeConversion_Test.prototype.runTest = function( frame )
 	var wordRange2 = new WordRange( );
 	wordRange2.fromTextRange( this.textRange, this.rel, null );
 	r = wordRange.equals( wordRange2 );
-	farme.passfail( this, 'WordRange to TextRange to WordRange', r );
+	frame.passfail( this, 'WordRange to TextRange to WordRange', r );
 }
 
 TextRange.prototype.fromString = function( str )
