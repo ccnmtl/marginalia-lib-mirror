@@ -352,13 +352,23 @@ Marginalia.prototype.showPerBlockUserCounts = function( url )
 
 function _showPerBlockUserCountsCallback( xmldoc )
 {
-	trace( 'markers', 'Show Markers' );
 	var rangeInfos = parseRangeInfoXml( xmldoc );
+	var marginalia = window.marginalia;
 	for ( var i = 0;  i < rangeInfos.length;  ++i )
 	{
 		var info = rangeInfos[ i ];
-		var post = window.marginalia.listPosts( ).getPostByUrl( info.url );
-		post.showPerBlockUserCount( marginalia, info );
+		
+		// Only include markers for non-edit annotations by users other than the displayed one
+		for ( var j = 0;  j < info.users.length;  ++j )
+		{
+			var user = info.users[ j ];
+			if ( user.noteCount > 0 ) // && user.userid != marginalia.anuser )
+			{
+				var post = marginalia.listPosts( ).getPostByUrl( info.url );
+				post.showPerBlockUserCount( marginalia, info );
+				break;
+			}
+		}
 	}
 }
 
@@ -368,45 +378,25 @@ function _showPerBlockUserCountsCallback( xmldoc )
  */
 PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 {
-	// Produce a user count list excluding the current user
-	var userListStr = '';
-	if ( true )	// for debugging
-		userListStr = info.users.join( ', ' )
-	else
+	var node = info.resolveStart( this.contentElement );
+	if ( node )
 	{
-		for ( var i = 0;  i < info.users.length;  ++i )
+		var resolver = new SequencePathResolver( node, info.sequenceRange.start.path );
+		do
 		{
-			var user = info.users[ i ];
-			if ( user != marginalia.anusername )
-				userListStr = userListStr == '' ? user : userListStr + ', ' + user;
+			// TODO: Inefficient to create so many SequencePath objects
+			var point = new SequencePoint( resolver.getPath() );
+			if ( point.compare( info.sequenceRange.end ) > 0 )
+				break;
+			if ( ELEMENT_NODE == node.nodeType )
+				this.showBlockMarker( marginalia, info, resolver.getNode(), point );
 		}
-	}
-	
-	if ( '' != userListStr )
-	{
-		trace( 'markers', 'Show markers for block ' + info.sequenceRange.toString() );
-		
-		var node = info.resolveStart( this.contentElement );
-		if ( node )
-		{
-			var resolver = new SequencePathResolver( node, info.sequenceRange.start.path );
-			do
-			{
-				// TODO: Inefficient to create so many SequencePath objects
-				var point = new SequencePoint( resolver.getPath() );
-				if ( point.compare( info.sequenceRange.end ) > 0 )
-					break;
-				if ( ELEMENT_NODE == node.nodeType )
-					this.showBlockMarker( marginalia, info, resolver.getNode(), point );
-			}
-			while ( resolver.next( ) );
-		}
+		while ( resolver.next( ) );
 	}
 }
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	trace( null, '  Show marker at ' + point.toString( ) );
 	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
 	if ( markers )
 	{
@@ -443,7 +433,6 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 				var nextTop = getElementYOffset( walker.node, this.contentElement );
 				var thisTop = getElementYOffset( block, this.contentElement );
 				height = nextTop - thisTop;
-				trace( null, '  Height=' + height + ' (' + thisTop + '), next=' + walker.node + '(' + nextTop + ")" );
 			}
 			else
 			{
@@ -475,7 +464,10 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 			block.blockMarkerUsers = [ ];
 			var marginalia = window.marginalia;
 			var url = info.url;
-			countElement.onclick = function() { marginalia.showBlockAnnotations( url, point.toString() ); };
+			countElement.onclick = function() {
+				marginalia.showBlockAnnotations( url, point.toString() );
+				addClass( block.markerElement, 'fetched' );
+			};
 		}
 		// The marker already exists - prepare to update it
 		else
@@ -486,8 +478,21 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		}
 		
 		for ( var i = 0;  i < info.users.length;  ++i )
-			block.blockMarkerUsers[ block.blockMarkerUsers.length ] = info.users[ i ];
-		countElement.setAttribute( 'title', block.blockMarkerUsers.join( ', ' ) );
+		{
+			var user = info.users[ i ];
+			// Don't include the currently-displayed user
+			if ( user.noteCount > 0 ) // && user != marginalia.anusername )
+				block.blockMarkerUsers[ block.blockMarkerUsers.length ] = user;
+		}
+		
+		var userStr = '';
+		for ( var i = 0;  i < block.blockMarkerUsers.length;  ++i )
+		{
+			var user = block.blockMarkerUsers[ i ];
+			userStr += userStr ? ', ' + user.userid : user.userid;
+		}
+			
+		countElement.setAttribute( 'title', userStr );
 		countElement.appendChild( document.createTextNode( String( block.blockMarkerUsers.length ) ) );
 	}
 }
@@ -751,6 +756,14 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"' );
 		else if ( keyword )
 			noteText.setAttribute( 'title', keyword.description );
+		if ( ! canEdit )
+		{
+			addClass( noteElement, 'other-user' );
+			usernameElement = document.createElement( 'span' );
+			addClass( usernameElement, 'username' );
+			usernameElement.appendChild( document.createTextNode( annotation.getUserId( ) + ': ' ) );
+			noteText.appendChild( usernameElement );
+		}
 		noteText.appendChild( document.createTextNode( annotation.getNote() ) );
 		noteElement.appendChild( noteText );
 		

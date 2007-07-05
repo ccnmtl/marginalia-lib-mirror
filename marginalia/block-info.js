@@ -49,8 +49,25 @@ RangeInfo.prototype.fromXml = function( blockElement )
 					this.sequenceRange = new SequenceRange( getNodeText( node ) );
 			}
 			else if ( 'user' == node.tagName )
-				this.users[ this.users.length ] = getNodeText( node );
+			{
+				this.users[ this.users.length ] = new UserInfo( );
+				this.users[ this.users.length - 1 ].fromXml( node );
+			}
 		}
 	}
 }
 
+function UserInfo( userid, noteCount, editCount )
+{
+	this.userid = userid;
+	this.noteCount = noteCount;
+	this.editCount = editCount;
+	return this;
+}
+
+UserInfo.prototype.fromXml = function( userElement )
+{
+	this.userid = getNodeText( userElement );
+	this.noteCount = Number( userElement.getAttribute( 'notes', 0 ) );
+	this.editCount = Number( userElement.getAttribute( 'edits', 0 ) );
+}
