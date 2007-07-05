@@ -30,5 +30,7 @@
 		>You must select some text to annotate.</message>
 	<message key="quote not found"
 		>The highlighted passage could not be found</message>
+	<message key="create overlapping edits"
+		>You may not create overlapping edits.</message>
 </locale>
 

@@ -2119,7 +2119,7 @@ function createAnnotation( postId, warn, action )
 	if ( null == textRange )
 	{
 		if ( warn )
-			alert( '1' + getLocalized( 'select text to annotate' ) );
+			alert( getLocalized( 'select text to annotate' ) );
 		return false;
 	}
 	
@@ -2129,6 +2129,27 @@ function createAnnotation( postId, warn, action )
 	// see an alert pop up, and the natural human instinct would be to try again).
 	if ( null != document.getElementById( AN_ID_PREFIX + '0' ) )
 		return;
+	
+	// Check whether this is an edit overlapping another annotation
+	if ( 'edit' == action )
+	{
+		trace( null, 'Walk test edit' );
+		
+		// First test whether 
+		var walker = new DOMWalker( textRange.startContainer );
+		while ( walker.walk( true, false ) && walker.node != textRange.endContainer )
+		{
+			// Find start and end tags for ins and del elements, check whether they're in highlight regions
+			// - in which case we're in an edit range
+			if ( ELEMENT_NODE == walker.node.nodeType && 
+				( 'ins' == walker.node.tagName.toLowerCase( ) || 'del' == walker.node.tagName.toLowerCase( ) )
+				&& getParentByTagClass( walker.node, null, AN_HIGHLIGHT_CLASS ) )
+			{
+				alert( getLocalized( 'create overlapping edits' ) );
+				return false;
+			}
+		}
+	}
 	
 	if ( null == postId )
 	{
