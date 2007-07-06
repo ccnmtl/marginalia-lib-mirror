@@ -68,12 +68,6 @@ function createHighlightRange( sequence )
 	wordRange.fromSequenceRange( sequenceRange, post.contentElement, null );
 	return wordRange;
 }
-function testSimpleHighlightRange( )
-{
-	var wordRange = createHighlightRange( '/1/2.0;/1/2.7' );
-	var parts = wordRange.partition( );
-	assertTrue( parts.quote == 'brillig' );
-}
 /*
 function testHighlightSimple( )
 {
@@ -83,7 +77,7 @@ function testHighlightSimple( )
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );
 }
-*/
+
 function testHighlightSimple( )
 {
 //	var annotation = createSimpleAnnotation( 2, '/1/2.0;/1/2.7', 'brillig' );
@@ -91,14 +85,14 @@ function testHighlightSimple( )
 	assertTrue( 'annotation2', post.showHighlight( marginalia, annotation2 ) );
 	inform( 'Paragraph with annotation2', htmlencode( document.getElementById( 'p1' ).innerHTML ) );
 //	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
-}
+}*/
 function testHighlightOverlap( )
 {
 	var annotation = createSimpleAnnotation( 2, '/2/2.0;/2/2.7', 'brillig' );
 	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
 	inform( 'Paragraph with annotation', htmlencode( document.getElementById( 'p2' ).innerHTML ) );
 }
-
+/*
 function testHighlightSpanBlock( )
 {
 	var quote = 'hand: Lo';
@@ -106,7 +100,7 @@ function testHighlightSpanBlock( )
 	assertFalse( post.showHighlight( marginalia, annotation ) );
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );
-}
+}*/
 </script>
 </head>
 

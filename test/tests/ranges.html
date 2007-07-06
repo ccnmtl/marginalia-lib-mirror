@@ -13,12 +13,18 @@
 	<script type="text/javascript" src="../../marginalia/range-format.js"></script>
     <script language="javaScript" type="text/javascript">
 
+	function myload()
+	{
+		window.log = new ErrorLogger( true, true );
+		window.log.setTrace( 'WordRange', true );			// Check if quote matches current state of document
+	}
 	
 	function testRangeConversion( )
 	{
 		var rel = document.getElementById( 'word-data' );
 	
 		var conversionData = [
+			{ t: 'p5.1.5;em4.1.4',		s: '/5/2.0;/5/2.7',			q: 'brillig',		c: 'span annotation'			},
 			{ t: 'p1.1.0;p1.1.1',		s: '/1/1.0;/1/1.1',			q: 'o',				c: 'first character'			},
 			{ t: 'p1.1.0;p1.1.3',		s: '/1/1.0;/1/1.3',			q: 'one',			c: 'word alone in block'		},
 			{ t: 'p2.1.0;p2.1.5',		s: '/2/1.0;/2/1.3',			q: 'two',			c: 'following space'			},
@@ -86,14 +92,17 @@
     </script>
 </head>
 
-<body onload="testRangeConversion()">
+<body onload='myload()'>
 <h1>Marginalia Range Format Conversion Tests</h1>
+
+<button onclick="testRangeConversion()">Run Test</button>
 
 <div id="word-data">
 <p id="p1">one</p>
 <p id="p2"> two three  </p>
 <p id="p3"> four <em id="em1">five</em> six </p>
 <p id="p4"> <em id="em2">seven</em><em id="em3">seven</em> </p>
+<p id="p5">Twas bri<em id="em4" class="annotation annot3 last">llig,</em> and the slithy toves</p>
 </div>
 
 </body>

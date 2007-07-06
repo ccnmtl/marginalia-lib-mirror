@@ -780,7 +780,7 @@ WordPointWalker.prototype.walk = function()
 						// inword remains true even crossing whitespace boundaries now
 						
 						// See if we can get all the characters we need
-						if ( s.length >= this.targetPoint.chars - this.targetWordChars )
+						if ( s.length - this.currChars >= this.targetPoint.chars - this.targetWordChars )
 						{
 							this.currChars += this.targetPoint.chars - this.targetWordChars;
 							this.targetWordChars = this.targetPoint.chars;
@@ -790,8 +790,8 @@ WordPointWalker.prototype.walk = function()
 						// If not, get what we can and return
 						else
 						{
-							this.currChars += s.length;
-							this.targetWordChars += s.length;
+							this.targetWordChars += s.length - this.currChars;
+							this.currChars = s.length;
 							this.atNodeEnd = true;
 							trace( 'WordPointWalker', ' WordWalker node end(3) at ' + this.targetWords + '/' + this.currChars );
 							return false;
