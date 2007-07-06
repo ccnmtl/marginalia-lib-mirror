@@ -426,6 +426,11 @@ PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
 {
 	var next = this.removeNote( marginalia, annotation );
 	this.removeHighlight( marginalia, annotation );
+
+	// Reposition markers if necessary
+	if ( 'edit' == annotation.action )
+		this.repositionBlockMarkers( marginalia );
+	
 	return null == next ? null : next.annotation;
 }
 

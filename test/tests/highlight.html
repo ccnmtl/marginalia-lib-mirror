@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Marginalia Unit Tests</title>
+<link rel="stylesheet" type="text/css" href="../css/jsUnitStyle.css">
+<script language="JavaScript" type="text/javascript" src="../app/jsUnitCore.js"></script>
+<script type="text/javascript" src="../../marginalia/3rd-party.js"></script>
+<script type="text/javascript" src="../../marginalia/log.js"></script>
+
+<script type="text/javascript" src="../../marginalia/html-model.js"></script>
+<script type="text/javascript" src="../../marginalia/domutil.js"></script>
+<script type="text/javascript" src="../../marginalia/ranges.js"></script>
+<script type="text/javascript" src="../../marginalia/range-format.js"></script>
+<script type="text/javascript" src="../../marginalia/post-micro.js"></script>
+
+
+<script type="text/javascript" src="../../marginalia/marginalia.js"></script>
+
+<script type="text/javascript" src="../../marginalia/highlight-ui.js"></script>
+<script type="text/javascript" src="../../marginalia/note-ui.js"></script>
+<script type="text/javascript" src="../../marginalia/link-ui.js"></script>
+
+<script type="text/javascript" src="../../marginalia/annotation.js"></script>
+
+<script language="javaScript" type="text/javascript">
+
+ANNOTATION_ACCESS_DEFAULT = 'private';
+ANNOTATION_ACTIONS = true;
+ANNOTATION_LINKING = true;
+
+function _skipContent( node )
+{ return _skipAnnotationLinks( node ) || _skipAnnotationActions( node ); }
+
+var marginalia;
+var post;
+var ann1;
+
+function load()
+{
+	marginalia = new Marginalia( null, 'geof', 'geof' );
+	var postElement = document.getElementById( 'test-entry' );
+	post = new PostMicro( postElement );
+	ann1 = new Annotation( );
+	ann1.id = 1;
+	ann1.sequenceRange = new SequenceRange( '/1/2.0;/1/2.7' );
+	ann1.quote = 'brillig';
+}
+
+function testNoteHighlights( )
+{
+	assertTrue( post.showHighlight( marginalia, ann1 ) );
+}
+
+</script>
+</head>
+
+<body onload="load()">
+<h1>Marginalia DOM Walker Tests</h1>
+
+<div id="test-entry" class="hEntry">
+<a rel="bookmark" href="#">This Entry</a>
+<div class="entry-content">
+<p>`Twas brillig, and the slithy toves
+  Did gyre and gimble in the wabe:
+All mimsy were the borogoves,
+  And the mome raths outgrabe.</p>
+
+
+<p>"Beware the Jabberwock, my son!
+  The jaws that bite, the claws that catch!
+Beware the Jubjub bird, and shun
+  The frumious Bandersnatch!"</p>
+
+<ul>
+<li>He took his vorpal sword in hand:</li>
+<li>  Long time the manxome foe he sought --</li>
+<li>So rested he by the Tumtum tree,</li>
+<li>  And stood awhile in thought.</li>
+</ul>
+
+<blockquote>
+<p>And, as in uffish thought he stood,
+  The Jabberwock, with eyes of flame,</p>
+Came whiffling through the tulgey wood,
+  And burbled as it came!
+</blockquote>
+
+<p>One, two! One, two! And through and through
+  The vorpal blade went snicker-snack!
+He left it dead, and with its head
+  He went galumphing back.
+</p>
+
+<p>"And, has thou slain the Jabberwock?
+  Come to my arms, my beamish boy!
+O frabjous day! Callooh! Callay!'
+  He chortled in his joy.</p>
+
+
+<p>`Twas brillig, and the slithy toves
+  Did gyre and gimble in the wabe;
+All mimsy were the borogoves,
+  And the mome raths outgrabe.</p>
+</div>
+</div>
+
+</body>
+</html>

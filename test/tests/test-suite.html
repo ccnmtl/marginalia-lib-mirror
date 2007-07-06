@@ -19,11 +19,18 @@
             result.addTestPage("tests/range-convert.html");
             return result;
         }
+		
+		function uiSuite() {
+			var result = new top.jsUnitTestSuite();
+			result.addTestPage("tests/highlight.html");
+			return result;
+		}
 
         function suite() {
             var newsuite = new top.jsUnitTestSuite();
             newsuite.addTestSuite(domutilSuite());
             newsuite.addTestSuite(rangeSuite());
+			newsuite.addTestSuite(uiSuite());
             return newsuite;
         }
     </script>

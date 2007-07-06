@@ -770,6 +770,8 @@ function briefPause( ms )
 		curDate = new Date( );
 }
 
+/*
+ * TODO: Change the name so JSUnit doesn't get confused and think it's a unit test
 // Test whether a mouseout event really means the mouse left an element
 function testMouseLeave( e, element )
 {
@@ -789,6 +791,7 @@ function testMouseLeave( e, element )
 	dump( related == target ? "related == target\n" : "left\n\n" );
 	return related != target;
 }
+*/
 
 /*
  * Normalize an element and its children
