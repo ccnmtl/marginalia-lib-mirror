@@ -277,7 +277,53 @@ WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
 }
 
 
-/*
+/**
+ * Partition a WordRange into a series of shorter TextRanges
+ * Also returns the quote defined by the range
+ */
+WordRange.prototype.partition = function( fskip )
+{
+	var walker = new WordPointWalker( this.start.rel, fskip );
+	walker.walkToPoint( this.start );
+	var initialOffset = walker.currChars;
+	var initialRel = walker.currNode;
+	
+	var highlightRanges = new Array();
+	walker.setPoint( this.end );
+	var rangeNum = 0;
+	var done = false;
+	var actual = '';	// actual quote text
+	while ( ! done )
+	{
+		done = walker.walk( );
+		if ( 0 == rangeNum )
+		{
+			highlightRanges[ rangeNum ] = new TextRange( 
+					walker.currNode, initialOffset,
+					walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( initialOffset, walker.currChars );
+		}
+		else
+		{
+			highlightRanges[ rangeNum ] = new TextRange(
+				walker.currNode, 0,
+				walker.currNode, walker.currChars );
+			var t = walker.currNode.nodeValue;
+			actual += t.substring( 0, walker.currChars );
+		}
+		rangeNum += 1;
+	}
+	walker.destroy();
+	
+	return {
+		quote: actual,
+		ranges: highlightRanges
+		};
+}
+
+
+/**
  * Test whether two word ranges are the same
  * doesn't account for different ways of specifying the same location
  */
@@ -734,7 +780,7 @@ WordPointWalker.prototype.walk = function()
 						// inword remains true even crossing whitespace boundaries now
 						
 						// See if we can get all the characters we need
-						if ( s.length > this.targetPoint.chars - this.targetWordChars )
+						if ( s.length >= this.targetPoint.chars - this.targetWordChars )
 						{
 							this.currChars += this.targetPoint.chars - this.targetWordChars;
 							this.targetWordChars = this.targetPoint.chars;

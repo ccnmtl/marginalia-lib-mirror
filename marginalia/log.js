@@ -43,24 +43,28 @@ ErrorLogger.prototype.getLogElement =  function( )
 	if ( ! this.logElement )
 	{
 		this.logWindow = window.open( "marginalia/log.html", "Log" );
-		this.logDocument = this.logWindow.document;
-		this.logDocument.open( "text/html", "replace" );
-		this.logDocument.write( 
-//			"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n"
-			"<html>\n<head>\n"
-//			+ "\t<link rel='stylesheet' type='text/css' href='log.css'/>\n"
-			+ "\t<title>Marginalia Log</title>\n"
-			+ "</head>\n<body>\n<ul id='log'>\n</ul>\n</body>\n</html>" );
-		this.logDocument.close( );
-// For some reason, if I add the stylesheet the logging information doesn't show up.
-// Looks like a browser bug.
-//		var stylesheet = this.logDocument.createElement( 'link' );
-//		stylesheet.setAttribute( 'rel', 'stylesheet' );
-//		stylesheet.setAttribute( 'type', 'text/css' );
-//		stylesheet.setAttribute( 'href', 'log.css' );
-//		var headElement = getChildByTagClass( this.logDocument.documentElement, 'head', null );
-//		headElement.appendChild( stylesheet );
-		this.logElement = this.logDocument.getElementById( 'log' );
+		// May fail to open if the html file cannot be found
+		if ( this.logWindow )
+		{
+			this.logDocument = this.logWindow.document;
+			this.logDocument.open( "text/html", "replace" );
+			this.logDocument.write( 
+	//			"<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>\n"
+				"<html>\n<head>\n"
+	//			+ "\t<link rel='stylesheet' type='text/css' href='log.css'/>\n"
+				+ "\t<title>Marginalia Log</title>\n"
+				+ "</head>\n<body>\n<ul id='log'>\n</ul>\n</body>\n</html>" );
+			this.logDocument.close( );
+	// For some reason, if I add the stylesheet the logging information doesn't show up.
+	// Looks like a browser bug.
+	//		var stylesheet = this.logDocument.createElement( 'link' );
+	//		stylesheet.setAttribute( 'rel', 'stylesheet' );
+	//		stylesheet.setAttribute( 'type', 'text/css' );
+	//		stylesheet.setAttribute( 'href', 'log.css' );
+	//		var headElement = getChildByTagClass( this.logDocument.documentElement, 'head', null );
+	//		headElement.appendChild( stylesheet );
+			this.logElement = this.logDocument.getElementById( 'log' );
+		}
 	}
 	return this.logElement;
 }

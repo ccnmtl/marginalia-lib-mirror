@@ -16,7 +16,7 @@
 
         function rangeSuite() {
             var result = new top.jsUnitTestSuite();
-            result.addTestPage("tests/range-convert.html");
+            result.addTestPage("tests/ranges.html");
             return result;
         }
 		
@@ -28,9 +28,9 @@
 
         function suite() {
             var newsuite = new top.jsUnitTestSuite();
+			newsuite.addTestSuite(uiSuite());
             newsuite.addTestSuite(domutilSuite());
             newsuite.addTestSuite(rangeSuite());
-			newsuite.addTestSuite(uiSuite());
             return newsuite;
         }
     </script>

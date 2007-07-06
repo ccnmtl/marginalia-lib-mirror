@@ -24,10 +24,10 @@
 			{ t: 'p2.1.0;p2.1.5',		s: '/2/1.0;/2/1.3',			q: 'two',			c: 'following space'			},
 			{ t: 'p2.1.5;p2.1.10',		s: '/2/2.0;/2/2.5',			q: 'three',			c: 'spaces'						},
 			{ t: 'p3.1.0;p3.1.6',		s: '/3/1.0;/3/1.4',			q: 'four',			c: 'spaces at either end'		},
-			{ t: 'em1.1.0;em1.1.4',	s: '/3/2.0;/3/2.4',			q: 'fivq: e',		c: 'non-breaking element'		},
+			{ t: 'em1.1.0;em1.1.4',	s: '/3/2.0;/3/2.4',			q: 'five',			c: 'non-breaking element'		},
 			{ t: 'p3.1.6;em1.1.4',		s: '/3/2.0;/3/2.4',			q: 'five',			c: 'cross em start boundary'	},
 			{ t: 'em1.1.0;p3.3.0',		s: '/3/2.0;/3/2.4',			q: 'five',			c: 'cross em end boundary'		},
-			{ t: 'em2.1.0;em3.1.5',	s: '/4/1.0;/4/1.10',		q: 'seveq: nseven',	c: 'cross em end/start'		},
+			{ t: 'em2.1.0;em3.1.5',	s: '/4/1.0;/4/1.10',		q: 'sevenseven',	c: 'cross em end/start'		},
 			{ t: 'p1.1.0;p2.1.4',		s: '/1/1.0;/2/1.3',			q: 'one two',		c: 'span paragraphs'			}
 		];
 	
@@ -41,12 +41,14 @@
 			conv.sequenceRange = new SequenceRange( );
 			conv.sequenceRange.fromString( conv.s );
 			
+			// TestWord Range -> TextRange conversion
 			var wordRange = new WordRange( );			
 			wordRange.fromTextRange( conv.textRange, rel, null );
 			var sequenceRange = wordRange.toSequenceRange( rel ); 
 			assertTrue( 'Convert ' + conv.t + ' to ' + conv.s,
 				conv.sequenceRange.equals( sequenceRange ) );
 			
+			// Test TextRange -> WordRange conversion
 			wordRange.fromSequenceRange( conv.sequenceRange, rel, null );
 			textRange = new TextRange( );
 			textRange.fromWordRange( wordRange );
@@ -54,6 +56,12 @@
 			wordRange2.fromTextRange( conv.textRange, rel, null );
 			assertTrue( 'Convert ' + conv.s + ' to ' + conv.t,
 				wordRange.equals( wordRange2 ) );
+				
+			// Test range partition
+			var parts = wordRange.partition( );
+			var actual = parts.quote.replace( /\s+|\u00a0\s*/g, ' ' );
+			var quote = conv.q.replace( /\s+|\u00a0\s*/g, ' ' );
+			assertTrue( 'Range ' + conv.s + ' actual quote "' + actual + '" == expected "' + quote + '"', actual == quote );
 		}
 	}
 	
@@ -78,7 +86,7 @@
     </script>
 </head>
 
-<body>
+<body onload="testRangeConversion()">
 <h1>Marginalia Range Format Conversion Tests</h1>
 
 <div id="word-data">

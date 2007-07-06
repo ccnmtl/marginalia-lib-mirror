@@ -26,7 +26,24 @@
 
 AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
 
- /**
+PostMicro.prototype.wordRangeFromAnnotation = function( annotation )
+{
+	var wordRange = new WordRange( );
+	if ( annotation.getRange( XPATH_RANGE ) )
+	{
+		if ( wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, _skipContent ) )
+			return wordRange;
+	}
+	else
+	{
+		if ( wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, _skipContent ) )
+			return wordRange;
+		// TODO: Store XPathRange back to annotation on server
+	}
+	return null;
+}
+
+/**
  * Display a single highlighted range
  * Inserts em tags of class annotation were appropriate
  */
@@ -40,69 +57,22 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	// A zero-length range should be represented by an <em> element in the text with
 	// no content;  for insert edit actions this code would then do the right thing.
 	
-	trace( 'show-highlight', 'Show highlight for annotation at xpath ' + annotation.toString( ) );
-		
+	trace( 'show-highlight', 'Show highlight for annotation ' + annotation.toString( ) );
+	
 	// Word range needed for conversion to text range and for later calculations
-	var wordRange = new WordRange( );
-	if ( annotation.getRange( XPATH_RANGE ) )
+	var wordRange = this.wordRangeFromAnnotation( annotation );
+	if ( null == wordRange )
 	{
-		var r = wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, _skipContent );
-		if ( false == r )
-		{
-			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
-			return false;
-		}
-	}
-	else
-	{
-		if ( ! wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, _skipContent ) )
-		{
-			trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
-			return false;
-		}
-		// TODO: Store XPathRange back to annotation on server
+		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
+		return false;
 	}
 	trace( 'show-highlight', 'WordRange constructed' );
 	
 	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
 	// TODO: check whether the range even falls within the content element
-	var walker = new WordPointWalker( wordRange.start.rel, _skipContent );
-	walker.walkToPoint( wordRange.start );
-	var initialOffset = walker.currChars;
-	var initialRel = walker.currNode;
-	
-	trace( 'show-highlight', 'Walked to start' );
-
-	var highlightRanges = new Array();
-	walker.setPoint( wordRange.end );
-	var rangeNum = 0;
-	var done = false;
-	var actual = '';	// actual quote text
-	while ( ! done )
-	{
-		done = walker.walk( );
-		if ( 0 == rangeNum )
-		{
-			highlightRanges[ rangeNum ] = new TextRange( 
-				walker.currNode, initialOffset,
-				walker.currNode, walker.currChars );
-			var t = walker.currNode.nodeValue;
-			actual += t.substring( initialOffset, walker.currChars );
-		}
-		else
-		{
-			highlightRanges[ rangeNum ] = new TextRange(
-				walker.currNode, 0,
-				walker.currNode, walker.currChars );
-			var t = walker.currNode.nodeValue;
-			actual += t.substring( 0, walker.currChars );
-		}
-		trace( 'show-highlight', 'HRange: ' + highlightRanges[ rangeNum ].startOffset + ' ' 
-			+ highlightRanges[ rangeNum ].endOffset + " [" + walker.currNode + "]\n" ); //+ getNodeText( walker.currNode ) );
-		rangeNum += 1;
-	}
-	walker.destroy();
-	trace( 'show-highlight', 'Walked to end' );
+	var parts = wordRange.partition( _skipContent );
+	highlightRanges = parts.ranges;
+	actual = parts.quote;
 	
 	// Confirm whether the actual text matches what's expected in the annotation quote
 	var quote = annotation.getQuote() ? annotation.getQuote() : '';
@@ -113,7 +83,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		// Older versions (before 2007-06-05) have some context calculation code which could be
 		// modified and used here.
 		var rangeStr = annotation.getRange( SEQUENCE_RANGE ) ? annotation.getRange( SEQUENCE_RANGE ).toString() : '';
-		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') \"' + actual + '\" doesn\'t match "' + quote + '"' );
+		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') actual \"' + actual + '\" doesn\'t match quote "' + quote + '"' );
 		return false;
 	}
 	else

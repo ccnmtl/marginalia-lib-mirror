@@ -6,6 +6,7 @@
 <title>Marginalia Unit Tests</title>
 <link rel="stylesheet" type="text/css" href="../css/jsUnitStyle.css">
 <script language="JavaScript" type="text/javascript" src="../app/jsUnitCore.js"></script>
+<script type="text/javascript" src="marginalia-config.js"></script>
 <script type="text/javascript" src="../../marginalia/3rd-party.js"></script>
 <script type="text/javascript" src="../../marginalia/log.js"></script>
 
@@ -26,10 +27,6 @@
 
 <script language="javaScript" type="text/javascript">
 
-ANNOTATION_ACCESS_DEFAULT = 'private';
-ANNOTATION_ACTIONS = true;
-ANNOTATION_LINKING = true;
-
 function _skipContent( node )
 { return _skipAnnotationLinks( node ) || _skipAnnotationActions( node ); }
 
@@ -37,36 +34,97 @@ var marginalia;
 var post;
 var ann1;
 
+function htmlencode( s )
+{
+	s = s.replace( /\&/g, '&amp;' );
+	s = s.replace( /</g, '&lt;' );
+	return s;
+}
+	
 function load()
 {
+	initLogging();
+	log.setTrace( 'find-quote', true );			// Check if quote matches current state of document
+	log.setTrace( 'show-highlight', true );			// Check if quote matches current state of document
 	marginalia = new Marginalia( null, 'geof', 'geof' );
 	var postElement = document.getElementById( 'test-entry' );
 	post = new PostMicro( postElement );
-	ann1 = new Annotation( );
-	ann1.id = 1;
-	ann1.sequenceRange = new SequenceRange( '/1/2.0;/1/2.7' );
-	ann1.quote = 'brillig';
 }
 
-function testNoteHighlights( )
+function createSimpleAnnotation( id, sequence, quote )
 {
-	assertTrue( post.showHighlight( marginalia, ann1 ) );
+	var annotation = new Annotation( );
+	annotation.id = id;
+	annotation.sequenceRange = new SequenceRange( sequence );
+	annotation.quote = quote;
+	return annotation
 }
 
+function createHighlightRange( sequence )
+{
+	var sequenceRange = new SequenceRange( );
+	sequenceRange.fromString( sequence );
+	var wordRange = new WordRange( );
+	wordRange.fromSequenceRange( sequenceRange, post.contentElement, null );
+	return wordRange;
+}
+function testSimpleHighlightRange( )
+{
+	var wordRange = createHighlightRange( '/1/2.0;/1/2.7' );
+	var parts = wordRange.partition( );
+	assertTrue( parts.quote == 'brillig' );
+}
+/*
+function testHighlightSimple( )
+{
+	var quote = 'brillig';
+	var annotation = createSimpleAnnotation( 1, '/1/2.0;/1/2.7', quote + 'x' );
+	assertFalse( post.showHighlight( marginalia, annotation ) );
+	annotation.quote = quote;
+	assertTrue( post.showHighlight( marginalia, annotation ) );
+}
+*/
+function testHighlightSimple( )
+{
+//	var annotation = createSimpleAnnotation( 2, '/1/2.0;/1/2.7', 'brillig' );
+	var annotation2 = createSimpleAnnotation( 3, '/1/2.3;/1/2.8', 'llig,' );
+	assertTrue( 'annotation2', post.showHighlight( marginalia, annotation2 ) );
+	inform( 'Paragraph with annotation2', htmlencode( document.getElementById( 'p1' ).innerHTML ) );
+//	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
+}
+function testHighlightOverlap( )
+{
+	var annotation = createSimpleAnnotation( 2, '/2/2.0;/2/2.7', 'brillig' );
+	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
+	inform( 'Paragraph with annotation', htmlencode( document.getElementById( 'p2' ).innerHTML ) );
+}
+
+function testHighlightSpanBlock( )
+{
+	var quote = 'hand: Lo';
+	var annotation = createSimpleAnnotation( 4, '/3/1/7.0;/3/2/1.2', quote + '.' );
+	assertFalse( post.showHighlight( marginalia, annotation ) );
+	annotation.quote = quote;
+	assertTrue( post.showHighlight( marginalia, annotation ) );
+}
 </script>
 </head>
 
-<body onload="load()">
+<body onload="load()" id="jsUnitRestoredHTML">
 <h1>Marginalia DOM Walker Tests</h1>
 
 <div id="test-entry" class="hEntry">
 <a rel="bookmark" href="#">This Entry</a>
 <div class="entry-content">
-<p>`Twas brillig, and the slithy toves
+<p id='p1'>`Twas brillig, and the slithy toves
   Did gyre and gimble in the wabe:
 All mimsy were the borogoves,
   And the mome raths outgrabe.</p>
 
+<p id="p2">Twas bri<em class="annotation annot3 last">llig,</em> and the slithy toves
+  Did gyre and gimble in the wabe:
+All mimsy were the borogoves,
+  And the mome raths outgrabe.</p>
 
 <p>"Beware the Jabberwock, my son!
   The jaws that bite, the claws that catch!
