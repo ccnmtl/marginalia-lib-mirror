@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Marginalia Unit Tests</title>
+    <link rel="stylesheet" type="text/css" href="../css/jsUnitStyle.css">
+    <script language="JavaScript" type="text/javascript" src="../app/jsUnitCore.js"></script>
+	<script type="text/javascript" src="../../marginalia/log.js"></script>
+	<script type="text/javascript" src="../../marginalia/html-model.js"></script>
+	<script type="text/javascript" src="../../marginalia/domutil.js"></script>
+    <script language="javaScript" type="text/javascript">
+
+		function testForwardDomWalk( )
+		{
+			var root = document.getElementById( 'dom-walker-test' );
+			var walker = new DOMWalker( root );
+			assertWalkerStartTag( walker, 'div' );
+			assertWalkerWalk( walker, 'whitespace' );
+			assertWalkerWhitespace( walker );
+			assertWalkerWalk( walker, 'ul' );
+			assertWalkerStartTag( walker, 'ul' );
+			assertWalkerWalk( walker, 'li' );
+			assertWalkerStartTag( walker, 'li' );
+			assertWalkerWalk( walker, 'Hello' );
+			assertWalkerText( walker, 'Hello' );
+			assertWalkerWalk( walker, '/li' );
+			assertWalkerEndTag( walker, 'li' );
+			assertWalkerWalk( walker, 'li (2)' );
+			assertWalkerStartTag( walker, 'li' );
+			assertWalkerWalk( walker, 'to the' );
+			assertWalkerText( walker, 'to the ');
+			assertWalkerWalk( walker, 'a' );
+			assertWalkerStartTag( walker, 'a' );
+			assertWalkerWalk( walker, 'world' );
+			assertWalkerText( walker, 'world' );
+			assertWalkerWalk( walker, '/a' );
+			assertWalkerEndTag( walker, 'a' );
+			assertWalkerWalk( walker, '/li (2)' );
+			assertWalkerEndTag( walker, 'li' );
+			assertWalkerWalk( walker, 'space' );
+			assertWalkerWhitespace( walker );
+			assertWalkerWalk( walker, '/ul' );
+			assertWalkerEndTag( walker, 'ul' );
+			assertWalkerWalk( walker, 'done' );
+			assertWalkerText( walker, 'done' );
+			assertWalkerWalk( walker, '/div' );
+			assertWalkerEndTag( walker, 'div' );
+		}
+		
+		function assertWalkerWalk( walker, name )
+		{
+			assertTrue( 'walk to ' + name, walker.walk( true, false ) );
+		}
+		
+		function assertWalkerStartTag( walker, name )
+		{
+			assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
+			assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
+			assertTrue( '<' + name + '> is start tag', walker.startTag );
+		}
+		
+		function assertWalkerEndTag( walker, name )
+		{
+			assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
+			assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
+			assertTrue( '</' + name + '> is end tag', walker.endTag );
+		}
+		
+		function assertWalkerWhitespace( walker )
+		{
+			assertTrue( 'whitespace is text', TEXT_NODE == walker.node.nodeType );
+		}
+		
+		function assertWalkerText( walker, text )
+		{
+			assertTrue( 'text is text', TEXT_NODE == walker.node.nodeType );
+			assertTrue( 'text is ' + text, text == walker.node.nodeValue );
+		}
+		
+    </script>
+</head>
+
+<body>
+<h1>Marginalia DOM Walker Tests</h1>
+
+<div id="dom-walker-test">
+	<ul><li>Hello</li><li>to the <a href="fred">world</a></li>
+	</ul>done</div>
+
+</body>
+</html>
