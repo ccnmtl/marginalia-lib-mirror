@@ -10,7 +10,8 @@
 	<script type="text/javascript" src="../../marginalia/html-model.js"></script>
 	<script type="text/javascript" src="../../marginalia/domutil.js"></script>
 	<script type="text/javascript" src="../../marginalia/ranges.js"></script>
-	<script type="text/javascript" src="../../marginalia/range-format.js"></script>
+	<script type="text/javascript" src="../../marginalia/SequenceRange.js"></script>
+	<script type="text/javascript" src="../../marginalia/XPathRange.js"></script>
     <script language="javaScript" type="text/javascript">
 
 	function myload()
@@ -23,8 +24,7 @@
 	{
 		var root = document.getElementById( 'xpath-data' );
 
-		var sequenceRange = new SequenceRange( );
-		sequenceRange.fromString( sequenceStr );
+		var sequenceRange = new SequenceRange( sequenceStr );
 		assertTrue( 'test sequence range parse', sequenceRange.toString() == sequenceStr );
 		
 		var wordRange = new WordRange( );
@@ -88,9 +88,7 @@
 
 			conv.textRange = new TextRange( );
 			conv.textRange.fromString( conv.t );
-			
-			conv.sequenceRange = new SequenceRange( );
-			conv.sequenceRange.fromString( conv.s );
+			conv.sequenceRange = new SequenceRange( conv.s );
 			
 			// TestWord Range -> TextRange conversion
 			var wordRange = new WordRange( );			

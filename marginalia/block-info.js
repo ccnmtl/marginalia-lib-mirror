@@ -1,7 +1,7 @@
 function parseRangeInfoXml( xmldoc )
 {
 	var listElement = xmldoc.documentElement;
-	if ( listElement.tagName != 'ranges' )
+	if ( listElement.tagName != 'range-infos' )
 		return null;
 	
 	var infoArray = new Array();

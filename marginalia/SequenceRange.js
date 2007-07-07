@@ -1,5 +1,5 @@
 /*
- * range-format.js
+ * SequenceRange.js
  *
  * Serialization formats for word ranges (see ranges.js).
  *
