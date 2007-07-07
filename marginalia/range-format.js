@@ -507,7 +507,7 @@ XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 		{
 			// Check whether we can use this node's ID as a start point
 			var id = node.getAttribute( 'id', null );
-			if ( id && idTest && idTest( id ) && -1 == id.indexOf( "'" ) )
+			if ( id && ( ! idTest || idTest( id ) ) && -1 == id.indexOf( "'" ) )
 			{
 				path = "*[@id='" + id + "']" + ( '' == path ? '' : '/' + path );
 				foundId = true;
@@ -520,7 +520,7 @@ XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 					if ( ELEMENT_NODE == prev.nodeType && prev.tagName == node.tagName )
 					{
 						id = prev.getAttribute( 'id', null );
-						if ( id && idTest && idTest( id ) && -1 == id.indexOf( "'" ) )
+						if ( id && ( ! idTest || idTest( id ) ) && -1 == id.indexOf( "'" ) )
 							foundId = true;
 						else
 							count += 1;
@@ -536,7 +536,6 @@ XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 							+ '/following-sibling::' + node.tagName.toLowerCase( )
 								+ '[' + String( count ) + ']'
 							+ path;
-						break outer;
 					}
 				}
 				else

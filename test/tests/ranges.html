@@ -19,12 +19,57 @@
 		window.log.setTrace( 'WordRange', true );			// Check if quote matches current state of document
 	}
 	
+	function makeXPathRange( sequenceStr )
+	{
+		var root = document.getElementById( 'xpath-data' );
+
+		var sequenceRange = new SequenceRange( );
+		sequenceRange.fromString( sequenceStr );
+		assertTrue( 'test sequence range parse', sequenceRange.toString() == sequenceStr );
+		
+		var wordRange = new WordRange( );
+		wordRange.fromSequenceRange( sequenceRange, root );
+		sequenceRange = wordRange.toSequenceRange( root );
+		assertTrue( 'sequence range = ' + sequenceRange.toString() + ', expect ' + sequenceStr, sequenceRange.toString() == sequenceStr );
+		
+		return {
+			root:  root,
+			wordRange: wordRange,
+			xpathRange: wordRange.toXPathRange( root )
+		};
+	}
+
+	function testXPathRangeWithId( )
+	{
+		var ranges = makeXPathRange( '/1/1/3.0;/1/1/3.2' );
+		xpath = ranges.xpathRange.toString( );
+		var expect = ".//*[@id='xbq1']/word(3)/char(0);.//*[@id='xbq1']/word(3)/char(2)";
+		assertTrue( 'xpath ' + xpath + ' = expect ' + expect, xpath == expect );
+		
+		var wordRange = new WordRange( );
+		wordRange.fromXPathRange( ranges.xpathRange, ranges.root );
+		assertTrue( 'Test xpath range with ID resolution', wordRange.equals( ranges.wordRange ) );
+	}
+	
+	function testXPathRangeFollowingId( )
+	{
+		var ranges = makeXPathRange( '/1/2/2.0;/1/2/2.4' );
+		xpath = ranges.xpathRange.toString( );
+		var expect = ".//*[@id='xbq1']/following-sibling::blockquote[1]/word(2)/char(0);.//*[@id='xbq1']/following-sibling::blockquote[1]/word(2)/char(4)";
+		assertTrue( 'xpath ' + xpath + ' = expect ' + expect, xpath == expect );
+		
+		var wordRange = new WordRange( );
+		wordRange.fromXPathRange( ranges.xpathRange, ranges.root );
+		assertTrue( 'Test xpath range with ID resulotion', wordRange.equals( ranges.wordRange ) );
+	}
+	
 	function testRangeConversion( )
 	{
 		var rel = document.getElementById( 'word-data' );
 	
 		var conversionData = [
-			{ t: 'p5.1.5;em4.1.4',		s: '/5/2.0;/5/2.7',			q: 'brillig',		c: 'span annotation'			},
+			{ t: 'li1.1.28;li2.1.4',	s: '/6/1/7.0;/6/2/1.2',	q: "hand: Lo",		c: 'crossing breaking element boundary'	},
+			{ t: 'p5.1.5;em4.1.4',		s: '/5/2.0;/5/2.7',			q: 'brillig',		c: '5 chars in, then start tag, with <= 5 chars to go'			},
 			{ t: 'p1.1.0;p1.1.1',		s: '/1/1.0;/1/1.1',			q: 'o',				c: 'first character'			},
 			{ t: 'p1.1.0;p1.1.3',		s: '/1/1.0;/1/1.3',			q: 'one',			c: 'word alone in block'		},
 			{ t: 'p2.1.0;p2.1.5',		s: '/2/1.0;/2/1.3',			q: 'two',			c: 'following space'			},
@@ -95,7 +140,7 @@
 <body onload='myload()'>
 <h1>Marginalia Range Format Conversion Tests</h1>
 
-<button onclick="testRangeConversion()">Run Test</button>
+<button onclick="testXPathRangeFollowingId()">Run Test</button>
 
 <div id="word-data">
 <p id="p1">one</p>
@@ -103,6 +148,18 @@
 <p id="p3"> four <em id="em1">five</em> six </p>
 <p id="p4"> <em id="em2">seven</em><em id="em3">seven</em> </p>
 <p id="p5">Twas bri<em id="em4" class="annotation annot3 last">llig,</em> and the slithy toves</p>
+<ul id="ul1">
+<li id="li1">He took his vorpal sword in hand:</li>
+<li id="li2">  Long time the manxome foe he sought --</li>
+<li id="li3">So rested he by the Tumtum tree,</li>
+<li id="li4">  And stood awhile in thought.</li>
+</ul></div>
+
+<div id="xpath-data">
+<div id="xdiv1">"Beware <blockquote id="xbq1">the <span id="xspan1">Jabberwock, my son!</span>
+  The </blockquote>jaws that bite,<blockquote> the claws that catch!</blockquote>
+Beware the Jubjub bird, and shun
+  The frumious Bandersnatch!"</div>
 </div>
 
 </body>

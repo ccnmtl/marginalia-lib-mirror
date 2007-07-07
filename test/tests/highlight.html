@@ -68,7 +68,7 @@ function createHighlightRange( sequence )
 	wordRange.fromSequenceRange( sequenceRange, post.contentElement, null );
 	return wordRange;
 }
-/*
+
 function testHighlightSimple( )
 {
 	var quote = 'brillig';
@@ -77,7 +77,8 @@ function testHighlightSimple( )
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );
 }
-
+*/
+/*
 function testHighlightSimple( )
 {
 //	var annotation = createSimpleAnnotation( 2, '/1/2.0;/1/2.7', 'brillig' );
@@ -92,19 +93,21 @@ function testHighlightOverlap( )
 	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
 	inform( 'Paragraph with annotation', htmlencode( document.getElementById( 'p2' ).innerHTML ) );
 }
-/*
+
 function testHighlightSpanBlock( )
 {
 	var quote = 'hand: Lo';
-	var annotation = createSimpleAnnotation( 4, '/3/1/7.0;/3/2/1.2', quote + '.' );
+	var annotation = createSimpleAnnotation( 4, '/4/1/7.0;/4/2/1.2', quote + '.' );
 	assertFalse( post.showHighlight( marginalia, annotation ) );
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );
-}*/
+}
 </script>
 </head>
 
 <body onload="load()" id="jsUnitRestoredHTML">
+<button onclick="testHighlightSpanBlock()">Run Current Debug Test</button>
+
 <h1>Marginalia DOM Walker Tests</h1>
 
 <div id="test-entry" class="hEntry">

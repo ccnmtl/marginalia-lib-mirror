@@ -234,7 +234,7 @@ WordRange.prototype.toSequenceRange = function( root )
 	var sequenceRange = new SequenceRange( );
 	sequenceRange.start = this.start.toSequencePoint( root );
 	sequenceRange.end = this.end.toSequencePoint( root );
-	return sequenceRange;
+	return sequenceRange.start && sequenceRange.end ? sequenceRange : null;
 }
 
 /**
