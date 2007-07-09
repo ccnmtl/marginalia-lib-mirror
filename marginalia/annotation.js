@@ -77,7 +77,7 @@ function Annotation( url )
 Annotation.prototype.hasChanged = function( field )
 {
 	if ( field )
-		return this.changes[ field ];
+		return this.changes[ field ] ? true : false;
 	else
 	{
 		for ( change in this.changes )
@@ -247,7 +247,7 @@ Annotation.prototype.setQuoteAuthor = function( author )
 }
 
 Annotation.prototype.getQuoteTitle = function( )
-{ return this.quote_title ? this.quote_title : ''; }
+{ return this.quoteTitle ? this.quoteTitle : ''; }
 
 Annotation.prototype.setQuoteTitle = function( title )
 {

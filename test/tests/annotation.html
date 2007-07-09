@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Marginalia Unit Tests</title>
+<link rel="stylesheet" type="text/css" href="../css/jsUnitStyle.css">
+<script language="JavaScript" type="text/javascript" src="../app/jsUnitCore.js"></script>
+<script type="text/javascript" src="../../marginalia/log.js"></script>
+<script type="text/javascript" src="../../marginalia/html-model.js"></script>
+<script type="text/javascript" src="../../marginalia/domutil.js"></script>
+<script type="text/javascript" src="../../marginalia/ranges.js"></script>
+<script type="text/javascript" src="../../marginalia/SequenceRange.js"></script>
+<script type="text/javascript" src="../../marginalia/XPathRange.js"></script>
+<script type="text/javascript" src="../../marginalia/annotation.js"></script>
+<script language="javaScript" type="text/javascript">
+
+ANNOTATION_ACCESS_DEFAULT = 'private';
+
+function testAnnotationId( )
+{
+	var annotation = new Annotation( );
+	var id = '123';
+	assertTrue( 'id=""', annotation.getId( ) == 0 );
+	assertFalse( "unchanged", annotation.hasChanged( 'id' ) );
+	annotation.setId( id );
+	assertTrue( "changed", annotation.hasChanged( 'id' ) );
+	assertTrue( "id=id", annotation.getId( ) == id );
+}
+
+function testAnnotationUrl( )
+{
+	var annotation = new Annotation( );
+	var url = 'http://www.geof.net/'
+	assertTrue( annotation.getUrl( ) == '' );
+	assertFalse( annotation.hasChanged( 'url' ) );
+	annotation.setUrl( url );
+	assertTrue( annotation.hasChanged( 'url' ) );
+	assertTrue( annotation.getUrl( ) == url );
+}
+
+function testAnnotationAction( )
+{
+	var annotation = new Annotation( );
+	var action = 'edit';
+	assertTrue( annotation.getAction( ) == '' );
+	assertFalse( annotation.hasChanged( 'action' ) );
+	annotation.setAction( action );
+	assertTrue( annotation.hasChanged( 'action' ) );
+	assertTrue( annotation.getAction( ) == action );
+}
+
+function testAnnotationAccess( )
+{
+	var annotation = new Annotation( );
+	var x = 'public';
+	assertTrue( annotation.getAccess( ) == ANNOTATION_ACCESS_DEFAULT );
+	assertFalse( annotation.hasChanged( 'access' ) );
+	annotation.setAccess( x );
+	assertTrue( annotation.hasChanged( 'access' ) );
+	assertTrue( annotation.getAccess( ) == x );
+}
+
+function testAnnotationNote( )
+{
+	var annotation = new Annotation( );
+	var x = 'hello world';
+	assertTrue( annotation.getNote( ) == '' );
+	assertFalse( annotation.hasChanged( 'note' ) );
+	annotation.setNote( x );
+	assertTrue( annotation.hasChanged( 'note' ) );
+	assertTrue( annotation.getNote( ) == x );
+}
+
+function testAnnotationQuote( )
+{
+	var annotation = new Annotation( );
+	var x = 'once upon a time';
+	assertTrue( annotation.getQuote( ) == '' );
+	assertFalse( annotation.hasChanged( 'quote' ) );
+	annotation.setQuote( x );
+	assertTrue( annotation.hasChanged( 'quote' ) );
+	assertTrue( annotation.getQuote( ) == x );
+}
+
+function testAnnotationUserId( )
+{
+	var annotation = new Annotation( );
+	var x = 'geof';
+	assertTrue( annotation.getUserId( ) == '' );
+	assertFalse( annotation.hasChanged( 'userid' ) );
+	annotation.setUserId( x );
+	assertTrue( annotation.hasChanged( 'userid' ) );
+	assertTrue( annotation.getUserId( ) == x );
+}
+
+function testAnnotationLink( )
+{
+	var annotation = new Annotation( );
+	var x = 'http://www.geof.net/';
+	assertTrue( annotation.getLink( ) == '' );
+	assertFalse( annotation.hasChanged( 'link' ) );
+	annotation.setLink( x );
+	assertTrue( annotation.hasChanged( 'link' ) );
+	assertTrue( annotation.getLink( ) == x );
+}
+
+function testAnnotationQuoteTitle( )
+{
+	var annotation = new Annotation( );
+	var x = 'Linked Document Title';
+	assertTrue( annotation.getQuoteTitle( ) == '' );
+	assertFalse( annotation.hasChanged( 'quoteTitle' ) );
+	annotation.setQuoteTitle( x );
+	assertTrue( annotation.hasChanged( 'quoteTitle' ) );
+	assertTrue( annotation.getQuoteTitle( ) == x );
+}
+
+function testAnnotationQuoteAuthor( )
+{
+	var annotation = new Annotation( );
+	var x = 'geof';
+	assertTrue( annotation.getQuoteAuthor( ) == '' );
+	assertFalse( annotation.hasChanged( 'quoteAuthor' ) );
+	annotation.setQuoteAuthor( x );
+	assertTrue( annotation.hasChanged( 'quoteAuthor' ) );
+	assertTrue( annotation.getQuoteAuthor( ) == x );
+}
+
+function testAnnotationSequenceRange( )
+{
+	var annotation = new Annotation( );
+	var range = new SequenceRange( '/1/2.0;/1/2.4' );
+	assertTrue( 'Initially empty', annotation.getRange( SEQUENCE_RANGE ) == null );
+	assertFalse( 'Initially unchanged', annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) );
+	annotation.setRange( SEQUENCE_RANGE, range );
+	assertTrue( 'Changed', annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) );
+	assertTrue( 'Stores range', annotation.getRange( SEQUENCE_RANGE ) == range );
+}
+
+function testAnnotationXPathRange( )
+{
+	var annotation = new Annotation( );
+	var range = new XPathRange( 'p[1]/word(2)/char(0);p[1]/word(2)/char(4)' );
+	assertTrue( annotation.getRange( XPATH_RANGE ) == null );
+	assertFalse( annotation.hasChanged( 'range/' + XPATH_RANGE ) );
+	annotation.setRange( XPATH_RANGE, range );
+	assertTrue( annotation.hasChanged( 'range/' + XPATH_RANGE ) );
+	assertTrue( annotation.getRange( XPATH_RANGE ) == range );
+}
+
+</script>
+</head>
+
+<body>
+<h1>Marginalia Annotation Tests</h1>
+
+</body>
+</html>
