@@ -6,9 +6,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -51,7 +53,7 @@ function PostPageInfo( doc )
 
 PostPageInfo.prototype.IndexPosts = function( root )
 {
-	var posts = getChildrenByTagClass( root, null, PM_POST_CLASS );
+	var posts = domutil.childrenByTagClass( root, null, PM_POST_CLASS );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
@@ -86,7 +88,7 @@ PostPageInfo.prototype.getAllPosts = function( )
  */
 function _skipPostContent( node )
 {
-	return ( ELEMENT_NODE == node.nodeType && hasClass( node, PM_CONTENT_CLASS ) );
+	return ( ELEMENT_NODE == node.nodeType && domutil.hasClass( node, PM_CONTENT_CLASS ) );
 }
 
 
@@ -103,15 +105,15 @@ function PostMicro( element)
 	this.element = element;
 
 	// The title
-	var metadata = getChildByTagClass( element, null, PM_TITLE_CLASS, _skipPostContent );
-	this.title = metadata == null ? '' : getNodeText( metadata );
+	var metadata = domutil.childByTagClass( element, null, PM_TITLE_CLASS, _skipPostContent );
+	this.title = metadata == null ? '' : domutil.getNodeText( metadata );
 	
 	// The author
-	metadata = getChildByTagClass( element, null, PM_AUTHOR_CLASS, _skipPostContent );
-	this.author = metadata == null ? '' : getNodeText( metadata );
+	metadata = domutil.childByTagClass( element, null, PM_AUTHOR_CLASS, _skipPostContent );
+	this.author = metadata == null ? '' : domutil.getNodeText( metadata );
 	
 	// The date
-	metadata = getChildByTagClass( element, 'abbr', PM_DATE_CLASS, _skipPostContent );
+	metadata = domutil.childByTagClass( element, 'abbr', PM_DATE_CLASS, _skipPostContent );
 	if ( null == metadata )
 		this.date = null;
 	else
@@ -132,12 +134,12 @@ function PostMicro( element)
 	}
 	
 	// The node containing the url
-	metadata = getChildAnchor( element, PM_URL_REL, _skipPostContent );
+	metadata = domutil.childAnchor( element, PM_URL_REL, _skipPostContent );
 	this.url = metadata.getAttribute( 'href' );
 	
 	// The node containing the content
 	// Any offsets (e.g. as used by annotations) are from the start of this node's children
-	this.contentElement = getChildByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
+	this.contentElement = domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
 
 	return this;
 }
@@ -160,7 +162,7 @@ PostMicro.prototype.getElement = function( )
  */
 PostMicro.prototype.getContentElement = function( )
 {
-	return getChildByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
+	return domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
 }
 
 function getPostMicro( element )
@@ -173,10 +175,10 @@ function getPostMicro( element )
 function findPostByUrl( url )
 {
 	var fragments = new Array( );
-	getChildrenByTagClass( document.documentElement, null, PM_POST_CLASS, fragments, _skipPostContent );
+	domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, fragments, _skipPostContent );
 	for ( var i = 0;  i < fragments.length;  ++i )
 	{
-		urlNode = getChildAnchor( fragments[ i ], PM_URL_REL, _skipPostContent );
+		urlNode = domutil.childAnchor( fragments[ i ], PM_URL_REL, _skipPostContent );
 		// IE returns the absolute URL, not the actual content of the href field
 		// (i.e., the bloody piece of junk lies).  So instead of straight equality,
 		// I need to test whether the endings of the two URLs match.  In rare

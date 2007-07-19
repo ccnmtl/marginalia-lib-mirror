@@ -3,9 +3,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -47,7 +49,7 @@ RestPreferenceService.prototype.listPreferences = function( f )
 	else
 		serviceUrl = this.wwwroot + UGLY_PREFERENCE_SERVICE_URL;	
 	
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl, true );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 )
@@ -74,7 +76,7 @@ RestPreferenceService.prototype.setPreference = function( setting, value, f )
 		serviceUrl = this.wwwroot + UGLY_PREFERENCE_SERVICE_URL + '?name=' + encodeURIComponent( setting );
 
 	var body = 'value=' + encodeURIComponent( value );
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'POST', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
 	xmlhttp.setRequestHeader( 'Content-length', body.length );

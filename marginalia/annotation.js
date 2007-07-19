@@ -3,9 +3,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -67,7 +69,6 @@ function Annotation( url )
 	this.isLocal = false;
 	// this.editing = null; -- deleted when not needed
 	this.link = '';
-	return this;
 }
 
 /**
@@ -234,6 +235,18 @@ Annotation.prototype.setLink = function( link )
 	}
 }
 
+Annotation.prototype.getLinkTitle = function( )
+{ return this.linkTitle ? this.linkTitle : ''; }
+
+Annotation.prototype.setLinkTitle = function( title )
+{
+	if ( this.linkTitle != title )
+	{
+		this.linkTitle = title;
+		this.changes[ 'linkTitle' ] = true;
+	}
+}
+
 Annotation.prototype.getQuoteAuthor = function( )
 { return this.quoteAuthor ? this.quoteAuthor : ''; }
 
@@ -321,9 +334,9 @@ Annotation.prototype.toString = function( )
  * If the note text is a keyword, default to keywords.  Otherwise, check
  * preferences.
  */
-Annotation.prototype.defaultNoteEditMode = function( preferences )
+Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService )
 {
-	if ( ! ANNOTATION_KEYWORDS )
+	if ( ! ANNOTATION_KEYWORDS || ! keywordService )
 		return AN_EDIT_NOTE_FREEFORM;
 	else if ( '' == this.note )
 	{
@@ -342,20 +355,20 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 	var rangeStr = null;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
-		if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'content' )
+		if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
 		{
 			if ( 'xhtml' == field.getAttribute( 'type' ) )
 			{
 				// Find the enclosed div
 				var child;
 				for ( child = field.firstChild;  child;  child = child.nextSibling )
-					if ( child.namespaceURI == NS_XHTML && child.nodeName == 'div' && hasClass( child, 'annotation' ) )
+					if ( child.namespaceURI == NS_XHTML && child.nodeName == 'div' && domutil.hasClass( child, 'annotation' ) )
 						break;
 				if ( child )
 					this.fromAtomContent( child );	
 			}
 		}
-		else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'link' )
+		else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'link' )
 		{
 			var rel = field.getAttribute( 'rel' );
 			var href = field.getAttribute( 'href' );
@@ -377,30 +390,30 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 				// this.post = findPostByUrl( href );
 			}
 		}
-		else if ( NS_ATOM == field.namespaceURI && 'author' == getLocalName( field ) )
+		else if ( NS_ATOM == field.namespaceURI && 'author' == domutil.getLocalName( field ) )
 		{
 			for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
 			{
-				if ( NS_ATOM == nameElement.namespaceURI && 'name' == getLocalName( nameElement ) )
+				if ( NS_ATOM == nameElement.namespaceURI && 'name' == domutil.getLocalName( nameElement ) )
 					this.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
 			}
 		}
-		else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'range' )
+		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'range' )
 		{
 			var format = field.getAttribute( 'format', '' );
 			// These ranges may throw parse errors
 			if ( 'sequence' == format )
-				this.setRange( format, new SequenceRange( getNodeText( field ) ) );
+				this.setRange( format, new SequenceRange( domutil.getNodeText( field ) ) );
 			else if ( 'xpath' == format )
-				this.setRange( format, new XPathRange( getNodeText( field ) ) );
+				this.setRange( format, new XPathRange( domutil.getNodeText( field ) ) );
 			// ignore unknown formats
 		}
-		else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'access' )
-			this.access = null == field.firstChild ? 'private' : getNodeText( field );
-		else if ( field.namespaceURI == NS_PTR && getLocalName( field ) == 'action' )
-			this.action = null == field.firstChild ? '' : getNodeText( field );
-		else if ( field.namespaceURI == NS_ATOM && getLocalName( field ) == 'updated' )
-			this.updated = getNodeText( field );
+		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )
+			this.access = null == field.firstChild ? 'private' : domutil.getNodeText( field );
+		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'action' )
+			this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
+		else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
+			this.updated = domutil.getNodeText( field );
 	}
 	// This is here because annotations are only parsed from XML when being initialized.
 	// In future who knows, this might not be the case - and the reset would have to
@@ -423,9 +436,10 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 			if ( ! mode )
 			{
 				// Quote, URL
-				if ( ( 'blockquote' == node.nodeName || 'q' == node.nodeName ) && node.getAttribute( 'cite' ) )
+				if ( ( 'blockquote' == domutil.getLocalName( node )
+					|| 'q' == domutil.getLocalName( node ) ) && node.getAttribute( 'cite' ) )
 				{
-					this.quote = getNodeText( node );
+					this.quote = domutil.getNodeText( node );
 					if ( this.quote )
 					{
 						this.quote = this.quote.replace( /^\s+/, '' );
@@ -435,7 +449,7 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 				}
 				// QuoteTitle
 				else if ( 'cite' == node.nodeName )
-					this.quoteTitle = getNodeText( node );
+					this.quoteTitle = domutil.getNodeText( node );
 				else
 				{
 					// Check class values
@@ -449,13 +463,13 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 							// Note
 							if ( 'note' == className )
 							{
-								this.note = getNodeText( node );
+								this.note = domutil.getNodeText( node );
 								this.note = this.note.replace( /^\s+/, '' );
 								this.note = this.note.replace( /\s+$/, '' );
 								childMode = 'note';
 							}
 							if ( 'quoteAuthor' == className )
-								this.quoteAuthor = getNodeText( node );
+								this.quoteAuthor = domutil.getNodeText( node );
 						}
 					}
 				}
@@ -489,7 +503,7 @@ function parseAnnotationXml( xmlDoc )
 		for ( var i = 0;  i < xmlDoc.documentElement.childNodes.length;  ++i ) {
 			child = xmlDoc.documentElement.childNodes[ i ];
 			// obliged to use tagName here rather than localName due to IE
-			if ( child.namespaceURI == NS_ATOM && getLocalName( child ) == 'entry' )
+			if ( child.namespaceURI == NS_ATOM && domutil.getLocalName( child ) == 'entry' )
 			{
 				// An exception may be thrown if there's a format error, in which case we
 				// don't want to parse or list the annotation - if we did, it might cause

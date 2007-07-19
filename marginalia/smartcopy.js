@@ -3,9 +3,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,6 +30,7 @@
 // Return false if the browser doesn't support the feature.
 function smartcopyInit( )
 {
+	// No point supporting IE here
 	if ( document.addEventListener )
 	{
 		document.addEventListener ('keyup', _smartcopyKeypressHandler, true );
@@ -77,13 +80,11 @@ function smartcopyOff( )
 // Smartcopy function called when the mouse button goes down
 function _smartcopyDownHandler( )
 {
-	stripSubtree( document.documentElement, null, 'smart-copy' );
+	domutil.stripSubtree( document.documentElement, null, 'smart-copy' );
 }
 
 function addSmartcopy( )
 {
-	briefPause( 200 );
-	
 	// this won't work with IE
 	var selection = window.getSelection();
 	var t = selection.type;
@@ -98,15 +99,15 @@ function addSmartcopy( )
 	var range = selection.getRangeAt( 0 );
 		
 	// Check that the selection is within a post
-	var postElement = getParentByTagClass( range.startContainer, null, PM_POST_CLASS, true, _skipPostContent );
+	var postElement = domutil.parentByTagClass( range.startContainer, null, PM_POST_CLASS, true, _skipPostContent );
 	if ( null == postElement )
 		return false;
 	var post = getPostMicro( postElement );
 	var contentElement = post.getContentElement( );
 	
 	// Check that both the start and end of the selection are within the post content
-	if ( ! isElementDescendant( range.startContainer, contentElement ) ||
-		! isElementDescendant( range.endContainer, contentElement ) )
+	if ( ! domutil.isElementDescendant( range.startContainer, contentElement ) ||
+		! domutil.isElementDescendant( range.endContainer, contentElement ) )
 		return false;
 	
 	// Check that there is actually some selected text
@@ -172,6 +173,6 @@ function addSmartcopy( )
 function _skipSmartcopy( node )
 {
 	if ( ELEMENT_NODE == node.nodeType )
-		return hasClass( node, 'smart-copy' ) ? true : false;
+		return domutil.hasClass( node, 'smart-copy' ) ? true : false;
 	return false;
 }

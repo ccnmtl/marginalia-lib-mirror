@@ -4,9 +4,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -79,7 +81,7 @@ RestKeywordService.prototype.getKeyword = function( word )
 
 RestKeywordService.prototype.listKeywords = function( f )
 {
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', this.serviceUrl, true );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 )

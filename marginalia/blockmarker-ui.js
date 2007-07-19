@@ -3,9 +3,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -85,7 +87,7 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
 	if ( markers )
 	{
 		var markerElement = block.markerElement;
@@ -108,7 +110,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 			var url = info.url;
 			countElement.onclick = function() {
 				marginalia.showBlockAnnotations( url, point.toString() );
-				addClass( block.markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+				domutil.addClass( block.markerElement, AN_ANNOTATIONSFETCHED_CLASS );
 			};
 			
 			this.positionBlockMarker( marginalia, markers, markerElement );
@@ -116,7 +118,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		// The marker already exists - prepare to update it
 		else
 		{
-			var countElement = getChildByTagClass( markerElement, 'span', null );
+			var countElement = domutil.childByTagClass( markerElement, 'span', null );
 			while ( countElement.firstChild )
 				countElement.removeChild( countElement.firstChild );
 		}
@@ -148,8 +150,8 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerElement )
 {
 	var blockElement = markerElement.blockElement;
-	var blockOffset = getElementYOffset( blockElement, this.element );
-	var markersOffset = getElementYOffset( markers, this.element );
+	var blockOffset = domutil.getElementYOffset( blockElement, this.element );
+	var markersOffset = domutil.getElementYOffset( markers, this.element );
 	var offset = blockOffset - markersOffset;
 	markerElement.style.top = String( offset ) + 'px';
 
@@ -159,15 +161,15 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
 	var walker = new DOMWalker( blockElement );
 	while ( walker.walk( true, false ) )
 	{
-		if ( ELEMENT_NODE == walker.node.nodeType && ! walker.endTag && isBreakingElement( walker.node.tagName ) )
+		if ( ELEMENT_NODE == walker.node.nodeType && ! walker.endTag && domutil.isBreakingElement( walker.node.tagName ) )
 			break;
 	}
 	
 	// Was one found?  If so, don't extend this far down.
-	if ( walker.node && ELEMENT_NODE == walker.node.nodeType && isBreakingElement( walker.node.tagName ) )
+	if ( walker.node && ELEMENT_NODE == walker.node.nodeType && domutil.isBreakingElement( walker.node.tagName ) )
 	{
-		var nextTop = getElementYOffset( walker.node, this.contentElement );
-		var thisTop = getElementYOffset( blockElement, this.contentElement );
+		var nextTop = domutil.getElementYOffset( walker.node, this.contentElement );
+		var thisTop = domutil.getElementYOffset( blockElement, this.contentElement );
 		height = nextTop - thisTop;
 	}
 	else
@@ -181,10 +183,10 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
  */
 PostMicro.prototype.repositionBlockMarkers = function( marginalia )
 {
-	var markers = getChildByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
 	if ( markers )
 	{
-		var markerElements = getChildrenByTagClass( this.element, null, AN_MARKER_CLASS, null );
+		var markerElements = domutil.childrenByTagClass( this.element, null, AN_MARKER_CLASS, null );
 		for ( var i = 0;  i < markerElements.length;  ++i )
 			this.positionBlockMarker( marginalia, markers, markerElements[ i ] );
 	}

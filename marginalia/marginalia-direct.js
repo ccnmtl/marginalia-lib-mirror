@@ -6,9 +6,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -91,8 +93,7 @@ MarginaliaDirect.prototype.show = function( )
 	
 	box.appendChild( this.newButton( 'md-close', 'Close', function() { direct.hide( ) } ) );
 	
-	var body = getBodyElement( document );
-	body.appendChild( box );
+	document.body.appendChild( box );
 }
 
 MarginaliaDirect.prototype.listAnnotations = function( )
@@ -144,8 +145,8 @@ MarginaliaDirect.prototype.updateAnnotation = function( listItem )
 
 MarginaliaDirect.prototype.getFieldInput = function( listItem, fieldName )
 {
-	var field = getChildByTagClass( listItem, null, fieldName );
-	field = getChildByTagClass( field, 'input', null );
+	var field = domutil.childByTagClass( listItem, null, fieldName );
+	field = domutil.childByTagClass( field, 'input', null );
 	return field;
 }
 	
@@ -191,11 +192,11 @@ MarginaliaDirect.prototype.showAnnotation = function( annotation )
 	listItem.appendChild( p );
 	
 	var button = this.newButton( 'md-annotation-update', 'Update', null );
-	button.onclick = function() { direct.updateAnnotation( listItem ); };
+	addEvent( button, 'click', function() { direct.updateAnnotation( listItem ); } );
 	listItem.appendChild( button );
 	
 	button = this.newButton( 'md-annotation-delete', 'Delete', null );
-	button.onclick = function() { direct.deleteAnnotation( annotation ); };
+	addEvent( button, 'click', function() { direct.deleteAnnotation( annotation ); } );
 	listItem.appendChild( button );
 }
 
@@ -239,7 +240,7 @@ MarginaliaDirect.prototype.newButton = function( id, text, f )
 	button = document.createElement( 'button' );
 	button.id = id;
 	button.appendChild( document.createTextNode( text ) );
-	button.onclick = f;
+	addEvente( button, 'click', f );
 	return button;
 }
 

@@ -136,3 +136,10 @@ function trace( topic, s )
 		window.log.trace( topic, s );
 }
 
+function assert( b, x )
+{
+	if ( ! x )
+		x = 'Assertion Error';
+	if ( ! b )
+		throw x;
+}

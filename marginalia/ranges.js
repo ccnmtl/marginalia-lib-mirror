@@ -8,9 +8,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -51,21 +53,6 @@ STATE_DONE = 5
  * points and ranges that exist under the root element but not within a child element.
  * Second, these points can be ordered.
  */
- 
-function closestPrecedingElement( rel )
-{
-	while ( ELEMENT_NODE != rel.nodeType || ! isBreakingElement( rel.tagName ))
-	{
-		if ( rel.previousNode )
-			rel = rel.previousElement;
-		else if ( rel.parentNode )
-			rel = rel.parentNode;
-		else
-			rel = null;
-	}
-	return rel;
-}
-
 
 function TextRange( startContainer, startOffset, endContainer, endOffset )
 {
@@ -208,10 +195,10 @@ function WordRange()
  */
 WordRange.prototype.fromTextRange = function( textRange, root, fskip )
 {
-	rel = closestPrecedingElement( textRange.startContainer );
+	rel = domutil.closestPrecedingElement( textRange.startContainer );
 	this.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
 
-	rel = closestPrecedingElement( textRange.endContainer );
+	rel = domutil.closestPrecedingElement( textRange.endContainer );
 	this.end = nodePointToWordPoint( textRange.endContainer, textRange.endOffset, rel, false, fskip );
 	
 	// If there was a problem, free memory
@@ -891,7 +878,7 @@ WordPointWalker.prototype.walk = function()
 			{
 				//trace( 'WordPointWalker', ' WordPointWalker - element node (' + this.currNode.tagName + ')' );
 				// Note that ELEMENT_NODE is returned at both start and end tags
-				if ( isBreakingElement( this.currNode.tagName ) )
+				if ( domutil.isBreakingElement( this.currNode.tagName ) )
 					this.inWord = false;
 				this.atNodeEnd = true;
 			}
@@ -979,7 +966,7 @@ function getContentOffset( rel, container, offset, fskip )
 	{
 		if ( TEXT_NODE == node.nodeType || CDATA_SECTION_NODE == node.nodeType )
 			sofar += node.length;
-		node = walkNextNode( node, fskip );
+		node = domutil.walkNextNode( node, fskip );
 	}
 	if ( null == node )
 		return 0;
@@ -999,7 +986,7 @@ function getContentOffset( rel, container, offset, fskip )
 		{
 			if ( null == node )
 				debug( 'Error in getContentOffset:  invalid element offset' );
-			sofar += nodeTextLength( node );
+			sofar += domutil.nodeTextLength( node );
 			node = node.nextSibling;
 		}
 		return sofar;
@@ -1091,7 +1078,7 @@ function getSelectionRangeIE()
 		markerElement.parentNode.insertBefore( document.createTextNode( ' ' ), markerElement );
 	// Remove the marker.
 	markerElement.parentNode.removeChild( markerElement );
-	portableNormalize( markerElement.parentNode );
+	domutil.portableNormalize( markerElement.parentNode );
 	
 	var walker;
 	// Make sure the start marker is a text node.  This may not be the case if there was no node 
@@ -1187,7 +1174,7 @@ function getTextRangeContent( range, fskip )
 		{
 			if ( TEXT_NODE == walker.node.nodeType )
 				s += walker.node.nodeValue;
-			else if ( ELEMENT_NODE == walker.node.nodeType && isBreakingElement( walker.node.tagName ) )
+			else if ( ELEMENT_NODE == walker.node.nodeType && domutil.isBreakingElement( walker.node.tagName ) )
 				s += ' ';
 			walker.walk( ! fskip( walker.node ) );	
 		}

@@ -3,9 +3,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -104,7 +106,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		// Is <em> valid in this position in the document?  (It might well not be if
 		// this is a script or style element, or if this is whitespace text in
 		// certain other nodes (ul, ol, table, tr, etc.))
-		if ( isValidHtmlContent( node.parentNode.tagName, 'em' ) )
+		if ( domutil.isValidHtmlContent( node.parentNode.tagName, 'em' ) )
 		{
 			var newNode;
 			var text = node.nodeValue + "";
@@ -152,7 +154,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	
 	if ( lastHighlight )
 	{
-		addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
+		domutil.addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
 		// If this was a substitution or insertion action, insert the text
 		if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getNote() )
 			this.showActionInsert( marginalia, annotation );
@@ -171,10 +173,10 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 {
 	trace( 'actions', 'showActionInsert for ' + annotation.getQuote() );
-	var highlights = getChildrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
+	var highlights = domutil.childrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
-		if ( hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
+		if ( domutil.hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
 		{
 			// TODO: should check whether <ins> is valid in this position
 			var lastHighlight = highlights[ i ];
@@ -187,7 +189,7 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 				lastHighlight.parentNode.insertBefore( insNode, lastHighlight.nextSibling );
 			else
 				lastHighlight.parentNode.appendChild( insNode );
-*/			addClass ( insNode, AN_ID_PREFIX + annotation.getId() );
+*/			domutil.addClass( insNode, AN_ID_PREFIX + annotation.getId() );
 		}
 	}
 }
@@ -198,16 +200,17 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
  */
 PostMicro.prototype.highlightStripTest = function( tnode, emclass )
 {
-	if ( matchTagClass( tnode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode, emclass ) ) )
+	if ( domutil.matchTagClass( tnode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || domutil.hasClass( tnode, emclass ) ) )
 		return STRIP_TAG;
-	else if ( tnode.parentNode && hasClass( tnode.parentNode, AN_HIGHLIGHT_CLASS ) && ( ! emclass || hasClass( tnode.parentNode, emclass ) ) )
+	else if ( tnode.parentNode && domutil.hasClass( tnode.parentNode, AN_HIGHLIGHT_CLASS )
+		&& ( ! emclass || domutil.hasClass( tnode.parentNode, emclass ) ) )
 	{
-		if ( matchTagClass( tnode, 'ins', null ) || matchTagClass( tnode, 'a', null ) )
-			return STRIP_CONTENT;
-		else if ( matchTagClass( tnode, 'del', null ) )
-			return STRIP_TAG;
+		if ( domutil.matchTagClass( tnode, 'ins', null ) || domutil.matchTagClass( tnode, 'a', null ) )
+			return domutil.STRIP_CONTENT;
+		else if ( domutil.matchTagClass( tnode, 'del', null ) )
+			return domutil.STRIP_TAG;
 	}
-	return STRIP_NONE;
+	return domutil.STRIP_NONE;
 }
 
 /**
@@ -220,14 +223,14 @@ PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 	var emClass = annotation ? AN_ID_PREFIX + annotation.getId() : AN_HIGHLIGHT_CLASS;
 	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, emClass );  };
 
-	var highlights = getChildrenByTagClass( contentElement, 'em', emClass, null, null );
+	var highlights = domutil.childrenByTagClass( contentElement, 'em', emClass, null, null );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
 		highlights[ i ].annotation = null;
 		if ( highlights[ i ].parentNode) // might already have been stripped
 		{
-			stripMarkup( highlights[ i ], stripTest, true );
-			unwrapElementChildren( highlights[ i ], true );
+			domutil.stripMarkup( highlights[ i ], stripTest, true );
+			domutil.unwrapElementChildren( highlights[ i ], true );
 		}
 	}
 	
@@ -251,5 +254,5 @@ PostMicro.prototype.removeAllHighlights = function( marginalia )
 	for ( var i = 0;  i < highlights.length;  ++i )
 		highlights[ i ].annotation = null;
 	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, null );  };
-	stripMarkup( contentElement, stripTest, true );	
+	domutil.stripMarkup( contentElement, stripTest, true );	
 }

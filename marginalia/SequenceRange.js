@@ -5,9 +5,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -174,7 +176,7 @@ SequencePoint.prototype.pathFromNode = function( root, rel, fskip )
 		{
 			if ( ! fskip || ! fskip( prev ) )
 			{
-				if ( ELEMENT_NODE == prev.nodeType && isBreakingElement( prev.tagName ) )
+				if ( ELEMENT_NODE == prev.nodeType && domutil.isBreakingElement( prev.tagName ) )
 					count += 1;
 			}
 		}
@@ -210,7 +212,7 @@ SequencePoint.prototype.getReferenceElement = function( root, fskip )
 			{
 				if ( ! fskip || ! fskip( node ) )
 				{
-					if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
+					if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
 					{
 						count -= 1;
 						if ( 0 == count )
@@ -289,7 +291,7 @@ function SequencePathResolver( node, path )
 	this.path = [ ];
 	for ( var i = 1;  i < parts.length;  ++i )
 		this.path[ i - 1 ] = Number( parts[ i ] );
-	if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
+	if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
 		this.depth = this.path.length;
 	else
 		this.depth = this.path.length - 1;
@@ -308,7 +310,7 @@ SequencePathResolver.prototype.next = function( )
 	{
 		var node = this.walker.node;
 		
-		if ( ELEMENT_NODE == node.nodeType && isBreakingElement( node.tagName ) )
+		if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
 		{
 			if ( this.walker.startTag )
 			{

@@ -105,10 +105,21 @@ function testAnnotationLink( )
 	assertTrue( annotation.getLink( ) == x );
 }
 
+function testAnnotationLinkTitle( )
+{
+	var annotation = new Annotation( );
+	var title = 'Linked document title';
+	assertTrue( annotation.getLinkTitle( ) == '' );
+	assertFalse( annotation.hasChanged( 'linkTitle' ) );
+	annotation.setLinkTitle( title );
+	assertTrue( annotation.hasChanged( 'linkTitle' ) );
+	assertTrue( annotation.getLinkTitle( ) == title );
+}
+
 function testAnnotationQuoteTitle( )
 {
 	var annotation = new Annotation( );
-	var x = 'Linked Document Title';
+	var x = 'Quoted Document Title';
 	assertTrue( annotation.getQuoteTitle( ) == '' );
 	assertFalse( annotation.hasChanged( 'quoteTitle' ) );
 	annotation.setQuoteTitle( x );

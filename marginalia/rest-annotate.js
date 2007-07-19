@@ -4,9 +4,11 @@
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
- * Canada, and units and individuals within those organizations.
- * Many thanks to all of them.  See CREDITS.html for details.
- * Copyright (C) 2005-2007 Geoffrey Glass www.geof.net
+ * Canada, the UNDESA Africa i-Parliaments Action Plan, and  
+ * units and individuals within those organizations.  Many 
+ * thanks to all of them.  See CREDITS.html for details.
+ * Copyright (C) 2005-2007 Geoffrey Glass; the United Nations
+ * http://www.geof.net/code/annotation
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -74,7 +76,7 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 {
 	var serviceUrl = this.serviceUrl + '?format=blocks&url=' + encodeURIParameter( url );
 	
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.onreadystatechange = function( ) {
@@ -113,7 +115,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 		serviceUrl += '&user=' + encodeURIParameter( username );
 	serviceUrl += '&url=' + encodeURIParameter( url );
 	
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.onreadystatechange = function( ) {
@@ -158,7 +160,10 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
 	if ( annotation.getRange( XPATH_RANGE ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
-	var xmlhttp = createAjaxRequest( );
+	if ( annotation.getLinkTitle( ) )
+		+ '&linkTitle=' + encodeURIParameter( annotation.getLinkTitle( ) );
+
+	var xmlhttp = domutil.createAjaxRequest( );
 	
 	xmlhttp.open( 'POST', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
@@ -201,12 +206,14 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 		body += ( body == '' ? '' : '&' ) + 'access=' + encodeURIParameter( annotation.getAccess() );
 	if ( annotation.hasChanged( 'link' ) )
 		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.getLink() );
+	if ( annotation.hasChanged( 'linkTitle' ) )
+		body += ( body == '' ? '' : '&' ) + 'link_title=' + encodeURIParameter( annotation.getLinkTitle( ) );
 	if ( annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) )
 		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
 	if ( annotation.hasChanged( 'range/' + XPATH_RANGE ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'PUT', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
@@ -238,7 +245,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotationId ) : ( '?id=' + annotationId );
 	
-	var xmlhttp = createAjaxRequest( );
+	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'DELETE', serviceUrl, true );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.onreadystatechange = function( ) {
