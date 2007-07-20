@@ -522,6 +522,16 @@ normalizeNodePair: function( firstNode )
 	}
 },
 
+trim:  function( s )
+{
+	if ( s )
+	{
+		s = s.replace( /^\s+/, '' );
+		s = s.replace( /\s+$/, '' );
+	}
+	return s;
+},
+
 /**
  * Used as an event handler
  */

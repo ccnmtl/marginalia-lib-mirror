@@ -158,12 +158,14 @@ SimpleLinkUi.prototype._editLinkKeypress = function( event )
 SimpleLinkUi.prototype._deleteLink = function( event )
 {
 	event.stopPropagation( );
+	var linkUi = window.marginalia.linkUi;
 	var post = domutil.nestedFieldValue( event.target, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( event.target, AN_ANNOTATION_FIELD );
 	var noteElement = domutil.parentByTagClass( event.target, 'li' );
 	var editNode = domutil.childByTagClass( noteElement, 'input', null, null );
 	editNode.value = '';
-	this.saveLink( window.marginalia, post, annotation, noteElement );
+	annotation.setLink( '' );
+	linkUi.saveLink( window.marginalia, post, annotation, noteElement );
 }
 
 /**

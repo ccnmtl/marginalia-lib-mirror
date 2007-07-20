@@ -428,61 +428,40 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
  */
 Annotation.prototype.fromAtomContent = function( parent, mode )
 {
-	for ( var node = parent.firstChild;  node;  node = node.nextSibling )
+	this.quote = this.atomContentText( parent, 'p.quote q' );
+	this.url = this.atomContentAttrib( parent, 'p.quote cite a', 'href' );
+	this.quoteTitle = this.atomContentText( parent, 'p.quote cite a' );
+	this.quoteAuthor = this.atomContentText( parent, 'p.quote .quoteAuthor' );
+	this.note = this.atomContentText( parent, 'p.note' );
+	if ( cssQuery( 'p.quote del', parent ).length > 0 || cssQuery( 'p.note ins', parent ).length > 0 )
+		this.action = 'edit';
+	var link = cssQuery( 'p.see-also', parent );
+	if ( link.length > 0 )
 	{
-		var childMode = mode;
-		if ( ELEMENT_NODE == node.nodeType && NS_XHTML == node.namespaceURI )
-		{
-			if ( ! mode )
-			{
-				// Quote, URL
-				if ( ( 'blockquote' == domutil.getLocalName( node )
-					|| 'q' == domutil.getLocalName( node ) ) && node.getAttribute( 'cite' ) )
-				{
-					this.quote = domutil.getNodeText( node );
-					if ( this.quote )
-					{
-						this.quote = this.quote.replace( /^\s+/, '' );
-						this.quote = this.quote.replace( /\s+$/, '' );
-					}
-					this.url = node.getAttribute( 'cite' );
-				}
-				// QuoteTitle
-				else if ( 'cite' == node.nodeName )
-					this.quoteTitle = domutil.getNodeText( node );
-				else
-				{
-					// Check class values
-					var className = node.getAttribute( 'class' );
-					if ( className )
-					{
-						var classNames = className.split( /\s+/ );
-						for ( var i = 0;  i < classNames.length;  ++i )
-						{
-							className = classNames[ i ];
-							// Note
-							if ( 'note' == className )
-							{
-								this.note = domutil.getNodeText( node );
-								this.note = this.note.replace( /^\s+/, '' );
-								this.note = this.note.replace( /\s+$/, '' );
-								childMode = 'note';
-							}
-							if ( 'quoteAuthor' == className )
-								this.quoteAuthor = domutil.getNodeText( node );
-						}
-					}
-				}
-			}
-			else if ( 'note' == mode )
-			{
-				// Link
-				if ( 'a' == node.nodeName )
-					this.link = node.getAttribute( 'href' );
-			}
-			this.fromAtomContent( node, childMode );
-		}
+		link = link[ 0 ];
+		this.link = cssQuery( 'a', link )[0].getAttribute( 'href' );
+		this.linkTitle = this.atomContentText( link, 'cite' );
 	}
+}
+
+Annotation.prototype.atomContentText = function( parent, css )
+{
+	var node = cssQuery( css, parent );
+	if ( node && node.length > 0 )
+	{
+		var s = domutil.getNodeText( node[0] );
+		if ( s )
+			return domutil.trim( s );
+	}
+	return '';
+}
+
+Annotation.prototype.atomContentAttrib = function( parent, css, attrib )
+{
+	var node = cssQuery( css, parent );
+	if ( node && node.length > 0 )
+		return node[0].getAttribute( attrib );
+	return '';
 }
 
 /**
