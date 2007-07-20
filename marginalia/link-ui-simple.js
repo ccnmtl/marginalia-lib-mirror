@@ -173,11 +173,11 @@ SimpleLinkUi.prototype.saveLink = function( marginalia, post, annotation, noteEl
 {
 	// Resolve parameters if this was triggered as a callback
 	var simpleUi;
-	if ( SimpleLinkUi.prototype.isPrototypeOf( this ) )
+	if ( domutil.instanceOf( this, SimpleLinkUi ) )
 		simpleUi = this;
 	else
 		simpleUi = window.marginalia.linkUi.getSimpleLinkUi( );
-	if ( ! Marginalia.prototype.isPrototypeOf( marginalia ) )
+	if ( ! domutil.instanceOf( marginalia, Marginalia ) )
 	{
 		var event = marginalia;
 		event.stopPropagation( );
@@ -208,7 +208,7 @@ SimpleLinkUi.prototype.saveLink = function( marginalia, post, annotation, noteEl
 	annotation.setLinkTitle( '' );
 	post.saveAnnotationLink( marginalia, annotation, noteElement );
 
-	simpleUi.showLinkEditComplete( marginalia, post, annotation );
+	marginalia.linkUi.showLinkEditComplete( marginalia, post, annotation );
 }
 
 

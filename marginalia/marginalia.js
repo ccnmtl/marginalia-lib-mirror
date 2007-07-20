@@ -71,8 +71,6 @@ function marginaliaInit( service, thisuser, anuser, urlBase, preferences, keywor
 	window.marginalia = new Marginalia( service, thisuser, anuser, urlBase, preferences, keywordService );
 
 	addEvent( document, 'keyup', _keyupCreateAnnotation );
-	
-	marginalia.linkUi.init( );
 }
 
 
@@ -84,7 +82,6 @@ function Marginalia( service, username, anusername, urlBase, preferences, keywor
 	this.anusername = anusername;
 	this.preferences = preferences;
 	this.keywordService = keywordService;
-	this.linkUi = new SimpleLinkUi( );
 	this.editing = null;	// annotation currently being edited (if any)
 }
 

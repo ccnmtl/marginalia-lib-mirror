@@ -159,7 +159,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 		if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getNote() )
 			this.showActionInsert( marginalia, annotation );
 		// If there's a link from this annotation, add the link icon
-		if ( ANNOTATION_LINKING && annotation.getLink() )
+		if ( marginalia.linkUi && annotation.getLink() )
 			this.showLink( marginalia, annotation );
 	}
 	var endTime = new Date( );

@@ -214,7 +214,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 			var controls = domutil.element( 'div', { className: 'controls' } );
 			noteElement.appendChild( controls );
 			
-			if ( ANNOTATION_LINKING )
+			if ( marginalia.linkUi )
 			{
 				// add the link button
 				// TODO: why is there an href here?

@@ -29,17 +29,14 @@
  */
  
 
-function ClickToLinkUI( )
+/**
+ * Don't initialize this until the DOM has been loaded
+ */
+function ClickToLinkUi( )
 {
 	 this.simpleUi = new SimpleLinkUi( );
-}
 
-/**
- * Called at Marginalia startup
- */
-ClickToLinkUi.prototype.init = function( )
-{
-	// Click-to-link doesn't work in IE because of its weak event model
+	 // Click-to-link doesn't work in IE because of its weak event model
 	if ( window.addEventListener )
 	{
 		window.addEventListener( 'focus', _enableLinkTargets, false );
@@ -69,11 +66,18 @@ ClickToLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, n
 ClickToLinkUi.prototype.showLinkEditComplete = function( marginalia, post, annotation, noteElement )
 {
 	_disableLinkTargets( );
-	domutil.removeCookie( AN_LINKING_COOKIE );
-	domutil.removeCookie( AN_LINKURL_COOKIE );
+	removeCookie( AN_LINKING_COOKIE );
+	removeCookie( AN_LINKURL_COOKIE );
 	domutil.removeClass( document.body, AN_EDITINGLINK_CLASS );
 	
 	this.simpleUi.showLinkEditComplete( marginalia, post, annotation, noteElement );
+}
+
+ClickToLinkUi.prototype.saveLink = function( marginalia, post, annotation, noteElement )
+{
+	if ( ! marginalia.editing )
+		return false;
+	this.simpleUi.saveLink( marginalia, post, annotation, noteElement );
 }
 
 /**
@@ -81,7 +85,7 @@ ClickToLinkUi.prototype.showLinkEditComplete = function( marginalia, post, annot
  * Callback set up (in this browser window and others) by
  * _enableLinkTargets, removed by _disableLinkTargets
  */
-ClickToLinkUi._updateLinks = function( )
+function _updateLinks( )
 {
 	if ( domutil.hasClass( document.body, AN_EDITINGLINK_CLASS ) )
 	{
@@ -92,11 +96,12 @@ ClickToLinkUi._updateLinks = function( )
 			var annotationNode = document.getElementById( AN_ID_PREFIX + annotationId );
 			if ( annotationNode )
 			{
+				var marginalia = window.marginalia;
 				var post = domutil.nestedFieldValue( annotationNode, AN_POST_FIELD );
 				var annotation = domutil.nestedFieldValue( annotationNode, AN_ANNOTATION_FIELD );
 				var editNode = domutil.childByTagClass( annotationNode, 'input', null, null );
 				editNode.value = newLink;
-				this.simpleUi.saveLink( window.marginalia, annotation );
+				marginalia.linkUi.saveLink( marginalia, post, annotation, annotation.getNoteElement( ) );
 			}
 		}
 	}
