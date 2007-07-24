@@ -220,7 +220,7 @@ function _showAnnotationsCallback( marginalia, url, xmldoc )
  * is basically a way to implement cooperative multitasking so that if many annotations
  * need to be displayed the browser won't lock up.
  */
-function _annotationDisplayCallback( marginalia, url )
+function _annotationDisplayCallback( marginalia, callbackUrl )
 {
 	var startTime = new Date( );
 	var curTime;
@@ -233,7 +233,7 @@ function _annotationDisplayCallback( marginalia, url )
 		curTime = new Date( );
 		if ( curTime - startTime >= AN_COOP_MAXTIME )
 		{
-			setTimeout( function() { _annotationDisplayCallback( marginalia, url ) }, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl ) }, AN_COOP_TIMEOUT );
 			return;
 		}
 	}
@@ -291,15 +291,15 @@ function _annotationDisplayCallback( marginalia, url )
 		if ( annotations.length == annotation_i )
 		{
 			delete marginalia.annotationCache;
-			marginalia.showPerBlockUserCounts( url );
+			marginalia.showPerBlockUserCounts( callbackUrl );
 		}
 		else
-			setTimeout( function() { _annotationDisplayCallback( marginalia, url ) }, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl ) }, AN_COOP_TIMEOUT );
 	}
 	// Finally, reposition block markers, as the annotations may have altered paragraph lengths
 	else if ( marginalia.getFeature( AN_BLOCKMARKER_FEAT ) )
 	{
-		marginalia.showPerBlockUserCounts( url );
+		marginalia.showPerBlockUserCounts( callbackUrl );
 	}
 }
 
