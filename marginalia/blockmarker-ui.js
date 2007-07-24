@@ -32,7 +32,7 @@ AN_USERCOUNT_CLASS = 'annotation-user-count';		// contains user count in block m
 AN_ANNOTATIONSFETCHED_CLASS = 'fetched';	// indicates a block's annotations have been fetched
 
 
- /**
+/**
  * Show Per-Block User Counts
  */
 Marginalia.prototype.showPerBlockUserCounts = function( url )

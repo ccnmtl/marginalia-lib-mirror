@@ -26,6 +26,9 @@
  * $Id$
  */
 
+// Features that can be switched on and off
+AN_BLOCKMARKER_FEAT = 'block-markers';
+
 // The names of HTML/CSS classes used by the annotation code.
 AN_HOVER_CLASS = 'hover';			// assigned to highlights and notes when the mouse is over the other
 AN_ANNOTATED_CLASS = 'annotated';	// class added to fragment when annotation is on
@@ -83,7 +86,22 @@ function Marginalia( service, username, anusername, urlBase, preferences, keywor
 	this.preferences = preferences;
 	this.keywordService = keywordService;
 	this.editing = null;	// annotation currently being edited (if any)
+	this.features = { };
 }
+
+Marginalia.prototype.setFeature = function( feature, flag )
+{
+	if ( flag )
+		this[ feature ] = flag;
+	else
+		delete this[ feature ];
+}
+
+Marginalia.prototype.getFeature = function( feauture )
+{
+	return this[ feature ] ? true : false;
+}
+
 
 /**
  * Could do this in the initializer, but by leaving it until now we can avoid
@@ -166,11 +184,13 @@ Marginalia.prototype.hideMarginalia = function( )
  * apply to individual posts on a page.  Unused, I removed them - they added
  * complexity because annotations needed to be stored but not displayed.  IMHO,
  * the best way to do this is with simple dynamic CSS (using display:none).
+ * TODO: If the url is a wildcard matching multiple posts, per block user markers
+ * won't show up as a result of calling this!
  */
 Marginalia.prototype.showAnnotations = function( url, block )
 {
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, this.anusername, block, _showAnnotationsCallback );
+	this.annotationService.listAnnotations( url, this.anusername, block, function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc ) } );
 }
 
 Marginalia.prototype.showBlockAnnotations = function( url, block )
@@ -178,19 +198,19 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 	// TODO: Push down calculations must be repaired where new annotations are added.
 	// Ideally this would happen automatically.
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, null, block, _showAnnotationsCallback );
+	this.annotationService.listAnnotations( url, null, block,
+		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc ) } );
 }
 
 /**
  * This is the callback function called by listAnnotations when data first comes back
  * from the server.
  */
-function _showAnnotationsCallback( xmldoc )
+function _showAnnotationsCallback( marginalia, url, xmldoc )
 {
-	var marginalia = window.marginalia;
 	marginalia.hideAnnotations( );
 	marginalia.annotationXmlCache = xmldoc;
-	_annotationDisplayCallback( );
+	_annotationDisplayCallback( marginalia, url );
 }
 
 /**
@@ -200,11 +220,10 @@ function _showAnnotationsCallback( xmldoc )
  * is basically a way to implement cooperative multitasking so that if many annotations
  * need to be displayed the browser won't lock up.
  */
-function _annotationDisplayCallback( )
+function _annotationDisplayCallback( marginalia, url )
 {
 	var startTime = new Date( );
 	var curTime;
-	var marginalia = window.marginalia;
 	
 	// Parse the XML, if that hasn't been done already
 	if ( marginalia.annotationXmlCache )
@@ -214,7 +233,7 @@ function _annotationDisplayCallback( )
 		curTime = new Date( );
 		if ( curTime - startTime >= AN_COOP_MAXTIME )
 		{
-			setTimeout( _annotationDisplayCallback, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, url ) }, AN_COOP_TIMEOUT );
 			return;
 		}
 	}
@@ -270,9 +289,17 @@ function _annotationDisplayCallback( )
 		}
 		
 		if ( annotations.length == annotation_i )
+		{
 			delete marginalia.annotationCache;
+			marginalia.showPerBlockUserCounts( url );
+		}
 		else
-			setTimeout( _annotationDisplayCallback, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, url ) }, AN_COOP_TIMEOUT );
+	}
+	// Finally, reposition block markers, as the annotations may have altered paragraph lengths
+	else if ( marginalia.getFeature( AN_BLOCKMARKER_FEAT ) )
+	{
+		marginalia.showPerBlockUserCounts( url );
 	}
 }
 
