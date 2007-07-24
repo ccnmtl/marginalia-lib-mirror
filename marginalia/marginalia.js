@@ -743,11 +743,12 @@ function _mousedownHideCaret( event )
  */
 function _skipAnnotationActions( node )
 {
+	if ( ELEMENT_NODE == node.nodeType && 'ins' == domutil.getLocalName( node ).toLowerCase() )
+	{
+		if ( node.parentNode && domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS ) )
+			return true;
+	}
 	return false;
-	return ELEMENT_NODE == node.nodeType
-		&& 'ins' == getLocalName( node )
-		&& node.parentNode
-		&& domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );
 }
 
 
