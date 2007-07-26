@@ -1,5 +1,5 @@
 /*
- * block-info.js
+ * RangeInfo.js
  *
  * Marginalia has been developed with funding and support from
  * BC Campus, Simon Fraser University, and the Government of
