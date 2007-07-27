@@ -786,7 +786,7 @@ unwrapElementChildren: function( node, doNormalize )
 	{
 		var firstChild = node.firstChild;
 		var lastChild = node.lastChild;
-		for ( var child = firstChild, nextChild = child.nextSibling;  child;  child = nextChild )
+		for ( var child = firstChild, nextChild = child.nextSibling;  child;  child = nextChild, nextChild = child.nextSibling )
 		{
 			node.removeChild( child );
 			domutil.clearEventHandlers( child, false );
