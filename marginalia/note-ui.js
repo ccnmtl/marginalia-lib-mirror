@@ -616,7 +616,7 @@ function _saveAnnotation( event )
 function _deleteAnnotation( event )
 {
 	event.stopPropagation( );
-	var post = domutil.estedFieldValue( this, AN_POST_FIELD );
+	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
 	post.deleteAnnotation( window.marginalia, annotation );
 }
