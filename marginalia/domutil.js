@@ -463,6 +463,7 @@ blockPathToNode: function( root, path, fskip )
 				return null;
 		}
 	}
+	return node;
 },
 
 

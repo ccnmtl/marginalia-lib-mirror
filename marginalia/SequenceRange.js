@@ -194,7 +194,7 @@ SequencePoint.prototype.getReferenceElement = function( root, fskip )
 	var node;
 	var startTime = new Date( );
 	
-	return domutil.blockPathToNode( root, this.path, fskip );
+	node = domutil.blockPathToNode( root, this.path, fskip );
 
 	trace( 'range-timing', 'SequencePoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
 
