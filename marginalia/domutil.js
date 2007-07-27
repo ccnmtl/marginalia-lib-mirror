@@ -430,6 +430,41 @@ closestPrecedingElement: function( rel )
 	return rel;
 },
 
+blockPathToNode: function( root, path, fskip )
+{
+	var node;
+	// Locate the rel node based on the path
+	// The simple case:  rel is root
+	if ( '/' == path )
+		node = root;
+	else
+	{
+		/* This will be slow because it's a linear search.  
+		/* It would be well worth optimizing this by caching a list of jump points,
+		 * or adding a breaknum attribute usable by xpath (e.g. /*[@breaknum=4]) */
+		node = root;
+		nodes = path.split( '/' );
+		for ( var i = 1;  i < nodes.length;  ++i )
+		{
+			var count = Number( nodes[ i ] );
+			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
+			{
+				if ( ! fskip || ! fskip( node ) )
+				{
+					if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
+					{
+						count -= 1;
+						if ( 0 == count )
+							break;
+					}
+				}
+			}
+			if ( 0 != count )
+				return null;
+		}
+	}
+},
+
 
 /* ********** Dom Text Functions ********** */
 

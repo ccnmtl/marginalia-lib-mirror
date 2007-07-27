@@ -194,37 +194,9 @@ SequencePoint.prototype.getReferenceElement = function( root, fskip )
 	var node;
 	var startTime = new Date( );
 	
-	// Locate the rel node based on the path
-	// The simple case:  rel is root
-	if ( '/' == this.path )
-		node = root;
-	else
-	{
-		/* This will be slow because it's a linear search.  
-		/* It would be well worth optimizing this by caching a list of jump points,
-		 * or adding a breaknum attribute usable by xpath (e.g. /*[@breaknum=4]) */
-		node = root;
-		nodes = this.path.split( '/' );
-		for ( var i = 1;  i < nodes.length;  ++i )
-		{
-			var count = Number( nodes[ i ] );
-			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
-			{
-				if ( ! fskip || ! fskip( node ) )
-				{
-					if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
-					{
-						count -= 1;
-						if ( 0 == count )
-							break;
-					}
-				}
-			}
-			if ( 0 != count )
-				return null;
-		}
-	}
-	trace( 'range-timing', 'BlockPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
+	return domutil.blockPathToNode( root, this.path, fskip );
+
+	trace( 'range-timing', 'SequencePoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
 
 	return node;
 }

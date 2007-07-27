@@ -432,7 +432,7 @@ NodeToWordPoint_Machine.prototype.startElement =
 NodeToWordPoint_Machine.prototype.endElement = function( node )
 {
 	this.trace( '<' + node.tagName + '>' );
-	if ( isBreakingElement( node.tagName ) )
+	if ( domutil.isBreakingElement( node.tagName ) )
 	{
 		if ( STATE_WORD == this.state )
 			this.state = STATE_SPACE;

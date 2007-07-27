@@ -629,8 +629,8 @@ function _expandEdit( event )
 	event.stopPropagation( );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
-	var noteElement = getParentByTagClass( event.target, 'li', null, false, null );
-	var expandControl = getChildByTagClass( noteElement, 'button', AN_EXPANDBUTTON_CLASS, null );
+	var noteElement = domutil.parentByTagClass( event.target, 'li', null, false, null );
+	var expandControl = domutil.childByTagClass( noteElement, 'button', AN_EXPANDBUTTON_CLASS, null );
 	while ( expandControl.firstChild )
 		expandControl.removeChild( expandControl.firstChild );
 	

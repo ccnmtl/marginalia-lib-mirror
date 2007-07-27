@@ -92,14 +92,14 @@ function Marginalia( service, username, anusername, urlBase, preferences, keywor
 Marginalia.prototype.setFeature = function( feature, flag )
 {
 	if ( flag )
-		this[ feature ] = flag;
+		this.features[ feature ] = flag;
 	else
-		delete this[ feature ];
+		delete this.features[ feature ];
 }
 
-Marginalia.prototype.getFeature = function( feauture )
+Marginalia.prototype.getFeature = function( feature )
 {
-	return this[ feature ] ? true : false;
+	return this.features[ feature ] ? true : false;
 }
 
 
@@ -329,7 +329,7 @@ Marginalia.prototype.hideAnnotations = function( )
  */
 function getNodeByFragmentPath( url )
 {
-	var postElements = getChildrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
+	var postElements = domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
 	if ( 1 != postElements.length )
 		return;
 	var post = getPostMicro( postElements[ 0 ] );
@@ -338,7 +338,7 @@ function getNodeByFragmentPath( url )
 	if ( -1 == url.indexOf( '#' ) )
 		return null;
 	var path = url.substring( url.indexOf( '#' ) + 1 );
-	var node = PathToNode( content, path );
+	var node = domutil.blockPathToNode( content, path, fskip );
 	return node;
 }
 
@@ -491,8 +491,8 @@ PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
 PostMicro.prototype.createAnnotation = function( marginalia, annotation )
 {
 	// Ensure the window doesn't scroll by saving and restoring scroll position
-	var scrollY = getWindowYScroll( );
-	var scrollX = getWindowXScroll( );
+	var scrollY = domutil.getWindowYScroll( );
+	var scrollX = domutil.getWindowXScroll( );
 
 	annotation.isLocal = true;
 	marginalia.editing = annotation;
@@ -503,14 +503,14 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation )
 	// Focus on the text edit
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	var editElement = ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
-		? domutil.hildByTagClass( noteElement, 'select', null, null )
-		: domutil.hildByTagClass( noteElement, 'textarea', null, null );
+		? domutil.childByTagClass( noteElement, 'select', null, null )
+		: domutil.childByTagClass( noteElement, 'textarea', null, null );
 	// Sequencing here (with focus last) is important
 	this.repositionNotes( marginalia, noteElement.nextSibling );
 	editElement.focus( );
 	// Just in case - IE can't get it right when editing, so I don't trust it
 	// on create either, even if it does work for me.
-	if ( 'exploder' == detectBrowser( ) )
+	if ( 'exploder' == domutil.detectBrowser( ) )
 		editElement.focus( );
 	
 	window.scrollTo( scrollX, scrollY );
