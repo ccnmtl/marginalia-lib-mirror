@@ -29,9 +29,10 @@
 NICE_PREFERENCE_SERVICE_URL = '/preference';
 UGLY_PREFERENCE_SERVICE_URL = '/preference';
 
-function RestPreferenceService( wwwroot )
+function RestPreferenceService( serviceUrl, niceUrls )
 {
-	this.wwwroot = wwwroot;
+	this.serviceUrl = serviceUrl;
+	this.niceUrls = niceUrls;
 	return this;
 }
 
@@ -43,14 +44,8 @@ function RestPreferenceService( wwwroot )
  */
 RestPreferenceService.prototype.listPreferences = function( f )
 {
-	var serviceUrl;
-	if ( ANNOTATION_NICE_URLS )
-		serviceUrl = this.wwwroot + NICE_PREFERENCE_SERVICE_URL;
-	else
-		serviceUrl = this.wwwroot + UGLY_PREFERENCE_SERVICE_URL;	
-	
 	var xmlhttp = domutil.createAjaxRequest( );
-	xmlhttp.open( 'GET', serviceUrl, true );
+	xmlhttp.open( 'GET', this.serviceUrl, true );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 )
 		{
@@ -69,11 +64,7 @@ RestPreferenceService.prototype.listPreferences = function( f )
 
 RestPreferenceService.prototype.setPreference = function( setting, value, f )
 {
-	var serviceUrl;
-	if ( ANNOTATION_NICE_URLS )
-		serviceUrl = this.wwwroot + NICE_PREFERENCE_SERVICE_URL + '?name=' + encodeURIComponent( setting );
-	else
-		serviceUrl = this.wwwroot + UGLY_PREFERENCE_SERVICE_URL + '?name=' + encodeURIComponent( setting );
+	var serviceUrl = this.serviceUrl + '?name=' + encodeURIComponent( setting );
 
 	var body = 'value=' + encodeURIComponent( value );
 	var xmlhttp = domutil.createAjaxRequest( );
