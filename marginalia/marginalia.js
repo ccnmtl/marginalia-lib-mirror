@@ -61,8 +61,8 @@ AN_COOP_MAXTIME = 240;
 /**
  * Must be called before any other annotation functions
  * service - used to connect to the server side
- * anuser - the user whose annotations are to be shown
- * thisuser - the current user (may differ from anuser)
+ * username - the current user
+ * anuser - the user whose annotations are to be shown (may differ from username)
  * urlBase - if null, annotation URLs are used as normal.  Otherwise, they are searched for this
  * string and anything preceeding it is chopped off.  This is necessary because IE lies about
  * hrefs:  it provides an absolute URL for that attribute, rather than the actual text.  In some
@@ -152,32 +152,6 @@ Marginalia.prototype.deleteAnnotation = function( annotationId )
 
 
 /**
- * Show Marginalia features on the page
- * triggers some CSS classes which can be used to show/hide the annotation margin etc.
- */
-Marginalia.prototype.showMarginalia = function( )
-{
-	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
-	if ( this.username == this.anusername )
-		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
-}
-
-
-/**
- * Hide Marginalia features on a page
- * This used to be part of hideAllAnnotations, but because it is sometimes necessary
- * to hide the annotations while allowing users to retrieve subsets of them, this
- * function was necessary (along with showMarginalia).
- */
-Marginalia.prototype.hideMarginalia = function( )
-{
-	var bodyElement = document.getElementsByTagName( 'body' )[ 0 ];
-	domutil.removeClass( document.body, AN_ANNOTATED_CLASS );
-	domutil.removeClass( document.body, AN_SELFANNOTATED_CLASS );
-}	
-
-
-/**
  * Show all annotations on the page
  * Make sure to call showMarginalia too
  * There used to be showAnnotations and hideAnnotations functions which could
@@ -209,6 +183,9 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 function _showAnnotationsCallback( marginalia, url, xmldoc )
 {
 	marginalia.hideAnnotations( );
+	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
+	if ( marginalia.username == marginalia.anusername )
+		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
 	marginalia.annotationXmlCache = xmldoc;
 	_annotationDisplayCallback( marginalia, url );
 }
@@ -260,6 +237,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl )
 				{
 					url = annotation.getUrl( );
 					post = marginalia.listPosts( ).getPostByUrl( url );
+					
 					// Find the first note in the list (if there is one)
 					notes = post.getNotesElement( );
 					nextNode = notes.firstCild;
@@ -291,7 +269,8 @@ function _annotationDisplayCallback( marginalia, callbackUrl )
 		if ( annotations.length == annotation_i )
 		{
 			delete marginalia.annotationCache;
-			marginalia.showPerBlockUserCounts( callbackUrl );
+			if ( marginalia.getFeature( AN_BLOCKMARKER_FEAT ) )
+				marginalia.showPerBlockUserCounts( callbackUrl );
 		}
 		else
 			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl ) }, AN_COOP_TIMEOUT );
@@ -308,6 +287,9 @@ function _annotationDisplayCallback( marginalia, callbackUrl )
  */
 Marginalia.prototype.hideAnnotations = function( )
 {
+	domutil.removeClass( document.body, AN_ANNOTATED_CLASS );
+	domutil.removeClass( document.body, AN_SELFANNOTATED_CLASS );
+	
 	var posts = this.listPosts( ).getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{

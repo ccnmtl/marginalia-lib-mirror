@@ -200,6 +200,8 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// this should never happen anyway.
 	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
 		return null;
+	else if ( xpath == '' )
+		return root;
 	
 /*	// Short-circuit paths starting with IDs
 	// TODO: Test whether this is or is not faster than the browser XPath

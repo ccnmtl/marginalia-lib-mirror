@@ -435,7 +435,7 @@ blockPathToNode: function( root, path, fskip )
 	var node;
 	// Locate the rel node based on the path
 	// The simple case:  rel is root
-	if ( '/' == path )
+	if ( '/' == path || '' == path )
 		node = root;
 	else
 	{

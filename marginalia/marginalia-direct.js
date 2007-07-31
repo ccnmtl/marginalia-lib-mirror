@@ -240,7 +240,7 @@ MarginaliaDirect.prototype.newButton = function( id, text, f )
 	button = document.createElement( 'button' );
 	button.id = id;
 	button.appendChild( document.createTextNode( text ) );
-	addEvente( button, 'click', f );
+	addEvent( button, 'click', f );
 	return button;
 }
 
