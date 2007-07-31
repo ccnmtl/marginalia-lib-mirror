@@ -786,11 +786,14 @@ unwrapElementChildren: function( node, doNormalize )
 	{
 		var firstChild = node.firstChild;
 		var lastChild = node.lastChild;
-		for ( var child = firstChild, nextChild = child.nextSibling;  child;  child = nextChild, nextChild = child.nextSibling )
+		var child = firstChild;
+		while ( child )
 		{
+			var nextChild = child.nextSibling;
 			node.removeChild( child );
 			domutil.clearEventHandlers( child, false );
 			node.parentNode.insertBefore( child, node );
+			child = nextChild;
 		}
 		node.parentNode.removeChild( node );
 		domutil.clearEventHandlers( node, false );

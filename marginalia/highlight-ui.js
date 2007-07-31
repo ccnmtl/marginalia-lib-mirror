@@ -201,7 +201,7 @@ PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 PostMicro.prototype.highlightStripTest = function( tnode, emclass )
 {
 	if ( domutil.matchTagClass( tnode, 'em', AN_HIGHLIGHT_CLASS ) && ( ! emclass || domutil.hasClass( tnode, emclass ) ) )
-		return STRIP_TAG;
+		return domutil.STRIP_TAG;
 	else if ( tnode.parentNode && domutil.hasClass( tnode.parentNode, AN_HIGHLIGHT_CLASS )
 		&& ( ! emclass || domutil.hasClass( tnode.parentNode, emclass ) ) )
 	{
