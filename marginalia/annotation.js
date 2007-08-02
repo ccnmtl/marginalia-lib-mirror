@@ -293,9 +293,10 @@ function compareAnnotationRanges( a1, a2 )
 	return a1.sequenceRange.compare( a2.sequenceRange );
 }
 
-function annotationFromTextRange( post, textRange )
+/* Does anything actually call this anymore? */
+function annotationFromTextRange( marginalia, post, textRange )
 {
-	var range = textRangeToWordRange( textRange, post.contentElement, _skipContent );
+	var range = textRangeToWordRange( textRange, post.contentElement, marginalia.skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation( post.url );
@@ -303,7 +304,7 @@ function annotationFromTextRange( post, textRange )
 	annotation.setRange( XPATH_RANGE, textRange.toXPathRange( ) );
 	// Can't just call toString() to grab the quote from the text range, because that would
 	// include any smart copy text.
-	annotation.setQuote( getTextRangeContent( textRange, _skipContent ) );
+	annotation.setQuote( getTextRangeContent( textRange, marginalia.skipContent ) );
 	//annotation.quote = textRange.toString( );
 	return annotation;
 }
@@ -336,7 +337,7 @@ Annotation.prototype.toString = function( )
  */
 Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService )
 {
-	if ( ! ANNOTATION_KEYWORDS || ! keywordService )
+	if ( ! keywordService )
 		return AN_EDIT_NOTE_FREEFORM;
 	else if ( '' == this.note )
 	{
@@ -344,7 +345,7 @@ Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService
 		return pref ? pref : AN_EDIT_NOTE_KEYWORDS;
 	}
 	else
-		return window.keywordService.isKeyword( this.note )
+		return keywordService.isKeyword( this.note )
 			? AN_EDIT_NOTE_KEYWORDS : AN_EDIT_NOTE_FREEFORM;
 }
 

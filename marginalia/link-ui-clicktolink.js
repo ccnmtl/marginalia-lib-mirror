@@ -32,9 +32,9 @@
 /**
  * Don't initialize this until the DOM has been loaded
  */
-function ClickToLinkUi( )
+function ClickToLinkUi( extlinks )
 {
-	 this.simpleUi = new SimpleLinkUi( );
+	 this.simpleUi = new SimpleLinkUi( extlinks );
 
 	 // Click-to-link doesn't work in IE because of its weak event model
 	if ( window.addEventListener )

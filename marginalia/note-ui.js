@@ -184,7 +184,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	{
 		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
 
-		if ( ANNOTATION_KEYWORDS )
+		if ( marginalia.keywordService )
 		{
 			noteElement.appendChild( domutil.button( {
 				className:	AN_EXPANDBUTTON_CLASS,
@@ -227,7 +227,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 				} ) );
 			}
 
-			if ( ANNOTATION_ACCESS || annotation.getAccess() != ANNOTATION_ACCESS_DEFAULT )
+			if ( marginalia.showAccess || annotation.getAccess() != ANNOTATION_ACCESS_DEFAULT )
 			{
 				// add the access button
 				// even if the feature is turned off, show this if the access is not
@@ -267,7 +267,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 		noteElement.appendChild( noteText );
 		
 		// Mark the action
-		if ( ANNOTATION_ACTIONS && annotation.getAction() )
+		if ( marginalia.showActions && annotation.getAction() )
 			domutil.addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.getAction() );
 		
 		if ( canEdit )

@@ -38,6 +38,44 @@ function smartcopyInit( )
 	window.isSmartcopyOn = false;
 }
 
+function alertSmartcopyStatus( )
+{
+	var msg;
+	var smartcopyStatus = document.getElementById( 'smartcopy-status' );
+
+	if ( null == smartcopyStatus )
+	{
+		// Add box for showing the status of smartcopy
+		// Don't do this in init because the page hasn't yet loaded at that point
+		smartcopyStatus = document.createElement( 'div' );
+		smartcopyStatus.id = 'smartcopy-status';
+		
+		var bodyElement = document.getElementsByTagName( 'body' )[ 0 ];
+		bodyElement.appendChild( smartcopyStatus );
+	}
+	
+	msg = getLocalized( window.isSmartcopyOn ? 'smartcopy on' : 'smartcopy off' );
+	window.status = msg;
+
+	while ( smartcopyStatus.firstChild )
+		smartcopyStatus.removeChild( smartcopyStatus.firstChild );
+	smartcopyStatus.appendChild( document.createTextNode( msg ) );
+	smartcopyStatus.style.display = 'block';
+	smartcopyStatus.style.opacity = 1;
+	setTimeout( fadeSmartcopyStatus, 3000 );
+}
+
+function fadeSmartcopyStatus( )
+{
+	var smartcopyStatus = document.getElementById( 'smartcopy-status' );
+	var opacity = smartcopyStatus.style.opacity - .1;
+	smartcopyStatus.style.opacity = opacity;
+	if ( opacity > 0 )
+		setTimeout( fadeSmartcopyStatus, 100 );
+	else
+		smartcopyStatus.style.display = 'none';
+}
+
 function _smartcopyKeypressHandler( event )
 {
 	var character = String.fromCharCode( event.which );
@@ -47,6 +85,7 @@ function _smartcopyKeypressHandler( event )
 			smartcopyOff( );
 		else
 			smartcopyOn( );
+		alertSmartcopyStatus();
 	}
 }
 

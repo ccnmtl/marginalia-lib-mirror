@@ -31,9 +31,9 @@
  * An instance is held in th Marginalia object.  Some applications will implement
  * their own versions to provide customized UI behavior.
  */
-function SimpleLinkUi( )
+function SimpleLinkUi( extlinks )
 {
-	return this;
+	this.extlinks = extlinks;	// permit links to other hosts?
 }
 
 /**
@@ -80,8 +80,8 @@ SimpleLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, no
 	var editNode = noteElement.appendChild( domutil.element( 'input', {
 		id:  controlId,
 		value:  annotation.getLink() ? annotation.getLink() : '',
-		type:  ANNOTATION_EXTERNAL_LINKING ? 'text' : 'hidden' } ) );
-	if ( ANNOTATION_EXTERNAL_LINKING )
+		type:  this.extlinks ? 'text' : 'hidden' } ) );
+	if ( this.extlinks )
 	{
 		addEvent( editNode, 'keypress', this._editLinkKeypress );
 		addEvent( editNode, 'keyup', _editChangedKeyup );

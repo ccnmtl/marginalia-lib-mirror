@@ -28,17 +28,17 @@
 
 AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
 
-PostMicro.prototype.wordRangeFromAnnotation = function( annotation )
+PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 {
 	var wordRange = new WordRange( );
 	if ( annotation.getRange( XPATH_RANGE ) )
 	{
-		if ( wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, _skipContent ) )
+		if ( wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, marginalia.skipContent ) )
 			return wordRange;
 	}
 	else
 	{
-		if ( wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, _skipContent ) )
+		if ( wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, marginalia.skipContent ) )
 			return wordRange;
 		// TODO: Store XPathRange back to annotation on server
 	}
@@ -62,7 +62,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	trace( 'show-highlight', 'Show highlight for annotation ' + annotation.toString( ) );
 	
 	// Word range needed for conversion to text range and for later calculations
-	var wordRange = this.wordRangeFromAnnotation( annotation );
+	var wordRange = this.wordRangeFromAnnotation( marginalia, annotation );
 	if ( null == wordRange )
 	{
 		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' not within the content area.' );
@@ -72,7 +72,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	
 	//setTrace( 'WordPointWalker', true );		// Show return values from WordPointWalker
 	// TODO: check whether the range even falls within the content element
-	var parts = wordRange.partition( _skipContent );
+	var parts = wordRange.partition( marginalia.skipContent );
 	highlightRanges = parts.ranges;
 	actual = parts.quote;
 	
@@ -120,14 +120,14 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 			newNode = document.createElement( 'em' );
 			
 			newNode.className = AN_HIGHLIGHT_CLASS + ' ' + AN_ID_PREFIX + annotation.getId();
-			if ( ANNOTATION_ACTIONS && annotation.getAction() )
+			if ( marginalia.showActions && annotation.getAction() )
 				newNode.className += ' ' + AN_ACTIONPREFIX_CLASS + annotation.getAction();
 			newNode.onmouseover = _hoverAnnotation;
 			newNode.onmouseout = _unhoverAnnotation;
 			newNode.annotation = annotation;
 			node.parentNode.replaceChild( newNode, node );
 			
-			if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getQuote() )
+			if ( marginalia.showActions && 'edit' == annotation.getAction() && annotation.getQuote() )
 			{
 				var delNode = document.createElement( 'del' );
 				delNode.appendChild( node );
@@ -156,7 +156,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	{
 		domutil.addClass( lastHighlight, AN_LASTHIGHLIGHT_CLASS );
 		// If this was a substitution or insertion action, insert the text
-		if ( ANNOTATION_ACTIONS && 'edit' == annotation.getAction() && annotation.getNote() )
+		if ( marginalia.showActions && 'edit' == annotation.getAction() && annotation.getNote() )
 			this.showActionInsert( marginalia, annotation );
 		// If there's a link from this annotation, add the link icon
 		if ( marginalia.linkUi && annotation.getLink() )
@@ -173,7 +173,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 {
 	trace( 'actions', 'showActionInsert for ' + annotation.getQuote() );
-	var highlights = domutil.childrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, _skipContent );
+	var highlights = domutil.childrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, marginalia.skipContent );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
 		if ( domutil.hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )

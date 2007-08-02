@@ -59,13 +59,10 @@ function encodeURIParameter( s )
 /**
  * Initialize the REST annotation service
  */
-function RestAnnotationService( serviceUrl )
+function RestAnnotationService( serviceUrl, niceUrls )
 {
-	if ( ANNOTATION_NICE_URLS )
-		this.serviceUrl = serviceUrl + NICE_ANNOTATION_SERVICE_URL;
-	else
-		this.serviceUrl = serviceUrl + UGLY_ANNOTATION_SERVICE_URL;
-	return this;
+	this.serviceUrl = serviceUrl;
+	this.niceUrls = niceUrls;
 }
 
 
@@ -197,7 +194,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 {
 	var serviceUrl = this.serviceUrl;
-	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotation.getId() ) : ( '?id=' + annotation.getId() );
+	serviceUrl += this.niceUrls ? ( '/' + annotation.getId() ) : ( '?id=' + annotation.getId() );
 	
 	var body = '';
 	if ( annotation.hasChanged( 'note' )  )
@@ -243,7 +240,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 {
 	var serviceUrl = this.serviceUrl;
-	serviceUrl += ANNOTATION_NICE_URLS ? ( '/' + annotationId ) : ( '?id=' + annotationId );
+	serviceUrl += this.niceUrls ? ( '/' + annotationId ) : ( '?id=' + annotationId );
 	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'DELETE', serviceUrl, true );

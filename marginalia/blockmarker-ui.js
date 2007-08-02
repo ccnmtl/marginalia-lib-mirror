@@ -85,35 +85,40 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 	}
 }
 
+PostMicro.getBlockMarkerClickFcn = function( marginalia, markerElement, url, pointStr )
+{
+	return function() {
+		marginalia.showBlockAnnotations( url, pointStr );
+		domutil.addClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+	};
+}
+
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, marginalia.skipContent );
 	if ( markers )
 	{
+		var countElement;
 		var markerElement = block.markerElement;
 		
 		// Create the marker
 		if ( ! markerElement )
 		{
-			var markerElement = document.createElement( 'div' );
-			markerElement.setAttribute( 'class', AN_MARKER_CLASS );
-			var countElement = document.createElement( 'span' );
-			countElement.setAttribute( 'class', AN_USERCOUNT_CLASS );
-			markerElement.appendChild( countElement );
-			markers.appendChild( markerElement );
-	
-			block.markerElement = markerElement;
-			markerElement.blockElement = block;
-
 			block.blockMarkerUsers = [ ];
-			var marginalia = window.marginalia;
-			var url = info.url;
-			countElement.onclick = function() {
-				marginalia.showBlockAnnotations( url, point.toString() );
-				domutil.addClass( block.markerElement, AN_ANNOTATIONSFETCHED_CLASS );
-			};
+
+			countElement = domutil.element( 'span', {
+				className: AN_USERCOUNT_CLASS,
+				onclick: PostMicro.getBlockMarkerClickFcn( window.marginalia, markerElement, info.url, point.toString() )
+			} );
+			markerElement = domutil.element( 'div', {
+				className: AN_MARKER_CLASS,
+				blockElement: block,
+				content:  countElement
+			} );
+			block.markerElement = markerElement;
+			markers.appendChild( markerElement );
 			
-			this.positionBlockMarker( marginalia, markers, markerElement );
+			this.positionBlockMarker( window.marginalia, markers, markerElement );
 		}
 		// The marker already exists - prepare to update it
 		else
@@ -183,7 +188,7 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
  */
 PostMicro.prototype.repositionBlockMarkers = function( marginalia )
 {
-	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, _skipContent );
+	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, marginalia.skipContent );
 	if ( markers )
 	{
 		var markerElements = domutil.childrenByTagClass( this.element, null, AN_MARKER_CLASS, null );

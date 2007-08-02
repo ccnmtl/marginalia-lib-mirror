@@ -27,7 +27,11 @@
  */
 
 // Features that can be switched on and off
-AN_BLOCKMARKER_FEAT = 'block-markers';
+AN_BLOCKMARKER_FEAT = 'show block markers';
+AN_ACCESS_FEAT = 'public/private access settings';
+AN_LINKING_FEAT = 'allow external links';
+AN_EXTLINKS_FEAT = 'allow external links';
+AN_ACTIONS_FEAT = 'allow (edit) actions';
 
 // The names of HTML/CSS classes used by the annotation code.
 AN_HOVER_CLASS = 'hover';			// assigned to highlights and notes when the mouse is over the other
@@ -69,39 +73,61 @@ AN_COOP_MAXTIME = 240;
  * cases, absolute URLs aren't desirable (e.g. because the annotated resources might be moved
  * to another host, in which case the URLs would all break).
  */
-function marginaliaInit( service, thisuser, anuser, urlBase, preferences, keywordService )
+function Marginalia( service, username, anusername, features )
 {
-	window.marginalia = new Marginalia( service, thisuser, anuser, urlBase, preferences, keywordService );
-
-	addEvent( document, 'keyup', _keyupCreateAnnotation );
-}
-
-
-function Marginalia( service, username, anusername, urlBase, preferences, keywordService )
-{
-	this.urlBase = urlBase;
 	this.annotationService = service;
 	this.username = username;
 	this.anusername = anusername;
-	this.preferences = preferences;
-	this.keywordService = keywordService;
 	this.editing = null;	// annotation currently being edited (if any)
-	this.features = { };
+	
+	this.preferences = null;
+	this.keywordService = null;
+	this.urlBase = null;
+	this.blockMarkers = false;
+	this.access = false;
+	this.linkUi = null;
+	this.actions = false;
+	this.skipContent = function(node) {
+		return _skipAnnotationLinks(node) || _skipAnnotationActions(node); };
+	for ( var feature in features )
+	{
+		var value = features[ feature ];
+		switch ( feature )
+		{
+			case 'preferences':
+				this.preferences = value;
+				break;
+			case 'keywordService':
+				this.keywordService = value;
+				break;
+			case 'baseUrl':
+				this.urlBase = value;
+				break;
+			case 'showBlockMarkers':
+				this.showBlockMarkers = value;
+				break;
+			case 'showAccess':
+				this.showAccess = value;
+				break;
+			case 'linkUi':
+				this.linkUi = value;
+				break;
+			case 'showActions':
+				this.showActions = value;
+				break;
+			case 'onkeyCreate':
+				if ( value )
+					addEvent( document, 'keyup', _keyupCreateAnnotation );
+				break;
+			case 'skipContent':
+				var oldSkipContent = this.skipContent;
+				this.skipContent = function(node) { return oldSkipContent(node) || value(node); };
+				break;
+			default:
+				throw 'Unknown Marginalia feature';
+		}
+	}
 }
-
-Marginalia.prototype.setFeature = function( feature, flag )
-{
-	if ( flag )
-		this.features[ feature ] = flag;
-	else
-		delete this.features[ feature ];
-}
-
-Marginalia.prototype.getFeature = function( feature )
-{
-	return this.features[ feature ] ? true : false;
-}
-
 
 /**
  * Could do this in the initializer, but by leaving it until now we can avoid
@@ -131,7 +157,7 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 		{
 			var root = post.getContentElement( );
 			var wordRange = new WordRange( );
-			wordRange.fromSequenceRange( sequenceRange, root, _skipContent );
+			wordRange.fromSequenceRange( sequenceRange, root, this.skipContent );
 			annotation.setRange( SEQUENCE_RANGE, wordRange.toSequenceRange( root ) );
 		}
 	}
@@ -164,7 +190,9 @@ Marginalia.prototype.deleteAnnotation = function( annotationId )
 Marginalia.prototype.showAnnotations = function( url, block )
 {
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, this.anusername, block, function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc ) } );
+	marginalia.hideAnnotations( );
+	this.annotationService.listAnnotations( url, this.anusername, block,
+		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }
 
 Marginalia.prototype.showBlockAnnotations = function( url, block )
@@ -173,21 +201,20 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 	// Ideally this would happen automatically.
 	var marginalia = this;
 	this.annotationService.listAnnotations( url, null, block,
-		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc ) } );
+		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, false ) } );
 }
 
 /**
  * This is the callback function called by listAnnotations when data first comes back
  * from the server.
  */
-function _showAnnotationsCallback( marginalia, url, xmldoc )
+function _showAnnotationsCallback( marginalia, url, xmldoc, doBlockMarkers )
 {
-	marginalia.hideAnnotations( );
 	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
 	if ( marginalia.username == marginalia.anusername )
 		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
 	marginalia.annotationXmlCache = xmldoc;
-	_annotationDisplayCallback( marginalia, url );
+	_annotationDisplayCallback( marginalia, url, doBlockMarkers );
 }
 
 /**
@@ -196,8 +223,12 @@ function _showAnnotationsCallback( marginalia, url, xmldoc )
  * all in that time, it will call setTimeout to trigger continued display later.  This
  * is basically a way to implement cooperative multitasking so that if many annotations
  * need to be displayed the browser won't lock up.
+ *
+ * It will also fetch and display block markers if that feature is set and the doBlockMarkers
+ * flag is true.  Block markers must be displayed *after* the annotations so that their
+ * height will be correct.
  */
-function _annotationDisplayCallback( marginalia, callbackUrl )
+function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers )
 {
 	var startTime = new Date( );
 	var curTime;
@@ -210,7 +241,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl )
 		curTime = new Date( );
 		if ( curTime - startTime >= AN_COOP_MAXTIME )
 		{
-			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl ) }, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers ) }, AN_COOP_TIMEOUT );
 			return;
 		}
 	}
@@ -269,14 +300,14 @@ function _annotationDisplayCallback( marginalia, callbackUrl )
 		if ( annotations.length == annotation_i )
 		{
 			delete marginalia.annotationCache;
-			if ( marginalia.getFeature( AN_BLOCKMARKER_FEAT ) )
+			if ( doBlockMarkers && marginalia.showBlockMarkers )
 				marginalia.showPerBlockUserCounts( callbackUrl );
 		}
 		else
-			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl ) }, AN_COOP_TIMEOUT );
+			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers ) }, AN_COOP_TIMEOUT );
 	}
 	// Finally, reposition block markers, as the annotations may have altered paragraph lengths
-	else if ( marginalia.getFeature( AN_BLOCKMARKER_FEAT ) )
+	else if ( doBlockMarkers && marginalia.showBlockMarkers )
 	{
 		marginalia.showPerBlockUserCounts( callbackUrl );
 	}
@@ -680,7 +711,7 @@ function _keyupCreateAnnotation( event )
 				event.stopPropagation( );
 		}
 		// C to create an edit action
-		else if ( ANNOTATION_ACTIONS && 67 == event.keyCode)
+		else if ( marginalia.showActions && 67 == event.keyCode)
 		{
 			var action = null;
 			if ( 67 == event.keyCode || 99 == event.keyCode )
@@ -761,11 +792,25 @@ function _skipAnnotationActions( node )
 }
 
 
+/*
+ * Handler for standar createAnnotation button
+ * Application may choose to do things otherwise (e.g. for edit actions)
+ */
+function clickCreateAnnotation( event, id )
+{
+	event.stopPropagation( );
+	createAnnotation( id, true );
+}
+
+
 /**
- * Create a highlight range based on user selection
+ * Create a highlight range based on user selection.
+ *
  * This is not in the event handler section above because it's up to the calling
  * application to decide what control creates an annotation.  Deletes and edits,
  * on the other hand, are built-in to the note display.
+ *
+ * That said, the standard interface calls this from clickCreateAnnotation
  */
 function createAnnotation( postId, warn, action )
 {
@@ -830,14 +875,14 @@ function createAnnotation( postId, warn, action )
 		annotation.setAction( action );
 	
 	var wordRange = new WordRange( );
-	wordRange.fromTextRange( textRange, post.contentElement, _skipContent );
+	wordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
 	var sequenceRange = wordRange.toSequenceRange( post.contentElement );
 	var xpathRange = wordRange.toXPathRange( post.contentElement );
 	
-	annotation.setQuote( getTextRangeContent( textRange, _skipContent ) );
+	annotation.setQuote( getTextRangeContent( textRange, marginalia.skipContent ) );
 	if ( 0 == annotation.getQuote().length )
 	{
-		if ( ANNOTATION_ACTIONS && 'edit' == action )
+		if ( marginalia.showActions && 'edit' == action )
 		{
 			// zero-length quotes are ok for edit actions
 			// Collapse ranges to points
