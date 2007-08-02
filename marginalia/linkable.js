@@ -36,14 +36,16 @@ AN_LINKURL_COOKIE = 'marginalia-link-url';
 /**
  * If the window gains focus and linking is on, enable link targets
  */
-function _enableLinkTargets( )
+function _enableLinkTargets( postInfo )
 {
 	if ( readCookie( AN_LINKING_COOKIE ) )
 	{
-		var postElements = domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-		for ( var i = 0;  i < postElements.length;  ++i )
+		if ( ! postInfo )
+			postInfo = new PostPageInfo( document );
+		var posts = postInfo.getAllPosts( );
+		for ( var i = 0;  i < posts.length;  ++i )
 		{
-			var post = getPostMicro( postElements[ i ] );
+			var post = posts[ i ];
 			var content = post.getContentElement( );
 			domutil.addClass( content, AN_MAKELINKTARGET_CLASS );
 			content.addEventListener( 'click', _clickLinkTarget, false );
@@ -55,12 +57,14 @@ function _enableLinkTargets( )
 /**
  * If the window loses focus, disable link targets
  */
-function _disableLinkTargets( )
+function _disableLinkTargets( postInfo )
 {	
-	var postElements = domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-	for ( var i = 0;  i < postElements.length;  ++i )
+	if ( ! postInfo )
+		postInfo = new PostPageInfo( document );
+	var posts = postInfo.getAllPosts( );
+	for ( var i = 0;  i < posts.length;  ++i )
 	{
-		var post = getPostMicro( postElements[ i ] );
+		var post = posts[ i ];
 		var content = post.getContentElement( );
 		domutil.removeClass( content, AN_MAKELINKTARGET_CLASS );
 		content.removeEventListener( 'click', _clickLinkTarget, false );

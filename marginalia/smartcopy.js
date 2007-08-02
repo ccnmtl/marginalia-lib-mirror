@@ -141,7 +141,8 @@ function addSmartcopy( )
 	var postElement = domutil.parentByTagClass( range.startContainer, null, PM_POST_CLASS, true, _skipPostContent );
 	if ( null == postElement )
 		return false;
-	var post = getPostMicro( postElement );
+	var postInfo = new PostPageInfo( document );
+	var post = postInfo.getPostMicro( postElement );
 	var contentElement = post.getContentElement( );
 	
 	// Check that both the start and end of the selection are within the post content

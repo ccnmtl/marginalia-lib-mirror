@@ -191,8 +191,8 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 				title: 'annotation expand edit button',
 				content: annotation.editing ? AN_COLLAPSED_ICON : AN_EXPANDED_ICON,
 				onclick: _expandEdit } ) );
-			this.showNoteEdit( marginalia, noteElement );
 		}
+		this.showNoteEdit( marginalia, noteElement );
 		
 		// If anywhere outside the note area is clicked, the annotation will be saved.
 		// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),

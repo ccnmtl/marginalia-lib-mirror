@@ -101,7 +101,7 @@ function Marginalia( service, username, anusername, features )
 				this.keywordService = value;
 				break;
 			case 'baseUrl':
-				this.urlBase = value;
+				this.baseUrl = value;
 				break;
 			case 'showBlockMarkers':
 				this.showBlockMarkers = value;
@@ -136,7 +136,7 @@ function Marginalia( service, username, anusername, features )
 Marginalia.prototype.listPosts = function( )
 {
 	if ( ! this.posts )
-		this.posts = new PostPageInfo( document );
+		this.posts = new PostPageInfo( document, this.baseUrl );
 	return this.posts;
 }
 
@@ -270,26 +270,36 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers )
 					post = marginalia.listPosts( ).getPostByUrl( url );
 					
 					// Find the first note in the list (if there is one)
-					notes = post.getNotesElement( );
-					nextNode = notes.firstCild;
-				}
-				
-				// Find the position of the annotation by walking through the note list
-				// (binary search would be nice here, but not practical unless the list is
-				// stored somewhere other than in the DOM - plus, since multiple annotations
-				// are dealt with here at once, the speed hit shouldn't be too bad)
-				while ( nextNode )
-				{
-					if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+					if ( post )
 					{
-						if ( annotation.compareRange( nextNode.annotation ) < 0 )
-							break;
+						notes = post.getNotesElement( );
+						nextNode = notes.firstCild;
 					}
-					nextNode = nextNode.nextSibling;
+					else
+						logError( 'Post not found for URL "' + url + "'" );
 				}
 				
-				// Now insert before beforeNote
-				post.addAnnotation( marginalia, annotation, nextNode );
+				// The server shouldn't normally return URLs that not on this page, but it
+				// could (e.g. if the target has been deleted).  In that case, don't crash!
+				if ( post )
+				{
+					// Find the position of the annotation by walking through the note list
+					// (binary search would be nice here, but not practical unless the list is
+					// stored somewhere other than in the DOM - plus, since multiple annotations
+					// are dealt with here at once, the speed hit shouldn't be too bad)
+					while ( nextNode )
+					{
+						if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+						{
+							if ( annotation.compareRange( nextNode.annotation ) < 0 )
+								break;
+						}
+						nextNode = nextNode.nextSibling;
+					}
+					
+					// Now insert before beforeNote
+					post.addAnnotation( marginalia, annotation, nextNode );
+				}
 			}
 			
 			annotations[ annotation_i ] = null;
@@ -331,28 +341,6 @@ Marginalia.prototype.hideAnnotations = function( )
 			annotations[ j ].destruct( );
 		// normalizeSpace( post.element );
 	}
-}
-
-/**
- * Check the location value for the window for a fragment identifier starting
- * with a slash (I know this is illegal, but right now it seems the cleanest
- * way to specify a node within a document).
- *
- * BROKEN for pages with more than one hentry.
- */
-function getNodeByFragmentPath( url )
-{
-	var postElements = domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, null, _skipPostContent );
-	if ( 1 != postElements.length )
-		return;
-	var post = getPostMicro( postElements[ 0 ] );
-	var content = post.getContentElement( );
-
-	if ( -1 == url.indexOf( '#' ) )
-		return null;
-	var path = url.substring( url.indexOf( '#' ) + 1 );
-	var node = domutil.blockPathToNode( content, path, fskip );
-	return node;
 }
 
 /* *****************************
@@ -868,7 +856,7 @@ function createAnnotation( postId, warn, action )
 	}
 	
 	var marginalia = window.marginalia;
-	var post = document.getElementById( postId ).post;
+	var post = marginalia.listPosts().getPostById( postId );
 	var annotation = new Annotation( post.url );
 	annotation.setUserId( marginalia.username );
 	if ( action )

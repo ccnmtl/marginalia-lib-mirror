@@ -386,9 +386,6 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 					href = href.substring( annotationUrlBase.length );
 				}
 				this.url = href;
-				// Used to link to post here.  In future, this should instead be done outside
-				// the annotation by looking up the url - as here.
-				// this.post = findPostByUrl( href );
 			}
 		}
 		else if ( NS_ATOM == field.namespaceURI && 'author' == domutil.getLocalName( field ) )

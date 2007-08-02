@@ -42,13 +42,13 @@ PM_URL_REL = 'bookmark';				// the url of this fragment (uses rel rather than cl
  * Initially that information was integrated into individual DOM nodes (especially
  * as PostMicro objects), but because of memory leak problems I'm moving it here.
  */
-function PostPageInfo( doc )
+function PostPageInfo( doc, baseUrl )
 {
+	this.baseUrl = baseUrl;
 	this.posts = new Array( );
 	this.postsById = new Object( );
 	this.postsByUrl = new Object( );
 	this.IndexPosts( doc.documentElement );
-	return this;
 }
 
 PostPageInfo.prototype.IndexPosts = function( root )
@@ -57,7 +57,7 @@ PostPageInfo.prototype.IndexPosts = function( root )
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
-		var post = new PostMicro( postElement );
+		var post = new PostMicro( this, postElement );
 		this.posts[ this.posts.length ] = post;
 		if ( null != posts[ i ].id && '' != posts[ i ].id )
 			this.postsById[ posts[ i ].id ] = post;
@@ -99,7 +99,7 @@ function _skipPostContent( node )
  * containing relevant metadata.  The class also provides a place to hang useful functions,
  * e.g. for annotation or smart copy support.
  */
-function PostMicro( element)
+function PostMicro( postInfo, element )
 {
 	// Point the post and DOM node to each other
 	this.element = element;
@@ -136,6 +136,8 @@ function PostMicro( element)
 	// The node containing the url
 	metadata = domutil.childAnchor( element, PM_URL_REL, _skipPostContent );
 	this.url = metadata.getAttribute( 'href' );
+	if ( postInfo.baseUrl && this.url.substring( 0, postInfo.baseUrl.length ) == postInfo.baseUrl )
+			this.url = this.url.substring( postInfo.baseUrl.length );
 	
 	// The node containing the content
 	// Any offsets (e.g. as used by annotations) are from the start of this node's children
@@ -165,28 +167,10 @@ PostMicro.prototype.getContentElement = function( )
 	return domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
 }
 
-function getPostMicro( element )
+PostMicro.prototype.getPostMicro = function( element )
 {
 	if ( ! element.post )
-		element.post= new PostMicro( element );
+		element.post = new PostMicro( this, element );
 	return element.post;
-}
-
-function findPostByUrl( url )
-{
-	var fragments = new Array( );
-	domutil.childrenByTagClass( document.documentElement, null, PM_POST_CLASS, fragments, _skipPostContent );
-	for ( var i = 0;  i < fragments.length;  ++i )
-	{
-		urlNode = domutil.childAnchor( fragments[ i ], PM_URL_REL, _skipPostContent );
-		// IE returns the absolute URL, not the actual content of the href field
-		// (i.e., the bloody piece of junk lies).  So instead of straight equality,
-		// I need to test whether the endings of the two URLs match.  In rare
-		// cases, this might cause a mismatch.  #geof#
-		var href = urlNode.getAttribute( 'href' );
-		if ( null != urlNode && href.length >= url.length && href.substring( href.length - url.length ) == url )
-			return getPostMicro( fragments[ i ] );
-	}
-	return null;
 }
 
