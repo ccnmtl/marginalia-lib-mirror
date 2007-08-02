@@ -5,8 +5,8 @@
  */
  
 .hentry .entry-content em.annotation {
-	background: #ffe880;
-	font-style: normal;
+	background: #fdf377;
+	font-style: inherit;
 }
 
 .hentry .entry-content em.annotation em.annotation {

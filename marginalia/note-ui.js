@@ -251,7 +251,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 		
 		// add the text content
 		var noteText = document.createElement( 'p' );
-		var keyword = marginalia.keywordService.getKeyword( annotation.getNote() );
+		var keyword = marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null;
 		if ( ! quoteFound )
 			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"' );
 		else if ( keyword )
