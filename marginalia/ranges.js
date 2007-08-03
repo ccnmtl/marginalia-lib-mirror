@@ -195,10 +195,10 @@ function WordRange()
  */
 WordRange.prototype.fromTextRange = function( textRange, root, fskip )
 {
-	rel = domutil.closestPrecedingElement( textRange.startContainer );
+	rel = domutil.closestPrecedingBreakingElement( textRange.startContainer );
 	this.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
 
-	rel = domutil.closestPrecedingElement( textRange.endContainer );
+	rel = domutil.closestPrecedingBreakingElement( textRange.endContainer );
 	this.end = nodePointToWordPoint( textRange.endContainer, textRange.endOffset, rel, false, fskip );
 	
 	// If there was a problem, free memory
@@ -267,6 +267,8 @@ WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
 /**
  * Partition a WordRange into a series of shorter TextRanges
  * Also returns the quote defined by the range
+ * The quote has spaces stripped from either end and inserted at breaking element start/end points
+ * (multiple spaces are compressed to a single space)
  */
 WordRange.prototype.partition = function( fskip )
 {

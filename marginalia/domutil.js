@@ -416,18 +416,26 @@ getBlockParent: function( node, root )
 	return root;
 },
 
-closestPrecedingElement: function( rel )
+/*
+ * Find the closest preceding breaking element *in document order*
+ * This is not the same as the closest preceding element at the same depth as the passed element
+ * E.g., for <a> <b>...</b> </a> <rel/>, the closest preceding element for rel is b - not a
+ */
+closestPrecedingBreakingElement: function( rel )
 {
-	while ( ELEMENT_NODE != rel.nodeType || ! domutil.isBreakingElement( rel.tagName ))
+	var walker = new DOMWalker( rel );
+	while ( walker.walk( true, true ) )
 	{
-		if ( rel.previousNode )
-			rel = rel.previousElement;
-		else if ( rel.parentNode )
-			rel = rel.parentNode;
-		else
-			rel = null;
+		if ( ELEMENT_NODE == walker.node.nodeType && domutil.isBreakingElement( walker.node.tagName )
+			&& walker.startTag )
+		{
+			rel = walker.node;
+			walker.destroy();
+			return rel;
+		}
 	}
-	return rel;
+	walker.destroy( );
+	return null;
 },
 
 blockPathToNode: function( root, path, fskip )

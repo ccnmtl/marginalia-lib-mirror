@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Marginalia Unit Tests</title>
+    <link rel="stylesheet" type="text/css" href="../css/jsUnitStyle.css">
+    <script language="JavaScript" type="text/javascript" src="../app/jsUnitCore.js"></script>
+	<script type="text/javascript" src="../../marginalia/log.js"></script>
+	<script type="text/javascript" src="../../marginalia/html-model.js"></script>
+	<script type="text/javascript" src="../../marginalia/domutil.js"></script>
+    <script language="javaScript" type="text/javascript">
+
+	function myload()
+	{
+		window.log = new ErrorLogger( true, true );
+		window.log.setTrace( 'WordRange', true );			// Check if quote matches current state of document
+	}
+
+	function testClosestPrecedingBreakingElement( )
+	{
+		var rel = document.getElementById( 'span1' );
+		var li3 = document.getElementById( 'li3' );
+		var prec = domutil.closestPrecedingBreakingElement( rel );
+		assertTrue( prec == li3 );
+	}
+		
+    </script>
+</head>
+
+<body onload="myload()">
+<h1>Marginalia DOM Walker Tests</h1>
+
+<button onclick="testClosestPrecedingBreakingElement()">Run Test</button>
+
+<div id="test">
+	<ul id="ul1">
+		<li id="li1">One</li>
+		<li id="li2">Two</li>
+		<li id="li3">Three</li>
+	</ul>
+	<span id="span1">Four</span>
+</div>
+
+</body>
+</html>
