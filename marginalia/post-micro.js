@@ -90,6 +90,13 @@ PostPageInfo.prototype.getAllPosts = function( )
 	return this.posts;
 }
 
+PostPageInfo.prototype.getPostMicro = function( element )
+{
+	if ( ! element.post )
+		element.post = new PostMicro( this, element );
+	return element.post;
+}
+
 /*
  * For ignoring post content when looking for specially tagged nodes, so that authors
  * of that content (i.e. users) can't mess things up.
@@ -175,10 +182,4 @@ PostMicro.prototype.getContentElement = function( )
 	return domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
 }
 
-PostMicro.prototype.getPostMicro = function( element )
-{
-	if ( ! element.post )
-		element.post = new PostMicro( this, element );
-	return element.post;
-}
 

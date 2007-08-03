@@ -164,14 +164,14 @@ XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 				{
 					{
 						path = "*[@id='" + id + "']"
-							+ '/following-sibling::' + node.tagName.toLowerCase( )
-								+ '[' + String( count ) + ']'
+							+ '/following-sibling::html:' + node.tagName.toLowerCase( )
+							+ '[' + String( count ) + ']'
 							+ path;
 					}
 				}
 				else
 				{
-					path = node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
+					path = 'html:' + node.tagName.toLowerCase( ) + '[' + String( count ) + ']' + path;
 					node = node.parentNode;
 				}
 			}
@@ -203,20 +203,18 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	else if ( xpath == '' )
 		return root;
 	
-/*	// Short-circuit paths starting with IDs
-	// TODO: Test whether this is or is not faster than the browser XPath
-	// evaluation of this kind of path
-	var matches = xpath.match( /^\.\/\/\*\[@id\s*=\s*\'([^\']+)\'\](.*)$/ );
-	if ( matches )
+	// If this document is not XHTML, need to strip the html: prefixes
+	if ( ! domutil.isXhtml( document ) )
 	{
-		myroot = document.getElementById( matches[ 1 ] );
-		xpath = matches[ 2 ];
+		xpath = xpath.replace( /(\/)html:/g, '$1' );
+		xpath = xpath.replace( /(\/[a-z-]+::)html:/g, '$1' );
+		xpath = xpath.replace( /^html:/, '' );
 	}
-*/	
+	
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
-		rel = root.ownerDocument.evaluate( xpath, myroot, null, XPathResult.ANY_TYPE, null );
+		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 		rel = rel.iterateNext( );
 	}
 	// Internet Explorer's xpath support:
@@ -234,3 +232,5 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	
 	return rel;
 }
+
+

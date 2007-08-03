@@ -292,9 +292,6 @@ WordRange.prototype.partition = function( fskip )
 					walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += t.substring( initialOffset, walker.currChars );
-			// If we passed a word break, insert a space
-			if ( ! walker.inWord )
-				actual += ' ';
 		}
 		else
 		{
@@ -302,7 +299,7 @@ WordRange.prototype.partition = function( fskip )
 				walker.currNode, 0,
 				walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
-			actual += t.substring( 0, walker.currChars );
+			actual += ( walker.breakBefore ? ' ' : '' ) + t.substring( 0, walker.currChars );
 		}
 		rangeNum += 1;
 	}
@@ -727,6 +724,10 @@ WordPointWalker.prototype.walkToPoint = function( point )
  *  sets eof to true. */
 WordPointWalker.prototype.walk = function()
 {
+	// When true, this indicates there was a wordbreak (due to a breaking element)
+	// before the returned chunk of text.
+	this.breakBefore = false;
+	
 	// Walk to the next node
 	while ( true )
 	{
@@ -752,6 +753,8 @@ WordPointWalker.prototype.walk = function()
 				// I'm not sure why I had this and can't convince myself it makes sense:
 				// this.targetWords = this.inWord ? 1 : 0;
 			}
+			if ( ELEMENT_NODE == this.currNode.nodeType && domutil.isBreakingElement( this.currNode.tagName ) )
+				this.breakBefore = true;
 			trace( 'WordPointWalker', ' WordPointWalker in <' + this.currNode.tagName + '>'
 				+ ( this.currNode == this.targetPoint.rel && ! this.endTag ? ' (target rel)' : '' ) );
 		}
@@ -886,7 +889,10 @@ WordPointWalker.prototype.walk = function()
 				//trace( 'WordPointWalker', ' WordPointWalker - element node (' + this.currNode.tagName + ')' );
 				// Note that ELEMENT_NODE is returned at both start and end tags
 				if ( domutil.isBreakingElement( this.currNode.tagName ) )
+				{
 					this.inWord = false;
+					this.breakBefore = true;
+				}
 				this.atNodeEnd = true;
 			}
 		}

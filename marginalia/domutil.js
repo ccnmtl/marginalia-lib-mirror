@@ -35,6 +35,25 @@ DOCUMENT_NODE = 9;
 
 domutil = {
 
+/**
+ * Returns True if this is an xhtml document (and therefore uses the XHTML namespace)
+ */
+isXhtml: function( doc )
+{
+	if ( doc.contentType )
+		return /xml/i.test( doc.contentType );
+	else
+		return doc.documentElement.tagName != "HTML";
+},
+
+// Hack to support XML for now
+nsPrefixResolver: function( prefix )
+{
+	if ( 'html' == prefix )
+		return "http://www.w3.org/1999/xhtml";
+	return null;
+},
+
 instanceOf: function( obj, type )
 {
 	return type.prototype.isPrototypeOf( obj );

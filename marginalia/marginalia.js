@@ -867,7 +867,11 @@ function createAnnotation( postId, warn, action )
 	var sequenceRange = wordRange.toSequenceRange( post.contentElement );
 	var xpathRange = wordRange.toXPathRange( post.contentElement );
 	
-	annotation.setQuote( getTextRangeContent( textRange, marginalia.skipContent ) );
+	// Compress whitespace in quote down to a single space
+	var quote = getTextRangeContent( textRange, marginalia.skipContent );
+	quote = quote.replace( /(\s|\u00a0)+/g, ' ' );
+	annotation.setQuote( quote );
+	
 	if ( 0 == annotation.getQuote().length )
 	{
 		if ( marginalia.showActions && 'edit' == action )
