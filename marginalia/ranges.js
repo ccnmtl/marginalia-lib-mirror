@@ -292,6 +292,9 @@ WordRange.prototype.partition = function( fskip )
 					walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += t.substring( initialOffset, walker.currChars );
+			// If we passed a word break, insert a space
+			if ( ! walker.inWord )
+				actual += ' ';
 		}
 		else
 		{
@@ -304,6 +307,8 @@ WordRange.prototype.partition = function( fskip )
 		rangeNum += 1;
 	}
 	walker.destroy();
+	// compress spaces in the quote
+	actual = actual.replace( /(\s|\u00a0)+/g, ' ' );
 	
 	return {
 		quote: actual,
