@@ -72,9 +72,17 @@ PostPageInfo.prototype.getPostById = function( id )
 	return this.postsById[ id ];
 }
 
+/*
+ * Return a post with a matching URL or, if that does not exist, try stripping baseUrl off the passed Url
+ */
 PostPageInfo.prototype.getPostByUrl = function( url )
 {
-	return this.postsByUrl[ url ];
+	if ( this.postsByUrl[ url ] )
+		return this.postsByUrl[ url ];
+	else if ( url.substring( 0, this.baseUrl.length ) == this.baseUrl )
+		return this.postsByUrl( url.substring( this.baseUrl.length ) );
+	else
+		return null;
 }
 
 PostPageInfo.prototype.getAllPosts = function( )

@@ -350,7 +350,7 @@ Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService
 }
 
 
-Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
+Annotation.prototype.fromAtom = function( entry )
 {
 	var hOffset, hLength, text, url, id;
 	var rangeStr = null;
@@ -379,14 +379,7 @@ Annotation.prototype.fromAtom = function( entry, annotationUrlBase )
 			else if ( 'related' == rel )
 				this.link = href;
 			else if ( 'alternate' == rel )
-			{
-				if ( null != annotationUrlBase
-					&& href.substring( 0, annotationUrlBase.length ) == annotationUrlBase )
-				{
-					href = href.substring( annotationUrlBase.length );
-				}
 				this.url = href;
-			}
 		}
 		else if ( NS_ATOM == field.namespaceURI && 'author' == domutil.getLocalName( field ) )
 		{
@@ -489,7 +482,7 @@ function parseAnnotationXml( xmlDoc )
 //				try
 //				{
 					var annotation = new Annotation( );
-					annotation.fromAtom( child, window.annotationUrlBase );
+					annotation.fromAtom( child );
 					annotations[ annotations.length ] = annotation;
 /*				}
 				catch ( exception )
