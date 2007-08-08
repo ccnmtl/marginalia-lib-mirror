@@ -841,6 +841,7 @@ unwrapElementChildren: function( node, doNormalize )
  * tagName or className can be null to indicate any tag or class
  * Note that this is an HTML implementation:  tag name comparisons are case-insensitive (ack!)
  * Originally written to strip annotation highlights.
+ * Doesn't normalize the result.
  */
 stripSubtree: function( node, tagName, className )
 {

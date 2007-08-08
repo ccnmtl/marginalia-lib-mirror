@@ -862,6 +862,12 @@ function createAnnotation( postId, warn, action )
 	if ( action )
 		annotation.setAction( action );
 	
+	// Must strip smartcopy as it contains a <br> element which will confuse
+	// the range engine.  It's safe to do this because stripsubtree only
+	// removes elements - it doesn't remove, normalize, or otherwise modify
+	// the text nodes used by the textRange for reference.
+	domutil.stripSubtree( post.contentElement, null, 'smart-copy' );
+
 	var wordRange = new WordRange( );
 	wordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
 	var sequenceRange = wordRange.toSequenceRange( post.contentElement );

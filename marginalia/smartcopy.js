@@ -28,17 +28,23 @@
  
 // Initialize smartcopy.  Installs the keyhandler to switch the feature on and off.
 // Return false if the browser doesn't support the feature.
-function smartcopyInit( )
+function smartcopyInit( preferences )
 {
+	window.smartcopy = new Smartcopy( preferences );
 	// No point supporting IE here
 	if ( document.addEventListener )
 	{
 		document.addEventListener ('keyup', _smartcopyKeypressHandler, true );
 	}
-	window.isSmartcopyOn = false;
 }
 
-function alertSmartcopyStatus( )
+function Smartcopy( preferences )
+{
+	this.preferences = preferences;
+	this.active = false;
+}
+
+Smartcopy.prototype.alertSmartcopyStatus = function( )
 {
 	var msg;
 	var smartcopyStatus = document.getElementById( 'smartcopy-status' );
@@ -54,7 +60,7 @@ function alertSmartcopyStatus( )
 		bodyElement.appendChild( smartcopyStatus );
 	}
 	
-	msg = getLocalized( window.isSmartcopyOn ? 'smartcopy on' : 'smartcopy off' );
+	msg = getLocalized( this.active ? 'smartcopy on' : 'smartcopy off' );
 	window.status = msg;
 
 	while ( smartcopyStatus.firstChild )
@@ -62,10 +68,12 @@ function alertSmartcopyStatus( )
 	smartcopyStatus.appendChild( document.createTextNode( msg ) );
 	smartcopyStatus.style.display = 'block';
 	smartcopyStatus.style.opacity = 1;
+	
+	var smartcopy = this;
 	setTimeout( fadeSmartcopyStatus, 3000 );
 }
 
-function fadeSmartcopyStatus( )
+fadeSmartcopyStatus = function( )
 {
 	var smartcopyStatus = document.getElementById( 'smartcopy-status' );
 	var opacity = smartcopyStatus.style.opacity - .1;
@@ -81,22 +89,29 @@ function _smartcopyKeypressHandler( event )
 	var character = String.fromCharCode( event.which );
 	if ( ( 's' == character || 'S' == character ) && event.shiftKey && event.ctrlKey )
 	{
-		if ( window.isSmartcopyOn )
-			smartcopyOff( );
+		var smartcopy = window.smartcopy;
+		if ( smartcopy.active )
+		{
+			smartcopy.smartcopyOff( );
+			smartcopy.preferences.setPreference( 'smartcopy', 'false' );
+		}
 		else
-			smartcopyOn( );
-		alertSmartcopyStatus();
+		{
+			smartcopy.smartcopyOn( );
+			smartcopy.preferences.setPreference( 'smartcopy', 'true' );
+		}
+		smartcopy.alertSmartcopyStatus();
 	}
 }
 
 // Switch on smartcopy.  Returns false if the browser doesn't support the feature.
-function smartcopyOn( )
+Smartcopy.prototype.smartcopyOn = function( )
 {
 	if ( document.addEventListener )
 	{
 		document.addEventListener( 'mouseup', addSmartcopy, false );
 		document.addEventListener( 'mousedown', _smartcopyDownHandler, false );
-		window.isSmartcopyOn = true;
+		this.active = true;
 		window.status = 'Smartcopy is on.  Press Shift-Ctrl-S to switch it off.';
 		return true;
 	}
@@ -105,13 +120,13 @@ function smartcopyOn( )
 }
 
 // Switch off smartcopy
-function smartcopyOff( )
+Smartcopy.prototype.smartcopyOff = function( )
 {
 	if ( document.removeEventListener )
 	{
 		document.removeEventListener( 'mouseup', addSmartcopy, false );
 		document.removeEventListener( 'mousedown', _smartcopyDownHandler, false );
-		window.isSmartcopyOn = false;
+		this.active = false;
 		window.status = 'Smartcopy is off.  Press Shift-Ctrl-S to switch it on.';
 	}
 }
@@ -124,6 +139,8 @@ function _smartcopyDownHandler( )
 
 function addSmartcopy( )
 {
+	var smartcopy = window.smartcopy;
+	
 	// this won't work with IE
 	var selection = window.getSelection();
 	var t = selection.type;

@@ -80,7 +80,7 @@ PostPageInfo.prototype.getPostByUrl = function( url )
 	if ( this.postsByUrl[ url ] )
 		return this.postsByUrl[ url ];
 	else if ( url.substring( 0, this.baseUrl.length ) == this.baseUrl )
-		return this.postsByUrl( url.substring( this.baseUrl.length ) );
+		return this.postsByUrl[ url.substring( this.baseUrl.length ) ];
 	else
 		return null;
 }
