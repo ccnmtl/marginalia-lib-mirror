@@ -528,7 +528,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	removeEvent( noteElement, 'click', domutil.stopPropagation );
 	
-	marginalia.preferences.setPreference( PREF_NOTEEDIT_MODE, annotation.editing );
+	marginalia.preferences.setPreference( AN_NOTEEDITMODE_PREF, annotation.editing );
 	
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );

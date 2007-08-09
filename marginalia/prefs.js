@@ -24,29 +24,44 @@
  * $Id$
  */
 
-PREF_SHOWANNOTATIONS = 'annotations.show';
-PREF_SHOWUSER = 'annotations.show-user';
-PREF_NOTEEDIT_MODE = 'annotations.note-edit-mode';
+AN_USER_PREF = 'annotations.user';
+AN_SHOWANNOTATIONS_PREF = 'annotations.show';
+AN_NOTEEDITMODE_PREF = 'annotations.note-edit-mode';
+AN_SPLASH_PREF = 'annotations.splash';
+SMARTCOPY_PREF = 'smartcopy';
+
 
 /**
  * Preferences creation
+ */
+function Preferences( service, prefs )
+{
+	this.preferences = new Object( );
+	this.service = service;
+	
+	if ( prefs )
+	{
+		for ( name in prefs )
+			this.preferences[ name ] = prefs[ name ];
+	}
+}
+
+/**
+ * Fetch preferences from the service.  (though it's preferable to simply pass prefs in to the constructor)
  * Call this as soon as possible to prevent blocking in getPreference
  * continueFunction - pass this in order to execute that function once all preferences
  *  are fetched.  This is the best way to ensure you don't try to get a preference before
  *  it has been retrieved from the server.
  */
-function Preferences( service, continueFunction )
+Preferences.prototype.fetch = function( continueFunction )
 {
-	this.preferences = new Object( );
 	this.continueFunction = continueFunction;
-	this.service = service;
 	var prefs = this;
 	_cachePrefs = function( text )
 	{
 		prefs.cachePreferences( text );
 	}
 	this.service.listPreferences( _cachePrefs );
-	return this;
 }
 
 Preferences.prototype.cachePreferences = function( text )
@@ -83,7 +98,9 @@ Preferences.prototype.getPreference = function( name, defaultValue )
 
 Preferences.prototype.setPreference = function( name, value )
 {
+	// Only set the preference if it has changed (saves HTTP requests)
+	if ( this.preferences[ name ] && this.preferences[ name ] != value )
+		this.service.setPreference( name, value );
 	this.preferences[ name ] = value;
-	this.service.setPreference( name, value );
 }
 
