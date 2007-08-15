@@ -87,6 +87,7 @@ function Marginalia( service, username, anusername, features )
 	this.access = false;
 	this.linkUi = null;
 	this.actions = false;
+	this.defaultAction = null;
 	this.skipContent = function(node) {
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node); };
 	for ( var feature in features )
@@ -94,30 +95,32 @@ function Marginalia( service, username, anusername, features )
 		var value = features[ feature ];
 		switch ( feature )
 		{
-			case 'preferences':
-				this.preferences = value;
+			case 'action':
+				this.defaultAction = value;
+			case 'baseUrl':
+				this.baseUrl = value;
 				break;
 			case 'keywordService':
 				this.keywordService = value;
 				break;
-			case 'baseUrl':
-				this.baseUrl = value;
-				break;
-			case 'showBlockMarkers':
-				this.showBlockMarkers = value;
-				break;
-			case 'showAccess':
-				this.showAccess = value;
-				break;
 			case 'linkUi':
 				this.linkUi = value;
-				break;
-			case 'showActions':
-				this.showActions = value;
 				break;
 			case 'onkeyCreate':
 				if ( value )
 					addEvent( document, 'keyup', _keyupCreateAnnotation );
+				break;
+			case 'preferences':
+				this.preferences = value;
+				break;
+			case 'showAccess':
+				this.showAccess = value;
+				break;
+			case 'showActions':
+				this.showActions = value;
+				break;
+			case 'showBlockMarkers':
+				this.showBlockMarkers = value;
 				break;
 			case 'skipContent':
 				var oldSkipContent = this.skipContent;
@@ -802,6 +805,8 @@ function clickCreateAnnotation( event, id )
  */
 function createAnnotation( postId, warn, action )
 {
+	var marginalia = window.marginalia;
+
 	// Test for selection support (W3C or IE)
 	if ( ( ! window.getSelection || null == window.getSelection().rangeCount )
 		&& null == document.selection )
@@ -827,6 +832,8 @@ function createAnnotation( postId, warn, action )
 		return;
 	
 	// Check whether this is an edit overlapping another annotation
+	if ( ! action )
+		action = marginalia.defaultAction;
 	if ( 'edit' == action )
 	{
 		trace( null, 'Walk test edit' );
@@ -855,7 +862,6 @@ function createAnnotation( postId, warn, action )
 		postId = domutil.parentByTagClass( contentElement, null, PM_POST_CLASS, true, _skipPostContent ).id;
 	}
 	
-	var marginalia = window.marginalia;
 	var post = marginalia.listPosts().getPostById( postId );
 	var annotation = new Annotation( post.url );
 	annotation.setUserId( marginalia.username );
