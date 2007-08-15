@@ -69,6 +69,7 @@ function testRangeConversion( )
 
 	/* t format below is:  elementid.childindex.charoffset */
 	var conversionData = [
+		{ t: 'sol1.2.0;sli1.2.4',	s: '/8/1/1.0;/8/1/1.4',	q: 'fred',			c: 'image'						},
 		{ t: 'li1.1.28;li2.1.4',	s: '/6/1/7.0;/6/2/1.2',	q: "hand: Lo",		c: 'crossing breaking element boundary'	},
 		{ t: 'p5.1.5;em4.1.4',		s: '/5/2.0;/5/2.7',			q: 'brillig',		c: '5 chars in, then start tag, with <= 5 chars to go'			},
 		{ t: 'p1.1.0;p1.1.1',		s: '/1/1.0;/1/1.1',			q: 'o',				c: 'first character'			},
@@ -97,7 +98,8 @@ function testRangeConversion( )
 		var wordRange = new WordRange( );			
 		wordRange.fromTextRange( conv.textRange, rel, null );
 		var sequenceRange = wordRange.toSequenceRange( rel ); 
-		inform( conv.t + ' converts to ' + sequenceRange.toString( ) );
+		var s = sequenceRange.toString( );
+		inform( conv.t + ' converts to ' + s );
 		assertTrue( 'Convert ' + conv.t + ' to ' + conv.s,
 			conv.sequenceRange.equals( sequenceRange ) );
 		
@@ -195,6 +197,10 @@ TextRange.prototype.fromString = function( str )
 </ul>
 <span id="s1">And while in uffish thought he stood</span><br id="br1"
 /><span id="s2">The Jabberwock, with eyes of flame, came wiffling through the tulgey wood.</span>
+
+<ol id="sol1">
+<li id="sli1"><img src="shy.gif" alt="shy" />fred</li>
+</ol>
 </div>
 
 <div id="xpath-data">
