@@ -60,10 +60,84 @@ function TextRange( startContainer, startOffset, endContainer, endOffset )
 	this.startOffset = startOffset;
 	this.endContainer = endContainer;
 	this.endOffset = endOffset;
-	return this;
 }
 
-/*
+/**
+ * Convert from a W3C Range object
+ */
+TextRange.prototype.fromW3C = function( range )
+{
+	this.startContainer = range.startContainer;
+	this.startOffset = range.startOffset;
+	this.endContainer = range.endContainer;
+	this.endOffset = range.endOffset;
+}
+
+/**
+ * Shift start and end points until each begins or ends in a text node with text
+ * (i.e. pass over whitespace-only and element nodes)
+ */
+TextRange.prototype.shrinkwrap = function( )
+{
+	var foundOther = false;
+	var walker;
+	
+	// Shrinkwrap start
+	if ( TEXT_NODE != this.startContainer )
+	{
+		walker = new DOMWalker( this.startContainer );
+		do
+		{
+			// Make sure endpoints don't pass each other
+			if ( walker.node == this.endContainer )
+				foundOther = true;
+			else if ( foundOther )
+				return false;
+			
+			// Find a non-whitespace-only text node and skip leading whitespace
+			if ( TEXT_NODE == walker.node.nodeType )
+			{
+				var leading = node.nodeValue.match( /^(\s|\u00a0)*/ );
+				if ( leading[ 1 ].length < node.nodeValue.length )
+				{
+					this.startContainer = node;
+					this.startOffset = leading[ 1 ].length;
+				}
+			}
+		}
+		while ( walker.walk( true ) );
+	}
+	
+	// Shrinkwrap end
+	if ( TEXT_NODE != this.endContainer )
+	{
+		foundOther = false;
+		walker = new DOMWalker( this.startContainer, true );
+		do
+		{
+			// Make sure endpoints don't pass each other
+			if ( walker.node == this.startContainer )
+				foundOther = true;
+			else if ( foundOther )
+				return false;
+			
+			// Find a non-whitespace-only text node and skip trailing whitespace
+			if ( TEXT_NODE == walker.node.nodeType )
+			{
+				var trailing = node.nodeValue.match( /(\s|\u00a0)*$/ );
+				if ( trailing[ 1 ].length < node.nodeValue.length )
+				{
+					this.endContainer = node;
+					this.endOffset = node.nodeValue.length - trailing[ 1 ].length;
+				}
+			}
+		}
+		while ( walker.walk( true, true ) );
+	}
+	return true;
+}
+
+/**
  * Convert a word range to a text range
  * This is also inefficient, because annotation calls it repeatedly, each time from the start
  * of the document.  A better version would take advantage of the fact that highlights are

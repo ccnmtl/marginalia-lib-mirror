@@ -55,7 +55,7 @@ function testXPathRangeFollowingId( )
 {
 	var ranges = makeXPathRange( '/1/2/2.0;/1/2/2.4' );
 	xpath = ranges.xpathRange.toString( );
-	var expect = ".//*[@id='xbq1']/following-sibling::blockquote[1]/word(2)/char(0);.//*[@id='xbq1']/following-sibling::blockquote[1]/word(2)/char(4)";
+	var expect = ".//*[@id='xbq1']/following-sibling::html:blockquote[1]/word(2)/char(0);.//*[@id='xbq1']/following-sibling::html:blockquote[1]/word(2)/char(4)";
 	assertTrue( 'xpath ' + xpath + ' = expect ' + expect, xpath == expect );
 	
 	var wordRange = new WordRange( );
@@ -181,7 +181,7 @@ TextRange.prototype.fromString = function( str )
 <body onload='myload()'>
 <h1>Marginalia Range Format Conversion Tests</h1>
 
-<button onclick="testRangeConversion()">Run Test</button>
+<button onclick="testXPathRangeFollowingId()">Run Test</button>
 
 <div id="word-data">
 <p id="p1">one</p>

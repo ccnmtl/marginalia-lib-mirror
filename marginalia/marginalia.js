@@ -824,6 +824,10 @@ function createAnnotation( postId, warn, action )
 		return false;
 	}
 	
+	// Strip off leading and trailing whitespace and preprocess so that
+	// conversion to WordRange will go smoothly.
+	textRange.shrinkwrap( );
+	
 	// Check for an annotation with id 0.  If one exists, we can't send another request
 	// because the code would get confused by the two ID values coming back.  In that
 	// case (hopefully very rare), silently fail.  (I figure the user doesn't want to

@@ -1127,11 +1127,11 @@ isString: function( s )
 /**
  * Walk through nodes in document order
  */
-function DOMWalker( startNode )
+function DOMWalker( startNode, atEnd )
 {
 	this.node = startNode;
-	this.endTag = false;
-	this.startTag = true;
+	this.endTag = atEnd;
+	this.startTag = ! atEnd;
 }
 
 DOMWalker.prototype.destroy = function( )
