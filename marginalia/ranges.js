@@ -77,65 +77,80 @@ TextRange.prototype.fromW3C = function( range )
  * Shift start and end points until each begins or ends in a text node with text
  * (i.e. pass over whitespace-only and element nodes)
  */
-TextRange.prototype.shrinkwrap = function( )
+TextRange.prototype.shrinkwrap = function( fskip )
 {
 	// Shrinkwrap start
-	if ( TEXT_NODE != this.startContainer.nodeType )
+	var node = this.startContainer;
+
+	// First apply the offset
+	if ( TEXT_NODE != node.nodeType && this.startOffset > 0)
+		node = node.childNodes.item( this.startOffset - 1 );
+		
+	var foundOther = false;
+	var walker = new DOMWalker( node );
+	do
 	{
-		var foundOther = false;
-		var walker = new DOMWalker( this.startContainer );
-		do
+		var node = walker.node;
+
+		// Make sure endpoints don't pass each other
+		if ( node == this.endContainer )
+			foundOther = true;
+		else if ( foundOther )
+			return false;
+		
+		
+		// Find a non-whitespace-only text node and skip leading whitespace
+		if ( !fskip || ! fskip( node ) && TEXT_NODE == node.nodeType )
 		{
-			var node = walker.node;
-			
-			// Make sure endpoints don't pass each other
-			if ( node == this.endContainer )
-				foundOther = true;
-			else if ( foundOther )
-				return false;
-			
-			// Find a non-whitespace-only text node and skip leading whitespace
-			if ( TEXT_NODE == node.nodeType )
+			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 			{
-				if ( ! walker.node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
+				if ( node != this.startContainer )
 				{
 					this.startContainer = node;
 					this.startOffset = 0;
-					break;
 				}
+				break;
 			}
 		}
-		while ( walker.walk( true ) );
 	}
+	while ( walker.walk( !fskip || ! fskip( node ) ) );
+
 	
 	// Shrinkwrap end
-	if ( TEXT_NODE != this.endContainer.nodeType )
+	var node = this.endContainer;
+
+	// First apply the offset
+	if ( TEXT_NODE != this.endContainer.nodeType && this.endOffset > 0 )
+		node = node.childNodes.item( this.endOffset - 1 );
+		
+	var foundOther = false;
+	var walker = new DOMWalker( node, true );
+	do
 	{
-		var foundOther = false;
-		var walker = new DOMWalker( this.startContainer, true );
-		do
+		var node = walker.node;
+		
+		// Make sure endpoints don't pass each other
+		if ( node == this.startContainer )
+			foundOther = true;
+		else if ( foundOther )
+			return false;
+		
+		// Find a non-whitespace-only text node and skip trailing whitespace
+		if ( ! fskip || ! fskip( node ) && TEXT_NODE == node.nodeType )
 		{
-			var node = walker.node;
-			
-			// Make sure endpoints don't pass each other
-			if ( node == this.startContainer )
-				foundOther = true;
-			else if ( foundOther )
-				return false;
-			
-			// Find a non-whitespace-only text node and skip trailing whitespace
-			if ( TEXT_NODE == node.nodeType )
+			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 			{
-				if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
+				if ( node != this.endContainer )
 				{
 					this.endContainer = walker.node;
 					this.endOffset = node.nodeValue.length;
-					break;
 				}
+				break;
 			}
 		}
-		while ( walker.walk( true, true ) );
 	}
+	while ( walker.walk( ! fskip || ! fskip( node ), true ) );
+
 	return true;
 }
 

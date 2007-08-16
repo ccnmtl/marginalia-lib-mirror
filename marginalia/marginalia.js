@@ -816,8 +816,8 @@ function createAnnotation( postId, warn, action )
 		return false;
 	}
 		
-	var textRange = getPortableSelectionRange();
-	if ( null == textRange )
+	var textRange0 = getPortableSelectionRange();
+	if ( null == textRange0 )
 	{
 		if ( warn )
 			alert( getLocalized( 'select text to annotate' ) );
@@ -826,7 +826,15 @@ function createAnnotation( postId, warn, action )
 	
 	// Strip off leading and trailing whitespace and preprocess so that
 	// conversion to WordRange will go smoothly.
-	textRange.shrinkwrap( );
+	var textRange = new TextRange( );
+	textRange.fromW3C( textRange0 );
+	if ( ! textRange.shrinkwrap( marginalia.skipContent ) )
+	{
+		// this happens if the shrinkwrapped range has no non-whitespace text in it
+		if ( warn )
+			alert( getLocalized( 'select text to annotate' ) );
+		return false;
+	}
 	
 	// Check for an annotation with id 0.  If one exists, we can't send another request
 	// because the code would get confused by the two ID values coming back.  In that
