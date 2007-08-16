@@ -79,29 +79,29 @@ TextRange.prototype.fromW3C = function( range )
  */
 TextRange.prototype.shrinkwrap = function( )
 {
-	var foundOther = false;
-	var walker;
-	
 	// Shrinkwrap start
-	if ( TEXT_NODE != this.startContainer )
+	if ( TEXT_NODE != this.startContainer.nodeType )
 	{
-		walker = new DOMWalker( this.startContainer );
+		var foundOther = false;
+		var walker = new DOMWalker( this.startContainer );
 		do
 		{
+			var node = walker.node;
+			
 			// Make sure endpoints don't pass each other
-			if ( walker.node == this.endContainer )
+			if ( node == this.endContainer )
 				foundOther = true;
 			else if ( foundOther )
 				return false;
 			
 			// Find a non-whitespace-only text node and skip leading whitespace
-			if ( TEXT_NODE == walker.node.nodeType )
+			if ( TEXT_NODE == node.nodeType )
 			{
-				var leading = node.nodeValue.match( /^(\s|\u00a0)*/ );
-				if ( leading[ 1 ].length < node.nodeValue.length )
+				if ( ! walker.node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 				{
 					this.startContainer = node;
-					this.startOffset = leading[ 1 ].length;
+					this.startOffset = 0;
+					break;
 				}
 			}
 		}
@@ -109,26 +109,28 @@ TextRange.prototype.shrinkwrap = function( )
 	}
 	
 	// Shrinkwrap end
-	if ( TEXT_NODE != this.endContainer )
+	if ( TEXT_NODE != this.endContainer.nodeType )
 	{
-		foundOther = false;
-		walker = new DOMWalker( this.startContainer, true );
+		var foundOther = false;
+		var walker = new DOMWalker( this.startContainer, true );
 		do
 		{
+			var node = walker.node;
+			
 			// Make sure endpoints don't pass each other
-			if ( walker.node == this.startContainer )
+			if ( node == this.startContainer )
 				foundOther = true;
 			else if ( foundOther )
 				return false;
 			
 			// Find a non-whitespace-only text node and skip trailing whitespace
-			if ( TEXT_NODE == walker.node.nodeType )
+			if ( TEXT_NODE == node.nodeType )
 			{
-				var trailing = node.nodeValue.match( /(\s|\u00a0)*$/ );
-				if ( trailing[ 1 ].length < node.nodeValue.length )
+				if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 				{
-					this.endContainer = node;
-					this.endOffset = node.nodeValue.length - trailing[ 1 ].length;
+					this.endContainer = walker.node;
+					this.endOffset = node.nodeValue.length;
+					break;
 				}
 			}
 		}
@@ -408,7 +410,8 @@ WordRange.prototype.destroy = function( )
 
 /*
  * Convert a (container,offset) pair into a word count from containing node named rel
- * container must be the text node containing the point
+ * container must be the text node containing the point.
+ * The container and offset must correspond to the output of TextRange.shrinkwrap() 
  * The first representation is browser-specific, but a word count is not.
  * A word is defined as a continuous sequence of non-space characters.  Inline elements
  * are not considered word separators, but block-level elements are.
@@ -505,16 +508,13 @@ NodeToWordPoint_Machine.prototype.getPoint = function( )
 }
 
 /** Callback when a start element is encountered */
-NodeToWordPoint_Machine.prototype.startElement = function( node )
+NodeToWordPoint_Machine.prototype.startElement =
+NodeToWordPoint_Machine.prototype.endElement = function( node )
 {
 	this.trace( '<' + node.tagName + '>' );
 	if ( domutil.isBreakingElement( node.tagName ) )
 	{
-		// Make sure to normalize the resulting point
-		// this can happen if highlight starts on an image at the beginning of a breaking element
-		if ( STATE_SPACE == this.state )
-			this.container = node;
-		else if ( STATE_WORD == this.state )
+		if ( STATE_WORD == this.state )
 			this.state = STATE_SPACE;
 		else if ( STATE_FALL_FORWARD == this.state )
 		{
@@ -522,17 +522,10 @@ NodeToWordPoint_Machine.prototype.startElement = function( node )
 			return false;
 		}
 	}
-	if ( node == this.targetContainer )
-	{
-		if ( STATE_WORD == this.state )
-			this.state = STATE_TARGET_WORD;
-		else if ( STATE_SPACE == this.state )
-			this.state = STATE_TARGET_SPACE;
-	}
 	return true;
 }
 
-/** Callback when an end element is encountered */
+/* Callback when an end element is encountered
 NodeToWordPoint_Machine.prototype.endElement = function( node )
 {
 	this.trace( '</' + node.tagName + '>' );
@@ -548,7 +541,7 @@ NodeToWordPoint_Machine.prototype.endElement = function( node )
 	}
 	return true;
 }
-
+*/
 NodeToWordPoint_Machine.prototype.text = function( node )
 {
 	if ( node == this.targetContainer || STATE_TARGET_WORD == this.state || STATE_TARGET_SPACE == this.state )
