@@ -100,7 +100,7 @@ TextRange.prototype.shrinkwrap = function( fskip )
 		
 		
 		// Find a non-whitespace-only text node and skip leading whitespace
-		if ( !fskip || ! fskip( node ) && TEXT_NODE == node.nodeType )
+		if ( ( !fskip || ! fskip( node ) ) && TEXT_NODE == node.nodeType )
 		{
 			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 			{
@@ -136,7 +136,7 @@ TextRange.prototype.shrinkwrap = function( fskip )
 			return false;
 		
 		// Find a non-whitespace-only text node and skip trailing whitespace
-		if ( ! fskip || ! fskip( node ) && TEXT_NODE == node.nodeType )
+		if ( ( !fskip || ! fskip( node ) ) && TEXT_NODE == node.nodeType )
 		{
 			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 			{
