@@ -774,8 +774,6 @@ function _mousedownHideCaret( event )
  */
 function _skipAnnotationActions( node )
 {
-	trace( null, 'Name: ' + node.tagName );
-	trace( null, 'baseName: ' + node.baseName );
 	if ( ELEMENT_NODE == node.nodeType && 'ins' == domutil.getLocalName( node ).toLowerCase() )
 	{
 		if ( node.parentNode && domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS ) )
