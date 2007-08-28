@@ -217,9 +217,14 @@ XPathPoint.prototype.getReferenceElement = function( root )
 		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 		rel = rel.iterateNext( );
 	}
-	// Internet Explorer's xpath support:
+	/*
+	// Internet Explorer's xpath support might look like the following if it existed for
+	// HTML document nodes (duh):
 	else if ( root.selectSingleNode )
+	{
 		rel = root.selectSingleNode( xpath );
+	}
+	*/
 
 	trace( 'range-timing', 'XPathPoint.getReferenceElement timing: ' + ( (new Date()) - startTime ) );
 		
