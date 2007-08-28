@@ -774,6 +774,8 @@ function _mousedownHideCaret( event )
  */
 function _skipAnnotationActions( node )
 {
+	trace( null, 'Name: ' + node.tagName );
+	trace( null, 'baseName: ' + node.baseName );
 	if ( ELEMENT_NODE == node.nodeType && 'ins' == domutil.getLocalName( node ).toLowerCase() )
 	{
 		if ( node.parentNode && domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS ) )
@@ -789,7 +791,10 @@ function _skipAnnotationActions( node )
  */
 function clickCreateAnnotation( event, id )
 {
-	event.stopPropagation( );
+	// This might be called from a handler not set up by addEvent,
+	// so use the clumsy functions.
+	event = domutil.getEvent( event );
+	domutil.stopPropagation( event );
 	createAnnotation( id, true );
 }
 

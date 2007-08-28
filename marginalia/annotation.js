@@ -391,7 +391,7 @@ Annotation.prototype.fromAtom = function( entry )
 		}
 		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'range' )
 		{
-			var format = field.getAttribute( 'format', '' );
+			var format = field.getAttribute( 'format' );
 			// These ranges may throw parse errors
 			if ( 'sequence' == format )
 				this.setRange( format, new SequenceRange( domutil.getNodeText( field ) ) );
@@ -419,6 +419,33 @@ Annotation.prototype.fromAtom = function( entry )
  */
 Annotation.prototype.fromAtomContent = function( parent, mode )
 {
+	var pquote = domutil.childByTagClass( parent, 'p', 'quote' );
+	var quote = domutil.childByTagClass( pquote, 'q' );
+	this.quote = quote ? domutil.getNodeText( quote ) : '';
+	
+	var cite = domutil.childByTagClass( pquote, 'cite' );
+	var a = domutil.childByTagClass( cite, 'a' );
+	this.url = a ? a.getAttribute( 'href' ) : '';
+	this.quoteTitle = a ? domutil.getNodeText( a ) : '';
+	
+	var quoteAuthor = domutil.childByTagClass( pquote, null, 'quoteAuthor' );
+	this.quoteAuthor = quoteAuthor ? domutil.getNodeText( quoteAuthor ) : null;
+	
+	var note = domutil.childByTagClass( parent, 'p', 'note' );
+	this.note = note ? domutil.getNodeText( note ) : '';
+	
+	if ( domutil.childByTagClass( quote, 'del' ) || domutil.childByTagClass( quote, 'ins' ) )
+		this.action = 'edit';
+	var link = domutil.childByTagClass( parent, 'p', 'see-also' );
+	if ( link )
+	{
+		var a = domutil.childByTagClass( link, 'a' );
+		this.link = a ? a.getAttribute( 'href' ) : null;
+		var cite = domutil.childByTagClass( link, 'cite' );
+		this.linkTitle = cite ? domutil.getNodeText( cite ) : '';
+	}
+	
+	/* cssQuery doesn't work for XML documents in IE (argh):
 	this.quote = this.atomContentText( parent, 'p.quote q' );
 	this.url = this.atomContentAttrib( parent, 'p.quote cite a', 'href' );
 	this.quoteTitle = this.atomContentText( parent, 'p.quote cite a' );
@@ -433,6 +460,7 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 		this.link = cssQuery( 'a', link )[0].getAttribute( 'href' );
 		this.linkTitle = this.atomContentText( link, 'cite' );
 	}
+	*/
 }
 
 Annotation.prototype.atomContentText = function( parent, css )
@@ -452,6 +480,7 @@ Annotation.prototype.atomContentAttrib = function( parent, css, attrib )
 	var node = cssQuery( css, parent );
 	if ( node && node.length > 0 )
 		return node[0].getAttribute( attrib );
+	trace( null, 'CSS (' + css + ') did not resolve for "' + attrib + '" in ' + parent.innerHtml );
 	return '';
 }
 
@@ -462,7 +491,7 @@ function parseAnnotationXml( xmlDoc )
 {
 	var annotations = new Array( );
 	
-	if ( xmlDoc.documentElement.tagName == "error" )
+	if ( !xmlDoc || xmlDoc.documentElement.tagName == "error" )
 	{
 		logError( "parseAnnotationXML Error: " + xmlDoc.documentElement.textValue() );
 		alert( getLocalized( 'corrupt XML from service' ) );

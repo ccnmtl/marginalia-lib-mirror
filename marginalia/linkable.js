@@ -36,12 +36,11 @@ AN_LINKURL_COOKIE = 'marginalia-link-url';
 /**
  * If the window gains focus and linking is on, enable link targets
  */
-function _enableLinkTargets( postInfo )
+function _enableLinkTargets( )
 {
 	if ( readCookie( AN_LINKING_COOKIE ) )
 	{
-		if ( ! postInfo )
-			postInfo = new PostPageInfo( document );
+		var postInfo = new PostPageInfo( document );
 		var posts = postInfo.getAllPosts( );
 		for ( var i = 0;  i < posts.length;  ++i )
 		{
@@ -57,10 +56,9 @@ function _enableLinkTargets( postInfo )
 /**
  * If the window loses focus, disable link targets
  */
-function _disableLinkTargets( postInfo )
+function _disableLinkTargets( )
 {	
-	if ( ! postInfo )
-		postInfo = new PostPageInfo( document );
+	var postInfo = new PostPageInfo( document );
 	var posts = postInfo.getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{

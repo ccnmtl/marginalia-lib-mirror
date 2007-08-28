@@ -59,6 +59,31 @@ instanceOf: function( obj, type )
 	return type.prototype.isPrototypeOf( obj );
 },
 
+
+// W3C/IE event handling:
+
+/** Get an event */
+getEvent: function( event )
+{
+	return event ? event : window.event;
+},
+
+/** Get an event target.  Because IE sucks */
+getEventTarget: function( event )
+{
+	return event.target ? event.target : event.srcElement;
+},
+
+/** Stop an event from bubbling */
+stopPropagation: function( event )
+{
+	if ( event.stopPropagation )
+		event.stopPropagation();		// W3C
+	else
+		event.cancelBubble = true;	// IE
+},
+
+
 /* ******** Display Model Functions ******** */
 
 /*
@@ -207,8 +232,10 @@ getLocalName: function( element )
 {
 	if ( element.localName )
 		return element.localName;	// W3C implementation
-	else
+	else if ( element.baseName )
 		return element.baseName;	// IE implementation
+	else
+		return element.tagName;	// IE is somewhat inconsistent
 },
 
 /*
@@ -233,11 +260,16 @@ childByTagClass: function( node, tagName, className, fskip )
 		{
 			if ( null == className )
 				return node;
-			var classNames = node.className.split( ' ' );
-			for ( var i = 0;  i < classNames.length;  ++i )
+			// for XML compatibility:
+			var classNames = node.className ? node.className : node.getAttribute( 'class' );
+			if ( classNames )
 			{
-				if ( classNames[ i ] == className )
-					return node;
+				classNames = classNames.split( ' ' );
+				for ( var i = 0;  i < classNames.length;  ++i )
+				{
+					if ( classNames[ i ] == className )
+						return node;
+				}
 			}
 		}
 		if ( null != node.childNodes )
@@ -594,15 +626,6 @@ trim:  function( s )
 	}
 	return s;
 },
-
-/**
- * Used as an event handler
- */
-stopPropagation: function( event )
-{
-	event.stopPropagation( );
-},
-
 
 /* ********** Form Controls ********** */
 

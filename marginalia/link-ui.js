@@ -107,8 +107,9 @@ PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
 	else
 	{
 		var event = marginalia;
-		annotation = domutil.nestedFieldValue( event.target, AN_ANNOTATION_FIELD );
-		post = domutil.nestedFieldValue( event.target, AN_POST_FIELD );
+		var target = domutil.getEventTarget( event );
+		annotation = domutil.nestedFieldValue( target, AN_ANNOTATION_FIELD );
+		post = domutil.nestedFieldValue( target, AN_POST_FIELD );
 		marginalia = window.marginalia;
 	}
 	

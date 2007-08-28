@@ -42,7 +42,7 @@ ErrorLogger.prototype.getLogElement =  function( )
 {
 	if ( ! this.logElement )
 	{
-		this.logWindow = window.open( "marginalia/log.html", "Log" );
+		this.logWindow = window.open( "", "Log" );
 		// May fail to open if the html file cannot be found
 		if ( this.logWindow )
 		{

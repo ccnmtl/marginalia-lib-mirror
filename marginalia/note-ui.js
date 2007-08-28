@@ -568,8 +568,9 @@ function _editAnnotation( event )
  */
 function _editNoteKeypress( event )
 {
-	var post = domutil.nestedFieldValue( event.target, AN_POST_FIELD );
-	var annotation = domutil.nestedFieldValue( event.target, AN_ANNOTATION_FIELD );
+	var target = domutil.getEventTarget( event );
+	var post = domutil.nestedFieldValue( target, AN_POST_FIELD );
+	var annotation = domutil.nestedFieldValue( target, AN_ANNOTATION_FIELD );
 	if ( event.keyCode == 13 )
 	{
 		post.saveAnnotation( window.marginalia, annotation );
@@ -588,11 +589,12 @@ function _editNoteKeypress( event )
  */
 function _editChangedKeyup( event )
 {
-	var annotation = domutil.nestedFieldValue( event.target, AN_ANNOTATION_FIELD );
-	if ( event.target.value != annotation.note )
-		domutil.addClass( event.target, AN_EDITCHANGED_CLASS );
+	var target = domutil.getEventTarget( event );
+	var annotation = domutil.nestedFieldValue( target, AN_ANNOTATION_FIELD );
+	if ( target.value != annotation.note )
+		domutil.addClass( target, AN_EDITCHANGED_CLASS );
 	else
-		domutil.removeClass( event.target, AN_EDITCHANGED_CLASS );
+		domutil.removeClass( target, AN_EDITCHANGED_CLASS );
 }		
 
 
@@ -627,9 +629,10 @@ function _deleteAnnotation( event )
 function _expandEdit( event )
 {
 	event.stopPropagation( );
+	var target = domutil.getEventTarget( event );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
-	var noteElement = domutil.parentByTagClass( event.target, 'li', null, false, null );
+	var noteElement = domutil.parentByTagClass( target, 'li', null, false, null );
 	var expandControl = domutil.childByTagClass( noteElement, 'button', AN_EXPANDBUTTON_CLASS, null );
 	while ( expandControl.firstChild )
 		expandControl.removeChild( expandControl.firstChild );
@@ -663,9 +666,10 @@ function _expandEdit( event )
 function _toggleAnnotationAccess( event )
 {
 	event.stopPropagation( );
-
+	var target = domutil.getEventTarget( event );
+	
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
-	var accessButton = event.target;
+	var accessButton = target;
 
 	annotation.setAccess( annotation.getAccess() == 'public' ? 'private' : 'public' );
 	window.marginalia.updateAnnotation( annotation, null );
