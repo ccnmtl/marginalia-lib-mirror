@@ -846,28 +846,10 @@ function createAnnotation( postId, warn, action )
 	if ( null != document.getElementById( AN_ID_PREFIX + '0' ) )
 		return;
 	
+
 	// Check whether this is an edit overlapping another annotation
 	if ( ! action )
 		action = marginalia.defaultAction;
-	if ( 'edit' == action )
-	{
-		trace( null, 'Walk test edit' );
-		
-		// First test whether 
-		var walker = new DOMWalker( textRange.startContainer );
-		while ( walker.walk( true, false ) && walker.node != textRange.endContainer )
-		{
-			// Find start and end tags for ins and del elements, check whether they're in highlight regions
-			// - in which case we're in an edit range
-			if ( ELEMENT_NODE == walker.node.nodeType && 
-				( 'ins' == walker.node.tagName.toLowerCase( ) || 'del' == walker.node.tagName.toLowerCase( ) )
-				&& domutil.parentByTagClass( walker.node, null, AN_HIGHLIGHT_CLASS ) )
-			{
-				alert( getLocalized( 'create overlapping edits' ) );
-				return false;
-			}
-		}
-	}
 	
 	if ( null == postId )
 	{
@@ -929,6 +911,33 @@ function createAnnotation( postId, warn, action )
 		return false;
 	}
 	
+	// Make sure edit annotations don't overlap
+	if ( 'edit' == action )
+	{
+		// This takes linear time unfortunately, but is very straightforward.
+		// It may be a candidate for optimization (e.g. by caching the annotation
+		// list and/or doing a binary search).
+		var annotations = post.listAnnotations( );
+		for ( var i = 0;  i < annotations.length;  ++i  )
+		{
+			if ( annotations[ i ].getAction( ) == 'edit' )
+			{
+				var tRange = annotations[ i ].getRange( SEQUENCE_RANGE );
+				if ( tRange.start.compare( sequenceRange.end ) <= 0 )
+				{
+					if ( tRange.end.compare( sequenceRange.start ) >= 0 )
+					{
+						alert( getLocalized( 'create overlapping edits' ) );
+						return false;
+					}
+				}
+				// At least save walking through the rest of the list
+				else
+					break;
+			}
+		}
+	}
+
 	// Check to see whether the quote is too long (don't do this based on the raw text 
 	// range because the quote strips leading and trailing spaces)
 	if ( annotation.getQuote().length > MAX_QUOTE_LENGTH )
