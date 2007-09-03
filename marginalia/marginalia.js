@@ -126,6 +126,9 @@ function Marginalia( service, username, anusername, features )
 				var oldSkipContent = this.skipContent;
 				this.skipContent = function(node) { return oldSkipContent(node) || value(node); };
 				break;
+			case 'warnDelete':
+				this.warnDelete = value;
+				break;
 			default:
 				throw 'Unknown Marginalia feature';
 		}
@@ -641,6 +644,13 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
  */
 PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 {
+	// Pop up a warning (if configured)
+	if ( marginalia.warnDelete )
+	{
+		if ( ! confirm( getLocalized( 'warn delete' ) ) )
+			return;
+	}
+	
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
 	var scrollX = domutil.getWindowXScroll( );
@@ -835,7 +845,7 @@ function createAnnotation( postId, warn, action )
 	{
 		// this happens if the shrinkwrapped range has no non-whitespace text in it
 		if ( warn )
-			alert( getLocalized( 'select text to annotate' ) );
+			alert( getLocalized( 'x select text to annotate' ) );
 		return false;
 	}
 	

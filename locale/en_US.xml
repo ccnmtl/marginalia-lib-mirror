@@ -32,5 +32,9 @@
 		>The highlighted passage could not be found</message>
 	<message key="create overlapping edits"
 		>You may not create overlapping edits.</message>
+	
+	<!-- Warnings -->
+	<message key="warn delete"
+		>Delete this annotation?</message>
 </locale>
 

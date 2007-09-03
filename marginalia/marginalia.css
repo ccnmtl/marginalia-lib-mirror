@@ -10,10 +10,18 @@
 }
 
 .hentry .entry-content em.annotation em.annotation {
-	background: #ecd470;
+	background: #f4e373;
 }
 
 .hentry .entry-content em.annotation em.annotation em.annotation {
+	background: #ecd470;
+}
+
+.hentry .entry-content em.annotation em.annotation em.annotation em.annotation {
+	background: #e0ce6c;
+}
+
+.hentry .entry-content em.annotation em.annotation em.annotation em.annotation em.annotation {
 	background: #d8c666;
 }
 

@@ -150,7 +150,11 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&quote=' + encodeURIParameter( annotation.getQuote() )
 		+ '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() )
 		+ '&quote_author=' + encodeURIParameter( annotation.getQuoteAuthor() )
-		+ '&link=' + encodeURIParameter( annotation.getLink() );
+		+ '&link=' + encodeURIParameter( annotation.getLink() )
+		+ '&userid=' + encodeURIParameter( annotation.getUserId() );
+	// userid shouldn't be trusted by the server of course, except for demo applications for
+	// which it can be useful.
+		
 	if ( annotation.getAction() )
 		body += '&action=' + encodeURIParameter (annotation.getAction() );
 	if ( annotation.getRange( SEQUENCE_RANGE ) )

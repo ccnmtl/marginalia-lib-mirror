@@ -530,8 +530,14 @@ PostMicro.prototype.clearNote = function( marginalia, annotation )
  */
 function _editAnnotation( event )
 {
-	event.stopPropagation( );
 	var marginalia = window.marginalia;
+
+	// If an annotation is already being edited, return (don't stop propagation)
+	if ( marginalia.editing )
+		return;
+	
+	event.stopPropagation( );
+	
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
 	if ( ! annotation.isDeleted )
@@ -540,6 +546,7 @@ function _editAnnotation( event )
 		var scrollY = domutil.getWindowYScroll( );
 		var scrollX = domutil.getWindowXScroll( );
 		
+		marginalia.editing = annotation;
 		annotation.editing = annotation.defaultNoteEditMode( );
 		var nextNode = post.removeNote( marginalia, annotation );
 		var noteElement = post.showNote( marginalia, annotation, nextNode );
