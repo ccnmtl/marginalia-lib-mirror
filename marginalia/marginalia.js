@@ -130,8 +130,11 @@ function Marginalia( service, username, anusername, features )
 				this.warnDelete = value;
 				break;
 			case 'showCaret':
-				document.addEventListener( 'mouseup', _caretUpHandler, true );
-				document.addEventListener( 'mousedown', _caretDownHandler, false );
+				if ( value )
+				{
+					document.addEventListener( 'mouseup', _caretUpHandler, true );
+					document.addEventListener( 'mousedown', _caretDownHandler, false );
+				}
 				break;
 			default:
 				throw 'Unknown Marginalia feature';
