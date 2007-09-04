@@ -89,7 +89,7 @@ function Marginalia( service, username, anusername, features )
 	this.actions = false;
 	this.defaultAction = null;
 	this.skipContent = function(node) {
-		return _skipAnnotationLinks(node) || _skipAnnotationActions(node); };
+		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
 	for ( var feature in features )
 	{
 		var value = features[ feature ];
@@ -129,11 +129,16 @@ function Marginalia( service, username, anusername, features )
 			case 'warnDelete':
 				this.warnDelete = value;
 				break;
+			case 'showCaret':
+				document.addEventListener( 'mouseup', _caretUpHandler, true );
+				document.addEventListener( 'mousedown', _caretDownHandler, false );
+				break;
 			default:
 				throw 'Unknown Marginalia feature';
 		}
 	}
 }
+
 
 /**
  * Could do this in the initializer, but by leaving it until now we can avoid
@@ -729,53 +734,106 @@ function _keyupCreateAnnotation( event )
 /**
  * When the user creates a zero-length text range, show the position with a marker
  */
-function _mouseupShowCaret( event )
+function _caretUpHandler( event )
 {
-	// TODO: Embedding the caret in the text is a bad idea.  Better to find the location
-	// by briefly inserting something, then hover another node over it.
-	var textRange = getPortableSelectionRange();
+	// Verify W3C range support
+	if ( ! window.getSelection )
+		return;
+	
+	// Strip any existing caret (in case it wasn't already caught)
+	_caretDownHandler( );
+	
+	var selection = window.getSelection();
+	if ( selection.rangeCount == null )
+		return;
+	if ( selection.rangeCount == 0 )
+		return;
+	var textRange = selection.getRangeAt( 0 );
+
 	if ( null != textRange )
 	{
-		var node = textRange.startContainer;
-		if ( domutil.parentByTagClass( node, null, PM_POST_CLASS ) )
+		// Save selection position
+		var container = textRange.startContainer;
+		var offset = textRange.startOffset;
+
+		if ( domutil.parentByTagClass( container, null, PM_CONTENT_CLASS ) )
 		{
 			// Only show the caret if it's a point (i.e. the range has zero length)
-			if ( textRange.startContainer == textRange.endContainer
-				&& textRange.startOffset == textRange.endOffset )
+			if ( container == textRange.endContainer && offset == textRange.endOffset )
 			{
-				// Create the caret
+				// Insert the caret
 				var caret = document.createElement( 'span' );
 				caret.appendChild( document.createTextNode( '>' ) );
 				caret.setAttribute( 'id', AN_RANGECARET_ID );
-				var textBefore = node.nodeValue.substring( 0, textRange.startOffset );
-				var textAfter = node.nodeValue.substring( textRange.startOffset );
-				node.nodeValue = textBefore;
-				node.parentNode.insertBefore( caret, node.nextSibling );
-				var afterNode = document.createTextNode( textAfter );
-				node.parentNode.insertBefore( afterNode, caret.nextSibling );
+				textRange.insertNode( caret );
+/*
+				
+				if ( ELEMENT_NODE == container.nodeType )
+				{
+					return false;
+				}
+				else if ( TEXT_NODE == container.nodeType )
+				{
+					var textBefore = container.nodeValue.substring( 0, offset );
+					var textAfter = container.nodeValue.substring( offset );
+					
+					container.nodeValue = textBefore;
+					container.parentNode.insertBefore( caret, container.nextSibling );
+					var afterNode = document.createTextNode( textAfter );
+					container.parentNode.insertBefore( afterNode, caret.nextSibling );
+					
+					if ( selection.removeAllRanges && selection.addRange )
+					{
+						selection.removeAllRanges( );
+						textRange.setStart( afterNode, 0 );
+						textRange.setEnd( afterNode, 0 );
+						selection.addRange( textRange );
+					}
+					else
+					{
+						textRange.setStart( container, offset );
+						textRange.setEnd( container, offset );
+					}
+				}
+				*/
 			}
 		}
 	}
 }
 
-/**
- * Hide the position caret when the user clicks somewhere
- */
-function _mousedownHideCaret( event )
+// Remove any carets when the mouse button goes down
+function _caretDownHandler( event )
 {
+	// Verify W3C range support
+	if ( ! window.getSelection )
+		return;
+	
 	var caret = document.getElementById( AN_RANGECARET_ID );
 	if ( caret )
 	{
-		var beforeNode = caret.previousSibling;
-		var afterNode = caret.nextSibling;
-		caret.parentNode.removeChild( caret );
-		// Do a quick bit of normalization
-		if ( beforeNode && afterNode && TEXT_NODE == beforeNode.nodeType && TEXT_NODE == afterNode.nodeType )
+		var selection = window.getSelection();
+		
+		var remove = false;
+		if ( selection.rangeCount == null )
+			remove = true;
+		else if ( selection.rangeCount == 0 )
+			remove = true;
+		else
 		{
-			beforeNode.nodeValue += afterNode.nodeValue;
-			afterNode.parentNode.removeChild( afterNode );
+			var textRange = selection.getRangeAt( 0 );
+			if ( textRange.prevSibling != caret )
+			{
+				var before = caret.prevSibling;
+				caret.parentNode.removeChild( caret );
+				domutil.normalizeNodePair( before );
+			}
 		}
 	}
+}
+
+function _skipCaret( node )
+{
+	return node.id == AN_RANGECARET_ID;
 }
 
 /**
