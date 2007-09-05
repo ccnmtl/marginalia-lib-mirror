@@ -252,10 +252,15 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 		// add the text content
 		var noteText = document.createElement( 'p' );
 		var keyword = marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null;
-		if ( ! quoteFound )
-			noteText.setAttribute( 'title', getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"' );
+		var titleText = null;
+		if ( ! quoteFound || ! annotation.getRange( SEQUENCE_RANGE ) )
+			titleText = getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"';
 		else if ( keyword )
-			noteText.setAttribute( 'title', keyword.description );
+			titleText = keyword.description;
+		
+		if ( titleText )
+			noteText.setAttribute( 'title', titleText );
+		
 		if ( ! canEdit )
 		{
 			domutil.addClass( noteElement, 'other-user' );

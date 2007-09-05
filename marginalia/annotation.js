@@ -283,14 +283,31 @@ Annotation.prototype.compareRange = function( a2 )
 {
 	if ( this.sequenceRange && a2.sequenceRange )
 		return this.sequenceRange.compare( a2.sequenceRange );
+	else if ( this.sequenceRange )
+		return -1;
+	else if ( a2.sequenceRange )
+		return 1;
 	else
 		return 0;
 }
 
 function compareAnnotationRanges( a1, a2 )
 {
+	var r1 = a1.sequenceRange;
+	var r2 = a2.sequenceRange;
 	// Note: don't use getters for efficiency.
-	return a1.sequenceRange.compare( a2.sequenceRange );
+	if ( r1 && r2 )
+		return r1.compare( r2 );
+	else
+	{
+		// Shouldn't happen, but bad data can produce this problem
+		if ( r1 )
+			return -1;
+		else if ( r2 )
+			return 1;
+		else
+			return 0;
+	}
 }
 
 /* Does anything actually call this anymore? */

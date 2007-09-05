@@ -69,7 +69,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
 PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 {
 	var node = info.resolveStart( this.contentElement );
-	if ( node )
+	if ( node && info.sequenceRange )
 	{
 		var resolver = new SequencePathResolver( node, info.sequenceRange.start.path );
 		do

@@ -37,7 +37,7 @@ PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 		if ( wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, marginalia.skipContent ) )
 			return wordRange;
 	}
-	else
+	else if ( annotation.getRange( SEQUENCE_RANGE ) )
 	{
 		if ( wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, marginalia.skipContent ) )
 			return wordRange;
