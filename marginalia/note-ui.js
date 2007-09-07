@@ -512,7 +512,7 @@ SelectActionNoteEditor.prototype.show = function( )
 		content: [
 			domutil.element( 'li', {
 				content: domutil.element( 'button', {
-					content: 'Annotate...',
+					content: getLocalized( 'action annotate button' ),
 					onclick: function( event ) {
 						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
 						marginalia.noteEditor.focus( );
@@ -521,7 +521,7 @@ SelectActionNoteEditor.prototype.show = function( )
 			} ),
 			domutil.element( 'li', {
 				content: domutil.element( 'button', {
-					content: 'Insert Before...',
+					content: getLocalized( 'action insert before button' ),
 					onclick: function( event ) {
 						annotation.setAction( 'edit' );
 						annotation.getRange( SEQUENCE_RANGE ).collapseToStart( );
@@ -534,7 +534,7 @@ SelectActionNoteEditor.prototype.show = function( )
 			} ),
 			domutil.element( 'li', {
 				content: domutil.element( 'button', {
-					content: 'Insert After...',
+					content: getLocalized( 'action insert after button' ),
 					onclick: function( event ) {
 						annotation.setAction( 'edit' );
 						annotation.getRange( SEQUENCE_RANGE ).collapseToEnd( );
@@ -547,7 +547,7 @@ SelectActionNoteEditor.prototype.show = function( )
 			} ),
 			domutil.element( 'li', {
 				content: domutil.element( 'button', {
-					content: 'Replace...',
+					content: getLocalized( 'action replace button' ),
 					onclick: function( event ) {
 						annotation.setAction( 'edit' );
 						postMicro.removeHighlight( marginalia, annotation );
@@ -559,7 +559,7 @@ SelectActionNoteEditor.prototype.show = function( )
 			} ),
 			domutil.element( 'li', {
 				content: domutil.element( 'button', {
-					content: 'Delete',
+					content: getLocalized( 'action delete button' ),
 					onclick: function( event ) {
 						annotation.setAction( 'edit' );
 						postMicro.removeHighlight( marginalia, annotation );

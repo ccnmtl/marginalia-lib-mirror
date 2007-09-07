@@ -534,6 +534,39 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editorC
  */
 PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 {
+	// Start with validation
+	
+	// If the editor has a copy of the note, store it
+	if ( marginalia.noteEditor.getNote )
+	{
+		noteStr = marginalia.noteEditor.getNote( );
+	
+		// Check the length of the note.  If it's too long, do nothing, but restore focus to the note
+		// (which is awkward, but we can't save a note that's too long, we can't allow the note
+		// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
+		if ( noteStr.length > MAX_NOTE_LENGTH )
+		{
+			alert( getLocalized( 'note too long' ) );
+			marginalia.noteEditor.focus( );
+			return false;
+		}
+		annotation.setNote( noteStr );
+	}
+	
+	// Note and quote length cannot both be zero
+	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
+	if ( sequenceRange.start.compare( sequenceRange.end ) == 0 && annotation.getNote( ).length == 0 )
+	{
+		alert( getLocalized( 'blank quote and note' ) );
+		marginalia.noteEditor.focus( );
+		return false;
+	}
+	
+	// don't allow this to happen more than once
+	if ( ! annotation.editing )
+		return false;
+
+
 	// Remove events
 	removeEvent( document.documentElement, 'click', _saveAnnotation );
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
@@ -550,26 +583,6 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	
 	var noteStr = annotation.note;
 	
-	// If the editor has a copy of the note, store it
-	if ( marginalia.noteEditor.getNote )
-	{
-		noteStr = marginalia.noteEditor.getNote( );
-	
-		// Check the length of the note.  If it's too long, do nothing, but restore focus to the note
-		// (which is awkward, but we can't save a note that's too long, we can't allow the note
-		// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
-		if ( noteStr.length > MAX_NOTE_LENGTH )
-		{
-			alert( getLocalized( 'note too long' ) );
-			editNode.focus( );
-			return false;
-		}
-		annotation.setNote( noteStr );
-	}
-	
-	// don't allow this to happen more than once
-	if ( ! annotation.editing )
-		return false;
 	this.hoverAnnotation( marginalia, annotation, false );
 	delete marginalia.noteEditor;
 	delete annotation.editing;
