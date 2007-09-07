@@ -79,6 +79,7 @@ function Marginalia( service, username, anusername, features )
 	this.username = username;
 	this.anusername = anusername;
 	this.editing = null;	// annotation currently being edited (if any)
+	this.noteEditor = null;	// state for note currently being edited (if any) - should replace editing, above
 	
 	this.preferences = null;
 	this.keywordService = null;
@@ -386,7 +387,7 @@ Annotation.prototype.getNoteElement = function( )
 /**
  * Add an annotation to the local annotation list and display.
  */
-PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, editorConstructor )
+PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, editor )
 {
 	if ( ! nextNode )
 		nextNode = this.getAnnotationNextNote( marginalia, annotation );
@@ -396,7 +397,7 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, 
 		this.removeAnnotation( marginalia, annotation );
 	var quoteFound = this.showHighlight( marginalia, annotation );
 	// Go ahead and show the note even if the quote wasn't found
-	var r = this.showNote( marginalia, annotation, nextNode, editorConstructor );
+	var r = this.showNote( marginalia, annotation, nextNode, editor );
 	// Reposition any following notes that need it
 	this.repositionSubsequentNotes( marginalia, nextNode );
 }
@@ -503,7 +504,7 @@ PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
  * Called to start editing a new annotation
  * the annotation isn't saved to the db until edit completes
  */
-PostMicro.prototype.createAnnotation = function( marginalia, annotation, editorConstructor )
+PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor )
 {
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
@@ -514,7 +515,7 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editorC
 	annotation.editing = annotation.defaultNoteEditMode( marginalia.preferences );
 	
 	// Show the annotation and highlight
-	this.addAnnotation( marginalia, annotation, null, editorConstructor );
+	this.addAnnotation( marginalia, annotation, null, editor );
 	// Focus on the text edit
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	// Sequencing here (with focus last) is important
@@ -864,13 +865,13 @@ function _skipAnnotationActions( node )
  * Handler for standard createAnnotation button
  * Application may choose to do things otherwise (e.g. for edit actions)
  */
-function clickCreateAnnotation( event, id, editorConstructor )
+function clickCreateAnnotation( event, id, editor )
 {
 	// This might be called from a handler not set up by addEvent,
 	// so use the clumsy functions.
 	event = domutil.getEvent( event );
 	domutil.stopPropagation( event );
-	createAnnotation( id, true, null, editorConstructor );
+	createAnnotation( id, true, null, editor );
 }
 
 
@@ -883,7 +884,7 @@ function clickCreateAnnotation( event, id, editorConstructor )
  *
  * That said, the standard interface calls this from clickCreateAnnotation
  */
-function createAnnotation( postId, warn, action, editorConstructor )
+function createAnnotation( postId, warn, action, editor )
 {
 	var marginalia = window.marginalia;
 
@@ -1025,6 +1026,6 @@ function createAnnotation( postId, warn, action, editorConstructor )
 		return false;
 	}
 	
-	post.createAnnotation( marginalia, annotation, editorConstructor );
+	post.createAnnotation( marginalia, annotation, editor );
 	return true;
 }

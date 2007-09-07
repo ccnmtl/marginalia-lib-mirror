@@ -118,7 +118,7 @@ PostMicro.prototype.getNoteId = function( annotation )
  * annotation - the annotation
  * nextNode - the node following this list element in the margin
  */
-PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, editorConstructor )
+PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, editor )
 {
 	trace( 'showNote', 'Show note ' + annotation.toString() );
 	var postMicro = this;
@@ -180,9 +180,8 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, edito
 	}
 	
 	// Create its contents
-	if ( editorConstructor )
+	if ( editor )
 	{
-		var editor = new editorConstructor( marginalia, postMicro, annotation, noteElement );
 		this.showNoteEditor( marginalia, noteElement, editor );
 
 		// If anywhere outside the note area is clicked, the annotation will be saved.
@@ -195,7 +194,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, edito
 	}
 	else if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
 	{
-		var editor = new KeywordNoteEditor( marginalia, postMicro, annotation, noteElement );
+		editor = new KeywordNoteEditor( );
 		this.showNoteEditor( marginalia, noteElement, editor );
 
 		// If anywhere outside the note area is clicked, the annotation will be saved.
@@ -208,7 +207,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, edito
 	}
 	else if ( AN_EDIT_NOTE_FREEFORM == annotation.editing )
 	{
-		var editor = new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement );
+		editor = new FreeformNoteEditor( );
 		this.showNoteEditor( marginalia, noteElement, editor );
 
 		// See notes for keyword editing above
@@ -325,6 +324,7 @@ PostMicro.prototype.showNoteEditor = function( marginalia, noteElement, editor )
 	// Since we're editing, set the appropriate class on body
 	domutil.addClass( document.body, AN_EDITINGNOTE_CLASS );
 	
+	editor.bind( marginalia, this, annotation, noteElement );
 	marginalia.noteEditor = editor;
 	editor.show( value );
 }
@@ -333,7 +333,10 @@ PostMicro.prototype.showNoteEditor = function( marginalia, noteElement, editor )
 /**
  * Freeform margin note editor
  */
-function FreeformNoteEditor( marginalia, postMicro, annotation, noteElement )
+function FreeformNoteEditor( )
+{ }
+
+FreeformNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
 {
 	this.marginalia = marginalia;
 	this.postMicro = postMicro;
@@ -367,7 +370,7 @@ FreeformNoteEditor.prototype.show = function( value )
 	if ( this.marginalia.keywordService )
 	{
 		var f = function( event ) {
-			postMicro.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+			postMicro.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( ) );
 		};
 		this.noteElement.appendChild( domutil.button( {
 			className:	AN_EXPANDBUTTON_CLASS,
@@ -398,7 +401,10 @@ FreeformNoteEditor.prototype.focus = function( )
 /**
  * Keyword margin note editor
  */
-function KeywordNoteEditor( marginalia, postMicro, annotation, noteElement )
+function KeywordNoteEditor( )
+{ }
+
+KeywordNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
 {
 	this.marginalia = marginalia;
 	this.postMicro = postMicro;
@@ -433,7 +439,7 @@ KeywordNoteEditor.prototype.show = function( value )
 
 	// Show the expand/collapse control
 	var f = function( event ) {
-		postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+		postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 	};
 	this.noteElement.appendChild( domutil.button( {
 		className:	AN_EXPANDBUTTON_CLASS,
@@ -482,7 +488,10 @@ KeywordNoteEditor.prototype.focus = function( )
 /**
  * Editor for selecting action type before proceding to actual editor
  */
-function SelectActionNoteEditor( marginalia, postMicro, annotation, noteElement )
+function SelectActionNoteEditor( )
+{ }
+
+SelectActionNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
 {
 	this.marginalia = marginalia;
 	this.postMicro = postMicro;
@@ -514,7 +523,7 @@ SelectActionNoteEditor.prototype.show = function( )
 				content: domutil.element( 'button', {
 					content: getLocalized( 'action annotate button' ),
 					onclick: function( event ) {
-						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 						marginalia.noteEditor.focus( );
 					}
 				} )	
@@ -527,7 +536,7 @@ SelectActionNoteEditor.prototype.show = function( )
 						annotation.getRange( SEQUENCE_RANGE ).collapseToStart( );
 						annotation.getRange( XPATH_RANGE ).collapseToStart( );
 						annotation.setQuote( '' );
-						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 						marginalia.noteEditor.focus( );
 					}
 				} )	
@@ -540,7 +549,7 @@ SelectActionNoteEditor.prototype.show = function( )
 						annotation.getRange( SEQUENCE_RANGE ).collapseToEnd( );
 						annotation.getRange( XPATH_RANGE ).collapseToEnd( );
 						annotation.setQuote( '' );
-						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 						marginalia.noteEditor.focus( );
 					}
 				} )	
@@ -552,7 +561,7 @@ SelectActionNoteEditor.prototype.show = function( )
 						annotation.setAction( 'edit' );
 						postMicro.removeHighlight( marginalia, annotation );
 						postMicro.showHighlight( marginalia, annotation );
-						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 						marginalia.noteEditor.focus( );
 					}
 				} )	
@@ -855,12 +864,12 @@ function _expandEdit( event )
 	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
 	{
 		expandControl.appendChild( document.createTextNode( AN_EXPANDED_ICON ) );
-		post.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, post, annotation, noteElement ) );
+		post.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( ) );
 	}
 	else
 	{
 		expandControl.appendChild( document.createTextNode( AN_COLLAPSED_ICON ) );
-		post.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( marginalia, post, annotation, noteElement ) );
+		post.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( ) );
 	}
 }
 
