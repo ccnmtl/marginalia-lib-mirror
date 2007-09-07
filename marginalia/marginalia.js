@@ -81,6 +81,7 @@ function Marginalia( service, username, anusername, features )
 	this.editing = null;	// annotation currently being edited (if any)
 	this.noteEditor = null;	// state for note currently being edited (if any) - should replace editing, above
 	
+	this.userInRequest = false;
 	this.preferences = null;
 	this.keywordService = null;
 	this.urlBase = null;
@@ -136,6 +137,9 @@ function Marginalia( service, username, anusername, features )
 					document.addEventListener( 'mouseup', _caretUpHandler, true );
 					document.addEventListener( 'mousedown', _caretDownHandler, false );
 				}
+				break;
+			case 'userInRequest':	// send the user ID in requests (for the demo)
+				this.userInRequest = value;
 				break;
 			default:
 				throw 'Unknown Marginalia feature';

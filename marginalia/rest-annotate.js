@@ -73,6 +73,10 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 {
 	var serviceUrl = this.serviceUrl + '?format=blocks&url=' + encodeURIParameter( url );
 	
+	// For demo debugging only
+	if ( window.marginalia && window.marginalia.userInRequest )
+		serviceUrl += '&user=' + encodeURIParameter( window.marginalia.username );
+	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
@@ -112,6 +116,10 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 		serviceUrl += '&user=' + encodeURIParameter( username );
 	serviceUrl += '&url=' + encodeURIParameter( url );
 	
+	// For demo debugging only
+	if ( window.marginalia && window.marginalia.userInRequest )
+		serviceUrl += '&user=' + encodeURIParameter( window.marginalia.username );
+
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
@@ -143,6 +151,10 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 {
 	var serviceUrl = this.serviceUrl;
 		
+	// For demo debugging only
+	if ( window.marginalia && window.marginalia.userInRequest )
+		serviceUrl += '?user=' + encodeURIParameter( window.marginalia.username );
+
 	var body
 		= 'url=' + encodeURIParameter( annotation.getUrl() )
 		+ '&note=' + encodeURIParameter( annotation.getNote() )
@@ -200,6 +212,11 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += this.niceUrls ? ( '/' + annotation.getId() ) : ( '?id=' + annotation.getId() );
 	
+	// For demo debugging only
+	if ( window.marginalia && window.marginalia.userInRequest )
+		serviceUrl += ( this.niceUrls ? '?' : '&' )
+			+ 'user=' + encodeURIParameter( window.marginalia.username );
+
 	var body = '';
 	if ( annotation.hasChanged( 'note' )  )
 		body = 'note=' + encodeURIParameter( annotation.getNote() );
@@ -246,6 +263,11 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += this.niceUrls ? ( '/' + annotationId ) : ( '?id=' + annotationId );
 	
+	// For demo debugging only
+	if ( window.marginalia && window.marginalia.userInRequest )
+		serviceUrl += ( this.niceUrls ? '?' : '&' )
+			+ 'user=' + encodeURIParameter( window.marginalia.username );
+
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'DELETE', serviceUrl, true );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
