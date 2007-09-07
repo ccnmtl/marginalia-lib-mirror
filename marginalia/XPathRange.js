@@ -66,6 +66,17 @@ XPathRange.prototype.makeBlockLevel = function( )
 	this.end.makeBlockLevel( )
 }
 
+XPathRange.prototype.collapseToStart = function( )
+{
+	this.end = this.start;
+}
+
+XPathRange.prototype.collapseToEnd = function( )
+{
+	this.start = this.end;
+}
+
+
 function XPathPoint( str )
 {
 	if ( str )

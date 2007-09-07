@@ -35,9 +35,10 @@ function removeCookie(name) {
  *
  * http://dean.edwards.name/weblog/2005/10/add-event/
  */
-function addEvent(element, type, handler) {
+function addEvent(element, type, handler, capture) {
 	if (element.addEventListener) {
-		element.addEventListener(type, handler, false);
+		// #Geof# Support event capture in capable browsers:
+		element.addEventListener(type, handler, capture ? true : false);
 	} else {
 		// assign each event handler a unique ID
 		if (!handler.$$guid) handler.$$guid = addEvent.guid++;

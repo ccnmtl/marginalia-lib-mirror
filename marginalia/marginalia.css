@@ -144,7 +144,36 @@
 	/*display: none;*/
 }
 
-.hentry .notes li button {
+.hentry .notes li .select-action {
+	margin: .5ex;
+	padding: 0 0 0 .5ex;
+	list-style-type: none;
+	font-size: inherit;
+	border-left: #bbb .5ex solid;
+}
+
+.hentry .notes li .select-action li {
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+
+.hentry .notes li .select-action button {
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+	font-size: inherit;
+}
+
+
+.hentry .notes li .select-action button:hover {
+	background-color: #bbb;
+}
+	
+.hentry .notes li .controls button,
+.hentry .notes li button.expand-edit {
 	line-height: 1em;
 	border: none;
 	font-size: inherit;
@@ -156,7 +185,8 @@
 	z-index: 1000;
 }
 
-.hentry .notes li button:hover {
+.hentry .notes li .controls button:hover,
+.hentry .notes li button.expand-edit {
 	font-weight: bold;
 }
 

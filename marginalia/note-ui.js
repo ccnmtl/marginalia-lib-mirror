@@ -118,7 +118,7 @@ PostMicro.prototype.getNoteId = function( annotation )
  * annotation - the annotation
  * nextNode - the node following this list element in the margin
  */
-PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
+PostMicro.prototype.showNote = function( marginalia, annotation, nextNode, editorConstructor )
 {
 	trace( 'showNote', 'Show note ' + annotation.toString() );
 	var postMicro = this;
@@ -180,31 +180,46 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	}
 	
 	// Create its contents
-	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing || AN_EDIT_NOTE_FREEFORM == annotation.editing )
+	if ( editorConstructor )
 	{
-		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
+		var editor = new editorConstructor( marginalia, postMicro, annotation, noteElement );
+		this.showNoteEditor( marginalia, noteElement, editor );
 
-		if ( marginalia.keywordService )
-		{
-			noteElement.appendChild( domutil.button( {
-				className:	AN_EXPANDBUTTON_CLASS,
-				title: 'annotation expand edit button',
-				content: annotation.editing ? AN_COLLAPSED_ICON : AN_EXPANDED_ICON,
-				onclick: _expandEdit } ) );
-		}
-		this.showNoteEdit( marginalia, noteElement );
-		
 		// If anywhere outside the note area is clicked, the annotation will be saved.
 		// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
 		// so this only works because I can figure out which element was clicked by looking for
 		// AN_EDITINGNOTE_CLASS.
+		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
+		addEvent( document.documentElement, 'click', _saveAnnotation );
+		addEvent( noteElement, 'click', domutil.stopPropagation );
+	}
+	else if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
+	{
+		var editor = new KeywordNoteEditor( marginalia, postMicro, annotation, noteElement );
+		this.showNoteEditor( marginalia, noteElement, editor );
+
+		// If anywhere outside the note area is clicked, the annotation will be saved.
+		// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
+		// so this only works because I can figure out which element was clicked by looking for
+		// AN_EDITINGNOTE_CLASS.
+		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
+		addEvent( document.documentElement, 'click', _saveAnnotation );
+		addEvent( noteElement, 'click', domutil.stopPropagation );
+	}
+	else if ( AN_EDIT_NOTE_FREEFORM == annotation.editing )
+	{
+		var editor = new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement );
+		this.showNoteEditor( marginalia, noteElement, editor );
+
+		// See notes for keyword editing above
+		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
 		addEvent( document.documentElement, 'click', _saveAnnotation );
 		addEvent( noteElement, 'click', domutil.stopPropagation );
 	}
 	// Display link editing
 	else if ( AN_EDIT_LINK == annotation.editing )
 		marginalia.linkUi.showLinkEdit( marginalia, this, annotation, noteElement );
-	// Regular annotation editing
+	// Regular annotation display with control buttons (delete, access, link)
 	else
 	{
 		// Does this user have permission to edit this annotation?
@@ -281,95 +296,283 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 			addEvent( noteText, 'click', _editAnnotation );
 		}
 		
-		// Add note hover behaviors
-		addEvent( noteElement, 'mouseover', _hoverAnnotation );
-		addEvent( noteElement, 'mouseout', _unhoverAnnotation );
 	}
+	
+	// Add note hover behaviors
+	addEvent( noteElement, 'mouseover', _hoverAnnotation );
+	addEvent( noteElement, 'mouseout', _unhoverAnnotation );
 	
 	return noteElement;
 }
 
+
 /**
- * Show the edit controls for a note
- * This may be a free-form textarea or a drop-down list, depending on the state of the note
+ * Remove the current editor on a note and replace it with the one passed in
  */
-PostMicro.prototype.showNoteEdit = function( marginalia, noteElement )
+PostMicro.prototype.showNoteEditor = function( marginalia, noteElement, editor )
 {
+	var annotation = domutil.nestedFieldValue( noteElement, AN_ANNOTATION_FIELD );
+
+	var value;
+	if ( marginalia.noteEditor )
+	{
+		value = marginalia.noteEditor.getNote ? marginalia.noteEditor.getNote( ) : annotation.getNote( );
+		marginalia.noteEditor.clear( );
+	}
+	else
+		value = annotation.getNote( );
+
 	// Since we're editing, set the appropriate class on body
 	domutil.addClass( document.body, AN_EDITINGNOTE_CLASS );
 	
-	var annotation = domutil.nestedFieldValue( noteElement, AN_ANNOTATION_FIELD );
-	var selectNode = domutil.childByTagClass( noteElement, 'select', AN_KEYWORDSCONTROL_CLASS, null );
-	var editNode = domutil.childByTagClass( noteElement, 'textarea', null, null );
+	marginalia.noteEditor = editor;
+	editor.show( value );
+}
 
-	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
+
+/**
+ * Freeform margin note editor
+ */
+function FreeformNoteEditor( marginalia, postMicro, annotation, noteElement )
+{
+	this.marginalia = marginalia;
+	this.postMicro = postMicro;
+	this.noteElement = noteElement;
+	this.annotation = annotation;
+	this.editNode = null;
+}
+
+FreeformNoteEditor.prototype.clear = function( )
+{
+	if ( this.editNode )
 	{
-		if ( null == selectNode )
-		{
-			var value = annotation.getNote();
-			if ( editNode )
-			{
-				value = editNode.value;
-				editNode.parentNode.removeChild( editNode );
-			}
-
-			var selectNode = document.createElement( 'select' );
-			selectNode.className = AN_KEYWORDSCONTROL_CLASS;
-			var keywords = marginalia.keywordService.keywords;
-			addEvent( selectNode, 'keypress', _editNoteKeypress );
-			
-			// See if the current value of the note is a keyword
-			if ( ! marginalia.keywordService.isKeyword( annotation.getNote() ) && annotation.getNote() )
-			{
-				// First option is the freeform edit value for the note
-				var opt = document.createElement( 'option' );
-				opt.appendChild( document.createTextNode(
-					annotation.getNote().length > 12 ? annotation.getNote().substring( 0, 12 ) : annotation.getNote() ) );
-				opt.setAttribute( 'value', annotation.getNote() );
-				selectNode.appendChild( opt );
-			}
-			
-			for ( var i = 0;  i < keywords.length;  ++i )
-			{
-				var keyword = keywords[ i ];
-				opt = document.createElement( 'option' );
-				if ( value == keyword.name )
-					opt.setAttribute( 'selected', 'selected' );
-				opt.appendChild( document.createTextNode( keyword.name ) );
-				opt.setAttribute( 'value', keyword.name );
-				opt.setAttribute( 'title', keyword.description );
-				selectNode.appendChild( opt );
-			}
-			noteElement.appendChild( selectNode );
-		}
-		return selectNode;
-	}
-	else if ( AN_EDIT_NOTE_FREEFORM == annotation.editing )
-	{
-		var value = annotation.getNote();
-		if ( selectNode )
-		{
-			if ( -1 != selectNode.selectedIndex )
-				value = selectNode.options[ selectNode.selectedIndex ].value;
-			selectNode.parentNode.removeChild( selectNode );
-		}
-		if ( null == editNode )
-		{
-			// Create the edit box
-			var editNode = document.createElement( "textarea" );
-			editNode.rows = 3;
-			editNode.appendChild( document.createTextNode( value ) );
-			noteElement.appendChild( editNode );
-
-			// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
-			//editNode.onkeyup = function( event ) { event = getEvent( event ); return postMicro.editKeyUp( event, this ); };
-			editNode.annotationId = annotation.getId();
-			addEvent( editNode, 'keypress', _editNoteKeypress );
-			addEvent( editNode, 'keyup', _editChangedKeyup );
-		}
-		return editNode;
+		this.editNode.parentNode.removeChild( this.editNode );
+		this.editNode = null;
 	}
 }
+
+FreeformNoteEditor.prototype.getNote = function( )
+{
+	return this.editNode.value;
+}
+
+FreeformNoteEditor.prototype.show = function( value )
+{
+	var postMicro = this.postMicro;
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var noteElement = this.noteElement;
+	
+	// If keywords are enabled, show the expand/collapse control
+	if ( this.marginalia.keywordService )
+	{
+		var f = function( event ) {
+			postMicro.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+		};
+		this.noteElement.appendChild( domutil.button( {
+			className:	AN_EXPANDBUTTON_CLASS,
+			title: 'annotation expand edit button',
+			content: AN_EXPANDED_ICON,
+			onclick: f } ) );
+	}
+
+	// Create the edit box
+	this.editNode = document.createElement( "textarea" );
+	this.editNode.rows = 3;
+	this.editNode.appendChild( document.createTextNode( value ) );
+
+	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
+	this.editNode.annotationId = this.annotation.getId();
+	addEvent( this.editNode, 'keypress', _editNoteKeypress );
+	addEvent( this.editNode, 'keyup', _editChangedKeyup );
+	
+	this.noteElement.appendChild( this.editNode );
+}
+
+FreeformNoteEditor.prototype.focus = function( )
+{
+	this.editNode.focus( );
+}
+		
+
+/**
+ * Keyword margin note editor
+ */
+function KeywordNoteEditor( marginalia, postMicro, annotation, noteElement )
+{
+	this.marginalia = marginalia;
+	this.postMicro = postMicro;
+	this.noteElement = noteElement;
+	this.annotation = annotation;
+	this.selectNode = null;
+}
+
+KeywordNoteEditor.prototype.clear = function( )
+{
+	if ( this.selectNode )
+	{
+		this.selectNode.parentNode.removeChild( this.selectNode );
+		this.selectNode = null;
+	}
+}
+
+KeywordNoteEditor.prototype.getNote = function( )
+{
+	if ( -1 != this.selectNode.selectedIndex )
+		return this.selectNode.options[ this.selectNode.selectedIndex ].value;
+	else
+		return null;
+}
+
+KeywordNoteEditor.prototype.show = function( value )
+{
+	var postMicro = this.postMicro;
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var noteElement = this.noteElement;
+
+	// Show the expand/collapse control
+	var f = function( event ) {
+		postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+	};
+	this.noteElement.appendChild( domutil.button( {
+		className:	AN_EXPANDBUTTON_CLASS,
+		title: 'annotation expand edit button',
+		content: AN_COLLAPSED_ICON,
+		onclick: f } ) );
+	
+	this.selectNode = document.createElement( 'select' );
+	
+	this.selectNode.className = AN_KEYWORDSCONTROL_CLASS;
+	var keywords = marginalia.keywordService.keywords;
+	addEvent( this.selectNode, 'keypress', _editNoteKeypress );
+	
+	// See if the current value of the note is a keyword
+	if ( ! marginalia.keywordService.isKeyword( annotation.getNote() ) && annotation.getNote() )
+	{
+		// First option is the freeform edit value for the note
+		var opt = document.createElement( 'option' );
+		opt.appendChild( document.createTextNode(
+			annotation.getNote().length > 12 ? annotation.getNote().substring( 0, 12 ) : annotation.getNote() ) );
+		opt.setAttribute( 'value', annotation.getNote() );
+		this.selectNode.appendChild( opt );
+	}
+	
+	for ( var i = 0;  i < keywords.length;  ++i )
+	{
+		var keyword = keywords[ i ];
+		opt = document.createElement( 'option' );
+		if ( value == keyword.name )
+			opt.setAttribute( 'selected', 'selected' );
+		opt.appendChild( document.createTextNode( keyword.name ) );
+		opt.setAttribute( 'value', keyword.name );
+		opt.setAttribute( 'title', keyword.description );
+		this.selectNode.appendChild( opt );
+	}
+	
+	this.noteElement.appendChild( this.selectNode );
+}
+
+KeywordNoteEditor.prototype.focus = function( )
+{
+	this.selectNode.focus( );
+}
+
+
+/**
+ * Editor for selecting action type before proceding to actual editor
+ */
+function SelectActionNoteEditor( marginalia, postMicro, annotation, noteElement )
+{
+	this.marginalia = marginalia;
+	this.postMicro = postMicro;
+	this.annotation = annotation;
+	this.noteElement = noteElement;
+}
+
+SelectActionNoteEditor.prototype.clear = function( )
+{
+	while ( this.noteElement.firstChild )
+	{
+		if ( this.noteElement.onclick )
+			this.noteElement.onclick = null;
+		this.noteElement.removeChild( this.noteElement.firstChild );
+	}
+}
+
+SelectActionNoteEditor.prototype.show = function( )
+{
+	var postMicro = this.postMicro;
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var noteElement = this.noteElement;
+
+	var ul = this.noteElement.appendChild( domutil.element( 'ul', {
+		className: 'select-action',
+		content: [
+			domutil.element( 'li', {
+				content: domutil.element( 'button', {
+					content: 'Annotate...',
+					onclick: function( event ) {
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						marginalia.noteEditor.focus( );
+					}
+				} )	
+			} ),
+			domutil.element( 'li', {
+				content: domutil.element( 'button', {
+					content: 'Insert Before...',
+					onclick: function( event ) {
+						annotation.setAction( 'edit' );
+						annotation.getRange( SEQUENCE_RANGE ).collapseToStart( );
+						annotation.getRange( XPATH_RANGE ).collapseToStart( );
+						annotation.setQuote( '' );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						marginalia.noteEditor.focus( );
+					}
+				} )	
+			} ),
+			domutil.element( 'li', {
+				content: domutil.element( 'button', {
+					content: 'Insert After...',
+					onclick: function( event ) {
+						annotation.setAction( 'edit' );
+						annotation.getRange( SEQUENCE_RANGE ).collapseToEnd( );
+						annotation.getRange( XPATH_RANGE ).collapseToEnd( );
+						annotation.setQuote( '' );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						marginalia.noteEditor.focus( );
+					}
+				} )	
+			} ),
+			domutil.element( 'li', {
+				content: domutil.element( 'button', {
+					content: 'Replace...',
+					onclick: function( event ) {
+						annotation.setAction( 'edit' );
+						postMicro.removeHighlight( marginalia, annotation );
+						postMicro.showHighlight( marginalia, annotation );
+						postMicro.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, postMicro, annotation, noteElement ) );
+						marginalia.noteEditor.focus( );
+					}
+				} )	
+			} ),
+			domutil.element( 'li', {
+				content: domutil.element( 'button', {
+					content: 'Delete',
+					onclick: function( event ) {
+						annotation.setAction( 'edit' );
+						postMicro.removeHighlight( marginalia, annotation );
+						postMicro.showHighlight( marginalia, annotation );
+						_saveAnnotation( );
+					}
+				} )	
+			} )
+		] } ) ) ;
+}
+
+SelectActionNoteEditor.prototype.focus = function( )
+{ }
 
  
 /**
@@ -652,24 +855,13 @@ function _expandEdit( event )
 	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
 	{
 		expandControl.appendChild( document.createTextNode( AN_EXPANDED_ICON ) );
-		annotation.editing = AN_EDIT_NOTE_FREEFORM;
+		post.showNoteEditor( marginalia, noteElement, new FreeformNoteEditor( marginalia, post, annotation, noteElement ) );
 	}
 	else
 	{
-		// Must save the text value as a possible option in the drop-down, otherwise
-		// it will be lost.
-		var editNode = domutil.childByTagClass( noteElement, 'textarea', null, null );
-		// If the text is too long, just chop it (popping up a dialog is too
-		// complex and wrecks the flow)
-		if ( editNode.value.length > MAX_NOTE_LENGTH )
-			annotation.setNote( editNode.value.substr( 0, MAX_NOTE_LENGTH ) );
-		else
-			annotation.setNote( editNode.value );
 		expandControl.appendChild( document.createTextNode( AN_COLLAPSED_ICON ) );
-		annotation.editing = AN_EDIT_NOTE_KEYWORDS;
+		post.showNoteEditor( marginalia, noteElement, new KeywordNoteEditor( marginalia, post, annotation, noteElement ) );
 	}
-	
-	var editControl = post.showNoteEdit( marginalia, noteElement );
 }
 
 /**

@@ -386,7 +386,7 @@ Annotation.prototype.getNoteElement = function( )
 /**
  * Add an annotation to the local annotation list and display.
  */
-PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode )
+PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, editorConstructor )
 {
 	if ( ! nextNode )
 		nextNode = this.getAnnotationNextNote( marginalia, annotation );
@@ -396,7 +396,7 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode )
 		this.removeAnnotation( marginalia, annotation );
 	var quoteFound = this.showHighlight( marginalia, annotation );
 	// Go ahead and show the note even if the quote wasn't found
-	var r = this.showNote( marginalia, annotation, nextNode );
+	var r = this.showNote( marginalia, annotation, nextNode, editorConstructor );
 	// Reposition any following notes that need it
 	this.repositionSubsequentNotes( marginalia, nextNode );
 }
@@ -503,7 +503,7 @@ PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
  * Called to start editing a new annotation
  * the annotation isn't saved to the db until edit completes
  */
-PostMicro.prototype.createAnnotation = function( marginalia, annotation )
+PostMicro.prototype.createAnnotation = function( marginalia, annotation, editorConstructor )
 {
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
@@ -514,19 +514,16 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation )
 	annotation.editing = annotation.defaultNoteEditMode( marginalia.preferences );
 	
 	// Show the annotation and highlight
-	this.addAnnotation( marginalia, annotation );
+	this.addAnnotation( marginalia, annotation, null, editorConstructor );
 	// Focus on the text edit
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
-	var editElement = ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
-		? domutil.childByTagClass( noteElement, 'select', null, null )
-		: domutil.childByTagClass( noteElement, 'textarea', null, null );
 	// Sequencing here (with focus last) is important
 	this.repositionNotes( marginalia, noteElement.nextSibling );
-	editElement.focus( );
+	marginalia.noteEditor.focus( );
 	// Just in case - IE can't get it right when editing, so I don't trust it
 	// on create either, even if it does work for me.
 	if ( 'exploder' == domutil.detectBrowser( ) )
-		editElement.focus( );
+		marginalia.noteEditor.focus( );
 	
 	window.scrollTo( scrollX, scrollY );
 }
@@ -552,35 +549,31 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	
 	var noteStr = annotation.note;
-	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
+	
+	// If the editor has a copy of the note, store it
+	if ( marginalia.noteEditor.getNote )
 	{
-		var selectNode = domutil.childByTagClass( listItem, 'select', AN_KEYWORDSCONTROL_CLASS, null );
-		if ( selectNode.selectedIndex > -1 )
-			noteStr = selectNode.options[ selectNode.selectedIndex ].value;
-	}
-	else
-	{
-		var editNode = domutil.childByTagClass( listItem, 'textarea', null, null );
-		
+		noteStr = marginalia.noteEditor.getNote( );
+	
 		// Check the length of the note.  If it's too long, do nothing, but restore focus to the note
 		// (which is awkward, but we can't save a note that's too long, we can't allow the note
 		// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
-		if ( editNode.value.length > MAX_NOTE_LENGTH )
+		if ( noteStr.length > MAX_NOTE_LENGTH )
 		{
 			alert( getLocalized( 'note too long' ) );
 			editNode.focus( );
 			return false;
 		}
-		noteStr = editNode.value;
+		annotation.setNote( noteStr );
 	}
 	
 	// don't allow this to happen more than once
 	if ( ! annotation.editing )
 		return false;
 	this.hoverAnnotation( marginalia, annotation, false );
+	delete marginalia.noteEditor;
 	delete annotation.editing;
 	marginalia.editing = null;
-	annotation.setNote( noteStr );
 
 	// Update the link hover (if present)
 	this.showLink( marginalia, annotation );
@@ -855,16 +848,16 @@ function _skipAnnotationActions( node )
 
 
 /*
- * Handler for standar createAnnotation button
+ * Handler for standard createAnnotation button
  * Application may choose to do things otherwise (e.g. for edit actions)
  */
-function clickCreateAnnotation( event, id )
+function clickCreateAnnotation( event, id, editorConstructor )
 {
 	// This might be called from a handler not set up by addEvent,
 	// so use the clumsy functions.
 	event = domutil.getEvent( event );
 	domutil.stopPropagation( event );
-	createAnnotation( id, true );
+	createAnnotation( id, true, null, editorConstructor );
 }
 
 
@@ -877,7 +870,7 @@ function clickCreateAnnotation( event, id )
  *
  * That said, the standard interface calls this from clickCreateAnnotation
  */
-function createAnnotation( postId, warn, action )
+function createAnnotation( postId, warn, action, editorConstructor )
 {
 	var marginalia = window.marginalia;
 
@@ -1019,6 +1012,6 @@ function createAnnotation( postId, warn, action )
 		return false;
 	}
 	
-	post.createAnnotation( marginalia, annotation );
+	post.createAnnotation( marginalia, annotation, editorConstructor );
 	return true;
 }

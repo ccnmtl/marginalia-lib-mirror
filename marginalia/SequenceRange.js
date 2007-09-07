@@ -119,6 +119,17 @@ SequenceRange.prototype.makeBlockLevel = function( )
 	this.end.makeBlockLevel( );
 }
 
+SequenceRange.prototype.collapseToStart = function( )
+{
+	this.end = this.start;
+}
+
+SequenceRange.prototype.collapseToEnd = function( )
+{
+	this.start = this.end;
+}
+
+
 function SequencePoint( str )
 {
 	if ( str )
