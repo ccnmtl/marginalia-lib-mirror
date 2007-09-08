@@ -28,6 +28,36 @@ function removeCookie(name) {
 	createCookie(name,"",-1);
 }
 
+
+/*
+Script by RoBorg
+RoBorg@geniusbug.com
+http://javascript.geniusbug.com | http://www.roborg.co.uk
+Please do not remove or edit this message
+Please link to this website if you use this script!
+*/
+function clone(myObj)
+{
+	if(typeof(myObj) != 'object') return myObj;
+	if(myObj == null) return myObj;
+
+	var myNewObj = new Object();
+
+	for(var i in myObj)
+		myNewObj[i] = clone(myObj[i]);
+
+	return myNewObj;
+}
+
+/**
+ * Also need to be able to copy (in order to maintain same reference in case it has been aliased)
+ */
+function copy( fromObj, toObj, deep )
+{
+	for ( var i in fromObj )
+		toObj[ i ] = deep ? clone( fromObj[ i ] ) : fromObj[ i ];
+}
+
 /*
  * The fellowing functions are
  * written by Dean Edwards, 2005

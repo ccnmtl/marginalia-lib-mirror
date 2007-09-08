@@ -141,11 +141,53 @@ function Marginalia( service, username, anusername, features )
 			case 'userInRequest':	// send the user ID in requests (for the demo)
 				this.userInRequest = value;
 				break;
+			case 'getEditor':
+				this.getEditor = value;
+				break;
+			case 'saveEditPrefs':
+				this.saveEditPrefs = value;
+				break;
 			default:
 				throw 'Unknown Marginalia feature';
 		}
 	}
+	if ( ! this.getEditor )
+		this.getEditor = Marginalia.getDefaultEditor;
+	if ( ! this.saveEditPrefs )
+		this.saveEditPrefs = Marginalia.saveEditPrefs;
 }
+
+/**
+ * Figure out whether note editing should be in keywords or freeform mode
+ * If the note text is a keyword, default to keywords.  Otherwise, check
+ * preferences.
+ */
+Marginalia.getDefaultEditor = function( marginalia, annotation )
+{
+	if ( ! marginalia.keywordService )
+		return AN_EDIT_NOTE_FREEFORM;
+	else if ( '' == annotation.getNote() )
+	{
+		var pref = marginalia.preferences.getPreference( AN_NOTEEDITMODE_PREF );
+		if ( pref == AN_EDIT_NOTE_KEYWORDS )
+			return new KeywordNoteEditor( );
+		else
+			return new FreeformNoteEditor( );
+	}
+	else if ( marginalia.keywordService.isKeyword( annotation.getNote() ) )
+		return new KeywordNoteEditor( );
+	else
+		return new FreeformNoteEditor( );
+}
+
+Marginalia.saveEditPrefs = function( marginalia, annotation, editor )
+{
+	if ( editor.constructor == KeywordNoteEditor )
+		marginalia.preferences.setPreference( AN_NOTEEDITMODE_PREF, AN_EDIT_NOTE_KEYWORDS );
+	else if ( editor.constructor == FreeformNoteEditor )
+		marginalia.preferences.setPreference( AN_NOTEEDITMODE_PREF, AN_EDIT_NOTE_FREEFORM );
+}
+
 
 
 /**
@@ -401,7 +443,11 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, 
 		this.removeAnnotation( marginalia, annotation );
 	var quoteFound = this.showHighlight( marginalia, annotation );
 	// Go ahead and show the note even if the quote wasn't found
-	var r = this.showNote( marginalia, annotation, nextNode, editor );
+	var r;
+	if ( editor )
+		r = this.showNoteEditor( marginalia, annotation, editor, nextNode );
+	else
+		r = this.showNote( marginalia, annotation, nextNode );
 	// Reposition any following notes that need it
 	this.repositionSubsequentNotes( marginalia, nextNode );
 }
@@ -539,23 +585,24 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor 
  */
 PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 {
-	// Start with validation
+	// Don't allow this to happen more than once
+	if ( ! marginalia.noteEditor )
+		return false;
 	
-	// If the editor has a copy of the note, store it
-	if ( marginalia.noteEditor.getNote )
+	// Save any changes to the annotation
+	if ( marginalia.noteEditor.save )
+		marginalia.noteEditor.save( );
+	
+	// ---- Validate the annotation ----
+
+	// Check the length of the note.  If it's too long, do nothing, but restore focus to the note
+	// (which is awkward, but we can't save a note that's too long, we can't allow the note
+	// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
+	if ( marginalia.noteEditor.annotation.getNote().length > MAX_NOTE_LENGTH )
 	{
-		noteStr = marginalia.noteEditor.getNote( );
-	
-		// Check the length of the note.  If it's too long, do nothing, but restore focus to the note
-		// (which is awkward, but we can't save a note that's too long, we can't allow the note
-		// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
-		if ( noteStr.length > MAX_NOTE_LENGTH )
-		{
-			alert( getLocalized( 'note too long' ) );
-			marginalia.noteEditor.focus( );
-			return false;
-		}
-		annotation.setNote( noteStr );
+		alert( getLocalized( 'note too long' ) );
+		marginalia.noteEditor.focus( );
+		return false;
 	}
 	
 	// Note and quote length cannot both be zero
@@ -567,39 +614,28 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		return false;
 	}
 	
-	// don't allow this to happen more than once
-	if ( ! annotation.editing )
-		return false;
-
+	// Now that validation's complete, start storing things
+	Marginalia.saveEditPrefs( marginalia, annotation, marginalia.noteEditor );
 
 	// Remove events
 	removeEvent( document.documentElement, 'click', _saveAnnotation );
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	removeEvent( noteElement, 'click', domutil.stopPropagation );
 	
-	marginalia.preferences.setPreference( AN_NOTEEDITMODE_PREF, annotation.editing );
-	
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
 	var scrollX = domutil.getWindowXScroll( );
 	
+	// Clear the editor
+	marginalia.noteEditor.clear();
+	marginalia.noteEditor = null;
+	while ( noteElement.firstChild )
+		noteElement.removeChild( noteElement.firstChild );
+
 	// TODO: listItem is an alias for noteElement
 	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	
-	var noteStr = annotation.note;
-	
 	this.hoverAnnotation( marginalia, annotation, false );
-	delete marginalia.noteEditor;
-	delete annotation.editing;
-	marginalia.editing = null;
-
-	// Update the link hover (if present)
-	this.showLink( marginalia, annotation );
-	
-	// Replace the editable note display
-	var nextNode = this.removeNote( marginalia, annotation );
-	noteElement = this.showNote( marginalia, annotation, nextNode );
-	this.repositionNotes( marginalia, noteElement.nextSibling );
 	
 	domutil.removeClass( document.body, AN_EDITINGNOTE_CLASS );
 	
@@ -609,6 +645,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		this.removeHighlight( marginalia, annotation );
 		this.showHighlight( marginalia, annotation );
 	}
+	
+	// ---- Update the annotation contents ----
 	
 	// The annotation is local and needs to be created in the DB
 	if ( annotation.isLocal )
@@ -638,18 +676,23 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 			annotation.setUrl( annotation.getUrl().substring( marginalia.urlBase.length ) );
 		}
 
-		annotation.setNote( noteStr );
 		annotation.setQuoteTitle( this.title );
 		annotation.setQuoteAuthor( this.author );
 		marginalia.createAnnotation( annotation, f );
 	}
 	// The annotation already exists and needs to be updated
 	else
-	{
-		annotation.setNote( noteStr );
 		marginalia.updateAnnotation( annotation, null );
-	}
 	
+	// ---- Redraw the note ----
+	// Update the link hover (if present)
+	this.showLink( marginalia, annotation );
+	
+	// Replace the editable note display
+	var nextNode = this.removeNote( marginalia, annotation );
+	noteElement = this.showNote( marginalia, annotation, nextNode );
+	this.repositionNotes( marginalia, noteElement.nextSibling );
+
 	// May need to reposition block markers
 	if ( annotation.action == 'edit' && annotation.hasChanged( 'note' ) || annotation.hasChanged( 'link' ) )
 		this.repositionBlockMarkers( marginalia );
