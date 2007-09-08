@@ -325,7 +325,13 @@ PostMicro.prototype.showNoteEditor = function( marginalia, noteElement, editor )
 	// Since we're editing, set the appropriate class on body
 	domutil.addClass( document.body, AN_EDITINGNOTE_CLASS );
 	
-	editor.bind( marginalia, this, annotation, noteElement );
+	// Used to have a bind() method to do this, but if done here there's only one
+	// copy of the code
+	editor.marginalia = marginalia;
+	editor.postMicro = this;
+	editor.annotation = annotation;
+	editor.noteElement = noteElement;
+
 	marginalia.noteEditor = editor;
 	editor.show( value );
 }
@@ -335,14 +341,7 @@ PostMicro.prototype.showNoteEditor = function( marginalia, noteElement, editor )
  * Freeform margin note editor
  */
 function FreeformNoteEditor( )
-{ }
-
-FreeformNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
 {
-	this.marginalia = marginalia;
-	this.postMicro = postMicro;
-	this.noteElement = noteElement;
-	this.annotation = annotation;
 	this.editNode = null;
 }
 
@@ -403,14 +402,7 @@ FreeformNoteEditor.prototype.focus = function( )
  * Keyword margin note editor
  */
 function KeywordNoteEditor( )
-{ }
-
-KeywordNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
 {
-	this.marginalia = marginalia;
-	this.postMicro = postMicro;
-	this.noteElement = noteElement;
-	this.annotation = annotation;
 	this.selectNode = null;
 }
 
@@ -490,8 +482,6 @@ function DummyNoteEditor( f )
 {
 	this.f = f;
 }
-
-DummyNoteEditor.bind = FreeformNoteEditor.bind;
 
 DummyNoteEditor.show = function( )
 {

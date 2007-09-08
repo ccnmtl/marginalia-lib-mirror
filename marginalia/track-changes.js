@@ -21,14 +21,6 @@ Annotation.prototype.makeInsertAfter = function( )
 function SelectActionNoteEditor( )
 { }
 
-SelectActionNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
-{
-	this.marginalia = marginalia;
-	this.postMicro = postMicro;
-	this.annotation = annotation;
-	this.noteElement = noteElement;
-}
-
 SelectActionNoteEditor.prototype.clear = function( )
 {
 	while ( this.noteElement.firstChild )
