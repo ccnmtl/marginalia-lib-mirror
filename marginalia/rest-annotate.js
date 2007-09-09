@@ -75,7 +75,7 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '&user=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.username );
 	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -118,7 +118,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '&user=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.username );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -153,7 +153,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '?user=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '?curuser=' + encodeURIParameter( window.marginalia.username );
 
 	var body
 		= 'url=' + encodeURIParameter( annotation.getUrl() )
@@ -215,7 +215,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
 		serviceUrl += ( this.niceUrls ? '?' : '&' )
-			+ 'user=' + encodeURIParameter( window.marginalia.username );
+			+ 'curuser=' + encodeURIParameter( window.marginalia.username );
 
 	var body = '';
 	if ( annotation.hasChanged( 'note' )  )
@@ -266,7 +266,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
 		serviceUrl += ( this.niceUrls ? '?' : '&' )
-			+ 'user=' + encodeURIParameter( window.marginalia.username );
+			+ 'curuser=' + encodeURIParameter( window.marginalia.username );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'DELETE', serviceUrl, true );
