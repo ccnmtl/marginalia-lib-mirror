@@ -76,7 +76,7 @@ SelectActionNoteEditor.prototype.show = function( )
 				content: domutil.element( 'button', {
 					content: getLocalized( 'action annotate button' ),
 					onclick: function( event ) {
-						postMicro.showNoteEditor( marginalia, annotation, marginalia.getEditor(), noteElement );
+						postMicro.showNoteEditor( marginalia, annotation, marginalia.newEditor(), noteElement );
 					}
 				} )	
 			} ),
@@ -85,7 +85,7 @@ SelectActionNoteEditor.prototype.show = function( )
 					content: getLocalized( 'action insert before button' ),
 					onclick: function( event ) {
 						annotation.makeInsertBefore();
-						postMicro.showNoteEditor( marginalia, annotation, marginalia.getEditor(), noteElement );
+						postMicro.showNoteEditor( marginalia, annotation, marginalia.newEditor(), noteElement );
 					}
 				} )	
 			} ),
@@ -94,7 +94,7 @@ SelectActionNoteEditor.prototype.show = function( )
 					content: getLocalized( 'action insert after button' ),
 					onclick: function( event ) {
 						annotation.makeInsertAfter( );
-						postMicro.showNoteEditor( marginalia, annotation, marginalia.getEditor(), noteElement );
+						postMicro.showNoteEditor( marginalia, annotation, marginalia.newEditor(), noteElement );
 					}
 				} )	
 			} ),
@@ -105,7 +105,7 @@ SelectActionNoteEditor.prototype.show = function( )
 						annotation.setAction( 'edit' );
 						postMicro.removeHighlight( marginalia, annotation );
 						postMicro.showHighlight( marginalia, annotation );
-						postMicro.showNoteEditor( marginalia, annotation, marginalia.getEditor(), noteElement );
+						postMicro.showNoteEditor( marginalia, annotation, marginalia.newEditor(), noteElement );
 					}
 				} )	
 			} ),

@@ -734,11 +734,7 @@ function _editAnnotation( event )
 	// If a specific editor type is to be invoked, its name is stored in clickEditorType.
 	// This is better than spinning off a whole pile of lambda functions, each with its
 	// own huge context.
-	var editor;
-	if ( this.clickEditorType )
-		var editor = new marginalia.editors[ this.clickEditorType ]( );
-	else
-		editor = marginalia.getEditor( marginalia, annotation );
+	var editor = marginalia.newEditor( annotation, this.clickEditorType );
 	post.showNoteEditor( marginalia, annotation, editor );
 }
 

@@ -94,9 +94,10 @@ function Marginalia( service, username, anusername, features )
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
 		
 	this.editors = {
-		freeform: FreeformNoteEditor,
-		keyword: KeywordNoteEditor,
-		link: SimpleLinkUi
+		'default': Marginalia.newDefaultEditor,
+		freeform: Marginalia.newEditorFunc( FreeformNoteEditor ),
+		keyword: Marginalia.newEditorFunc( KeywordNoteEditor ),
+		link: Marginalia.newEditorFunc( SimpleLinkUi )
 	};
 	
 	for ( var feature in features )
@@ -153,9 +154,6 @@ function Marginalia( service, username, anusername, features )
 				for ( var name in value )
 					this.editors[ name ] = value[ name ];
 				break;
-			case 'getEditor':
-				this.getEditor = value;
-				break;
 			case 'saveEditPrefs':
 				this.saveEditPrefs = value;
 				break;
@@ -166,12 +164,26 @@ function Marginalia( service, username, anusername, features )
 				throw 'Unknown Marginalia feature';
 		}
 	}
-	if ( ! this.getEditor )
-		this.getEditor = Marginalia.getDefaultEditor;
 	if ( ! this.saveEditPrefs )
 		this.saveEditPrefs = Marginalia.saveEditPrefs;
 	if ( ! this.displayNote )
 		this.displayNote = Marginalia.defaultDisplayNote;
+}
+
+Marginalia.prototype.newEditor = function( annotation, editorName )
+{
+	var f = name ? this.editors[ name ] : this.editors[ 'default' ];
+	return f( this, annotation );
+}
+
+/**
+ * Call this to create a function for constructing an editor with the given constructor
+ * Avoids excessive context in the lambda
+ */
+Marginalia.newEditorFunc = function( constructor )
+{
+	var f = function( marginalia, annotation ) { return new constructor( ); };
+	return f;
 }
 
 /**
@@ -179,7 +191,7 @@ function Marginalia( service, username, anusername, features )
  * If the note text is a keyword, default to keywords.  Otherwise, check
  * preferences.
  */
-Marginalia.getDefaultEditor = function( marginalia, annotation )
+Marginalia.newDefaultEditor = function( marginalia, annotation )
 {
 	if ( ! marginalia.keywordService )
 		return AN_EDIT_NOTE_FREEFORM;
