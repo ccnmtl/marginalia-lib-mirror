@@ -26,7 +26,7 @@
  * $Id$
  */
  
- /**
+/**
  * This class defines default behavior for elements of the linking user interface
  * An instance is held in th Marginalia object.  Some applications will implement
  * their own versions to provide customized UI behavior.
@@ -36,39 +36,19 @@ function SimpleLinkUi( extlinks )
 	this.extlinks = extlinks;	// permit links to other hosts?
 }
 
-/**
- * Called at Marginalia startup
- */
-SimpleLinkUi.prototype.init = function( )
-{ }
-
-/**
- * May be necessary if this UI is nested in another
- * Use as follows:
- * window.marginalia.linkUI.getSimpleLinkUI( )
- */
-SimpleLinkUi.prototype.getSimpleLinkUi = function( )
+SimpleLinkUi.prototype.clear = function( )
 {
-	return this;
-}
- 
-/**
- * ID assigned to note (li) element for annotation being edited
- */
-SimpleLinkUi.prototype.getControlId = function( annotation )
-{
-	return AN_ID_PREFIX + annotation.getId() + '-linkedit';
+	this.editNode = null;
 }
 
-/**
- * Make whatever UI changes are necessary to display link edit controls
- */
-SimpleLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, noteElement )
+SimpleLinkUi.prototype.show = function( )
 {
-	// Replace note display.  Preserve ID and class values by maintaining note element.
-	var noteElement = post.clearNote( marginalia, annotation );
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var post = this.postMicro;
+	var noteElement = this.noteElement;
 	
-	var controlId = this.getControlId( annotation );
+	var controlId = AN_ID_PREFIX + annotation.getId() + '-linkedit';
 	
 	// add the link label
 	noteElement.appendChild( domutil.element( 'label', {
@@ -77,16 +57,15 @@ SimpleLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, no
 		content:  AN_LINKEDIT_LABEL } ) );
 
 	// Add the URL input field
-	var editNode = noteElement.appendChild( domutil.element( 'input', {
+	this.editNode = noteElement.appendChild( domutil.element( 'input', {
 		id:  controlId,
 		value:  annotation.getLink() ? annotation.getLink() : '',
-		type:  this.extlinks ? 'text' : 'hidden' } ) );
+		type:  'text' } ) );
 	if ( this.extlinks )
 	{
-		addEvent( editNode, 'keypress', this._editLinkKeypress );
+		addEvent( editNode, 'keypress', SimpleLinkUi._editLinkKeypress );
 		addEvent( editNode, 'keyup', _editChangedKeyup );
 	}
-	editNode.focus( );
 	
 	// add the delete button
 	noteElement.appendChild( domutil.button( {
@@ -94,54 +73,29 @@ SimpleLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, no
 		title:  getLocalized( 'delete annotation link button' ),
 		content:  'x',
 		annotationId:  annotation.getId(),
-		onclick: this._deleteLink } ) );
-		
-	// Reposition following notes
-	post.repositionNotes( marginalia, noteElement.nextSibling );
-
-	addEvent( document.documentElement, 'click', this.saveLink );
-	addEvent( noteElement, 'click', domutil.stopPropagation );
+		onclick: SimpleLinkUi._deleteLink } ) );
 }
 
-
-/**
- * Link editing is complete:  update the UI accordingly
- * (notes only - highlight UI is updated in a standard way, not customized here - see post.saveAnnotationLink)
- */
-SimpleLinkUi.prototype.showLinkEditComplete = function( marginalia, post, annotation )
+SimpleLinkUi.prototype.focus = function( )
 {
-	// Ensure the window doesn't scroll by saving and restoring scroll position
-	var scrollY = domutil.getWindowYScroll( );
-	var scrollX = domutil.getWindowXScroll( );
+	this.editNode.focus( );
+}
 
-	// Redisplay the annotation note
-	var noteElement = post.showNote( marginalia, annotation );
-
-	// Remove events
-	removeEvent( document.documentElement, 'click', this._anonymousSaveLink );
-	removeEvent( noteElement, 'click', domutil.stopPropagation );
-	
-	post.repositionNotes( marginalia, noteElement.nextSibling );
-	
-	window.scrollTo( scrollX, scrollY );
+SimpleLinkUi.prototype.save = function( )
+{
+	this.annotation.setLink( this.editNode.value );
+	this.annotation.setLinkTitle( '' );
 }
 
 
 /**
  * Hit a key while editing an annotation link
  */
-SimpleLinkUi.prototype._editLinkKeypress = function( event )
+SimpleLinkUi._editLinkKeypress = function( event )
 {
-	// callback must retrieve object
-	var simpleUi = window.marginalia.linkUi.getSimpleLinkUi( );
-	var marginalia = window.marginalia;
-	var annotation = marginalia.editing;
-	var noteElement = annotation.getNoteElement( );
-	var post = domutil.nestedFieldValue( noteElement, AN_POST_FIELD );
-	
 	if ( event.keyCode == 13 )
 	{
-		simpleUi.saveLink( marginalia, post, annotation, noteElement );
+		_saveAnnotation( event );
 		return false;
 	}
 	// should check for 27 ESC to cancel edit
@@ -155,64 +109,10 @@ SimpleLinkUi.prototype._editLinkKeypress = function( event )
 /**
  * Delete a link
  */
-SimpleLinkUi.prototype._deleteLink = function( event )
+SimpleLinkUi._deleteLink = function( event )
 {
 	event.stopPropagation( );
-	var target = domutil.getEventTarget( event );
-	var linkUi = window.marginalia.linkUi;
-	var post = domutil.nestedFieldValue( target, AN_POST_FIELD );
-	var annotation = domutil.nestedFieldValue( target, AN_ANNOTATION_FIELD );
-	var noteElement = domutil.parentByTagClass( target, 'li' );
-	var editNode = domutil.childByTagClass( noteElement, 'input', null, null );
-	editNode.value = '';
-	annotation.setLink( '' );
-	linkUi.saveLink( window.marginalia, post, annotation, noteElement );
+	window.marginalia.noteEditor.editNode.value = '';
+	_saveAnnotation( event );
 }
-
-/**
- * Retrieve link text from input field, validate, save, update display
- */
-SimpleLinkUi.prototype.saveLink = function( marginalia, post, annotation, noteElement )
-{
-	// Resolve parameters if this was triggered as a callback
-	var simpleUi;
-	if ( domutil.instanceOf( this, SimpleLinkUi ) )
-		simpleUi = this;
-	else
-		simpleUi = window.marginalia.linkUi.getSimpleLinkUi( );
-	if ( ! domutil.instanceOf( marginalia, Marginalia ) )
-	{
-		var event = marginalia;
-		event.stopPropagation( );
-		marginalia = window.marginalia;
-		annotation = marginalia.editing;
-		noteElement = annotation.getNoteElement( );
-		post = domutil.nestedFieldValue( noteElement, AN_POST_FIELD );
-	}
-		
-	// don't allow this to happen more than once
-	if ( ! annotation.editing )
-		return false;
-	delete annotation.editing;
-
-	var editNode = domutil.childByTagClass( noteElement, 'input', null, null );
-	
-	// Check the length of the link.  If it's too long, do nothing, but restore focus to the note
-	// (which is awkward, but we can't save a note that's too long, we can't allow the note
-	// to appear saved, and truncating it automatically strikes me as an even worse solution.) 
-	if ( editNode.value > MAX_LINK_LENGTH )
-	{
-		alert( getLocalized( 'link too long' ) );
-		editNode.focus( );
-		return false;
-	}
-
-	annotation.setLink( editNode.value );
-	annotation.setLinkTitle( '' );
-	post.saveAnnotationLink( marginalia, annotation, noteElement );
-
-	marginalia.linkUi.showLinkEditComplete( marginalia, post, annotation );
-}
-
-
 

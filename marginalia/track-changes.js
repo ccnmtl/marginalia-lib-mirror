@@ -77,7 +77,6 @@ SelectActionNoteEditor.prototype.show = function( )
 					content: getLocalized( 'action annotate button' ),
 					onclick: function( event ) {
 						postMicro.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ), noteElement );
-						marginalia.noteEditor.focus( );
 					}
 				} )	
 			} ),
@@ -87,7 +86,6 @@ SelectActionNoteEditor.prototype.show = function( )
 					onclick: function( event ) {
 						annotation.makeInsertBefore();
 						postMicro.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ), noteElement );
-						marginalia.noteEditor.focus( );
 					}
 				} )	
 			} ),
@@ -97,7 +95,6 @@ SelectActionNoteEditor.prototype.show = function( )
 					onclick: function( event ) {
 						annotation.makeInsertAfter( );
 						postMicro.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ), noteElement );
-						marginalia.noteEditor.focus( );
 					}
 				} )	
 			} ),
@@ -109,7 +106,6 @@ SelectActionNoteEditor.prototype.show = function( )
 						postMicro.removeHighlight( marginalia, annotation );
 						postMicro.showHighlight( marginalia, annotation );
 						postMicro.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ), noteElement );
-						marginalia.noteEditor.focus( );
 					}
 				} )	
 			} ),

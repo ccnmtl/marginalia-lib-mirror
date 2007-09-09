@@ -190,73 +190,125 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
  * Regular annotation display with control buttons (delete, access, link)
  * Call showEdit if you want to show an editor instead
  */
-PostMicro.prototype.showNote = function( marginalia, annotation, editor, nextNode )
+PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 {
 	trace( 'showNote', 'Show note ' + annotation.toString() );
 
 	var noteElement = this.showNoteElement( marginalia, annotation, nextNode );
 	
-	// Does this user have permission to edit this annotation?
-	var canEdit = null != marginalia.username && annotation.getUserId() == marginalia.username;
-	if ( canEdit )
+	// Mark the action
+	if ( marginalia.showActions && annotation.getAction() )
+		domutil.addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.getAction() );
+	
+	// Calculating these parameters here makes it much easier to implement note display
+	var params = {
+		isCurrentUser: null != marginalia.username && annotation.getUserId( ) == marginalia.username,
+		linkingEnabled: marginalia.linkUi ? true : false,
+		quoteFound: null != domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null),
+		keyword: marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null
+	};
+	
+	// Generate actual display elements and get behavior rules
+	 marginalia.displayNote( marginalia, annotation, noteElement, params );
+	 
+	return noteElement;
+}
+
+Marginalia.prototype.bindNoteBehaviors = function( annotation, noteElement, behaviors )
+{
+	var marginalia = this;
+	var postMicro = domutil.nestedFieldValue( noteElement, AN_POST_FIELD );
+
+	// Functions to associate with events (click etc.)
+	var eventMappings = { 
+		link: function() {
+			postMicro.showNoteEditor( annotation, new SimpleLinkUi( ), noteElement );
+		},
+		access: _toggleAnnotationAccess,
+		'delete': _deleteAnnotation,
+		edit: _editAnnotation,
+		save: _saveAnnotation };
+		
+	// Apply behavior rules
+	// These are separated out to insulate display implementations from changes to internal APIs
+	for ( var i = 0;  i < behaviors.length;  ++i )
+	{
+		var nodes = cssQuery( behaviors[ i ][ 0 ], noteElement );
+		if ( nodes.length == 1 )
+		{
+			var node = nodes[ 0 ];
+			var props = behaviors[ i ][ 1 ];
+			for ( var property in props )
+			{
+				var value = props[ property ];
+				switch ( property )
+				{
+					case 'click':
+						addEvent( node, 'click', eventMappings[ value ] );
+						break;
+					default:
+						trace( 'behaviors', 'Unknown property: ' + property );
+				}
+			}
+		}
+		else
+			trace( 'behaviors', 'Show note behavior unable to find node: ' + behaviors[ i ][ 0 ] );
+	}
+}
+
+
+/**
+ * Default function for generating margin note display, stored in marginalia.displayNote
+ */
+Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, params )
+{
+	if ( params.isCurrentUser )
 	{
 		var controls = domutil.element( 'div', { className: 'controls' } );
 		noteElement.appendChild( controls );
 		
-		if ( marginalia.linkUi )
+		// add the link button
+		if ( params.linkingEnabled )
 		{
-			// add the link button
-			// TODO: why is there an href here?
 			controls.appendChild( domutil.button( {
 				className:  AN_LINKBUTTON_CLASS,
 				title:  getLocalized( 'annotation link button' ),
-				content:  AN_LINK_EDIT_ICON,
-				href:  annotation.getLink( ),
-				onclick:  this.editAnnotationLink
+				content:  AN_LINK_EDIT_ICON
 			} ) );
 		}
 
-		if ( marginalia.showAccess || annotation.getAccess() != ANNOTATION_ACCESS_DEFAULT )
+		// add the access button
+		if ( marginalia.showAccess )
 		{
-			// add the access button
-			// even if the feature is turned off, show this if the access is not
-			// what's expected - this is a subtle way of at least letting users
-			// know something may be amiss
 			controls.appendChild( domutil.button( {
 				className:  AN_ACCESSBUTTON_CLASS,
 				title:  getLocalized( annotation.getAccess() == AN_PUBLIC_ACCESS ? 'public annotation' : 'private annotation' ),
-				content:  annotation.getAccess() == AN_PUBLIC_ACCESS ? AN_SUN_SYMBOL : AN_MOON_SYMBOL,
-				onclick:  _toggleAnnotationAccess } ) );
+				content:  annotation.getAccess() == AN_PUBLIC_ACCESS ? AN_SUN_SYMBOL : AN_MOON_SYMBOL
+			} ) );
 		}
 		
 		// add the delete button
 		controls.appendChild( domutil.button( {
-			id:  annotation.getId( ),
 			className:  AN_DELETEBUTTON_CLASS,
 			title:  getLocalized( 'delete annotation button' ),
-			content:  'x',
-			onclick:  _deleteAnnotation } ) );
+			content:  'x'
+		} ) );
 	}
 	
 	// add the text content
 	var noteText = document.createElement( 'p' );
-	var keyword = marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null;
 	var titleText = null;
 
-	var highlightElement = domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
-	var quoteFound = highlightElement != null;
-
-
-	if ( ! quoteFound || ! annotation.getRange( SEQUENCE_RANGE ) )
+	if ( ! params.quoteFound || ! annotation.getRange( SEQUENCE_RANGE ) )
 		titleText = getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"';
-	else if ( keyword )
-		titleText = keyword.description;
+	else if ( params.keyword )
+		titleText = params.keyword.description;
 	
 	if ( titleText )
 		noteText.setAttribute( 'title', titleText );
 	
 	// If this doesn't belong to the current user, add the name of the owning user
-	if ( ! canEdit )
+	if ( ! params.isCurrentUser )
 	{
 		domutil.addClass( noteElement, 'other-user' );
 		noteText.appendChild( domutil.element( 'span', {
@@ -266,15 +318,13 @@ PostMicro.prototype.showNote = function( marginalia, annotation, editor, nextNod
 	noteText.appendChild( document.createTextNode( annotation.getNote() ) );
 	noteElement.appendChild( noteText );
 	
-	// Mark the action
-	if ( marginalia.showActions && annotation.getAction() )
-		domutil.addClass( noteElement, AN_ACTIONPREFIX_CLASS + annotation.getAction() );
-	
-	// Add edit behavior
-	if ( canEdit )
-		addEvent( noteText, 'click', _editAnnotation );
-	
-	return noteElement;
+	// Return behavior mappings
+	marginalia.bindNoteBehaviors( annotation, noteElement, [
+		[ 'button.annotation-link', { click: 'link' } ],
+		[ 'button.annotation-access', { click: 'access' } ],
+		[ 'button.annotation-delete', { click: 'delete' } ],
+		[ 'p', { click: 'edit' } ]
+	] );
 }
 
 
@@ -317,6 +367,7 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 
 	marginalia.noteEditor = editor;
 	editor.show( );
+	editor.focus( );
 
 	// If anywhere outside the note area is clicked, the annotation will be saved.
 	// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),

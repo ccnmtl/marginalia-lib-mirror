@@ -147,6 +147,9 @@ function Marginalia( service, username, anusername, features )
 			case 'saveEditPrefs':
 				this.saveEditPrefs = value;
 				break;
+			case 'displayNote':
+				this.displayNote = value;
+				break;
 			default:
 				throw 'Unknown Marginalia feature';
 		}
@@ -155,6 +158,8 @@ function Marginalia( service, username, anusername, features )
 		this.getEditor = Marginalia.getDefaultEditor;
 	if ( ! this.saveEditPrefs )
 		this.saveEditPrefs = Marginalia.saveEditPrefs;
+	if ( ! this.displayNote )
+		this.displayNote = Marginalia.defaultDisplayNote;
 }
 
 /**
@@ -601,6 +606,14 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	if ( marginalia.noteEditor.annotation.getNote().length > MAX_NOTE_LENGTH )
 	{
 		alert( getLocalized( 'note too long' ) );
+		marginalia.noteEditor.focus( );
+		return false;
+	}
+	
+	// Similarly for the length of a link
+	if ( marginalia.noteEditor.annotation.getLink().length > MAX_LINK_LENGTH )
+	{
+		alert( getLocalized( 'link too long' ) );
 		marginalia.noteEditor.focus( );
 		return false;
 	}
