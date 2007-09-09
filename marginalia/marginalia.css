@@ -32,12 +32,17 @@
  * Strikethrough etc.
  */
 
- .hentry .entry-content em.annotation del {
+.hentry .entry-content em.annotation.action-edit {
+	background: none;
+}
+
+.hentry .entry-content em.annotation del {
+	color: darkred;
 	text-decoration: line-through;
 }
 
 .hentry .entry-content em.annotation ins {
-	color: blue;
+	color: darkblue;
 	text-decoration: none;
 }
 
@@ -200,7 +205,9 @@
 }
 
 .hentry .notes li.hover,
-.hentry .entry-content em.annotation.hover {
+.hentry .entry-content em.annotation.hover,
+.hentry .entry-content em.annotation.hover ins,
+.hentry .entry-content em.annotation.hover del {
 	color: red;
 /*	outline: red 1px solid; */
 }

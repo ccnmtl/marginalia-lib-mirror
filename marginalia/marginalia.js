@@ -582,7 +582,8 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor 
 	annotation.editing = annotation.defaultNoteEditMode( marginalia.preferences );
 	
 	// Show the annotation and highlight
-	this.addAnnotation( marginalia, annotation, null, editor );
+	var nextNode = this.getAnnotationNextNote( marginalia, annotation );
+	this.addAnnotation( marginalia, annotation, nextNode, editor );
 	// Focus on the text edit
 	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	// Sequencing here (with focus last) is important

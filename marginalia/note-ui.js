@@ -214,10 +214,10 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	return noteElement;
 }
 
-Marginalia.prototype.bindNoteBehaviors = function( annotation, noteElement, behaviors )
+Marginalia.prototype.bindNoteBehaviors = function( annotation, parentElement, behaviors )
 {
 	var marginalia = this;
-	var postMicro = domutil.nestedFieldValue( noteElement, AN_POST_FIELD );
+	var postMicro = domutil.nestedFieldValue( parentElement, AN_POST_FIELD );
 
 	// Functions to associate with events (click etc.)
 	var eventMappings = { 
@@ -230,7 +230,7 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, noteElement, beha
 	// These are separated out to insulate display implementations from changes to internal APIs
 	for ( var i = 0;  i < behaviors.length;  ++i )
 	{
-		var nodes = cssQuery( behaviors[ i ][ 0 ], noteElement );
+		var nodes = cssQuery( behaviors[ i ][ 0 ], parentElement );
 		if ( nodes.length == 1 )
 		{
 			var node = nodes[ 0 ];
@@ -343,9 +343,9 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
  * Show a note editor in the margin
  * If there's already a note editor present, remove it
  */
-PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor )
+PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, nextNode )
 {
-	var noteElement = this.showNoteElement( marginalia, annotation );
+	var noteElement = this.showNoteElement( marginalia, annotation, nextNode );
 
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
@@ -492,14 +492,10 @@ KeywordNoteEditor.prototype.show = function( )
 	var noteElement = this.noteElement;
 
 	// Show the expand/collapse control
-	var f = function( event ) {
-		postMicro.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ) );
-	};
 	this.noteElement.appendChild( domutil.button( {
 		className:	AN_EXPANDBUTTON_CLASS,
 		title: 'annotation expand edit button',
-		content: AN_COLLAPSED_ICON,
-		onclick: f } ) );
+		content: AN_COLLAPSED_ICON } ) );
 	
 	this.selectNode = document.createElement( 'select' );
 	
@@ -532,6 +528,10 @@ KeywordNoteEditor.prototype.show = function( )
 	}
 	
 	this.noteElement.appendChild( this.selectNode );
+	
+	marginalia.bindNoteBehaviors( annotation, noteElement, [
+		[ '.'+AN_EXPANDBUTTON_CLASS, { click: 'edit freeform' } ]
+	] );
 }
 
 KeywordNoteEditor.prototype.focus = function( )
