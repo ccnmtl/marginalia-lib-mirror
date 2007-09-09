@@ -219,13 +219,6 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, parentElement, be
 	var marginalia = this;
 	var postMicro = domutil.nestedFieldValue( parentElement, AN_POST_FIELD );
 
-	// Functions to associate with events (click etc.)
-	var eventMappings = { 
-		access: _toggleAnnotationAccess,
-		'delete': _deleteAnnotation,
-//		edit: _editAnnotation,
-		save: _saveAnnotation };
-		
 	// Apply behavior rules
 	// These are separated out to insulate display implementations from changes to internal APIs
 	for ( var i = 0;  i < behaviors.length;  ++i )
@@ -238,32 +231,44 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, parentElement, be
 			for ( var property in props )
 			{
 				var value = props[ property ];
-				switch ( property )
-				{
-					case 'click':
-						var f = eventMappings[ value ];
-						if ( ! f )
-						{
-							var args = value.split( ' ' );
-							if ( args.length >= 1 && args[ 0 ] == 'edit' )
-							{
-								if ( args.length == 2 )
-									node.clickEditorType = args[ 1 ];
-								f = _editAnnotation;
-							}
-						}
-						if ( f )
-							addEvent( node, 'click', f );
-						else
-							logError( 'Unknown note click behavior: ' + value );
-						break;
-					default:
-						trace( 'behaviors', 'Unknown property: ' + property );
-				}
+				this.bindNoteBehavior( node, property, value );
 			}
 		}
 		else
 			trace( 'behaviors', 'Show note behavior unable to find node: ' + behaviors[ i ][ 0 ] );
+	}
+}
+
+Marginalia.prototype.bindNoteBehavior = function( node, property, value )
+{
+	// Functions to associate with events (click etc.)
+	var eventMappings = { 
+		access: _toggleAnnotationAccess,
+		'delete': _deleteAnnotation,
+//		edit: _editAnnotation,
+		save: _saveAnnotation };
+		
+	switch ( property )
+	{
+		case 'click':
+			var f = eventMappings[ value ];
+			if ( ! f )
+			{
+				var args = value.split( ' ' );
+				if ( args.length >= 1 && args[ 0 ] == 'edit' )
+				{
+					if ( args.length == 2 )
+						node.clickEditorType = args[ 1 ];
+					f = _editAnnotation;
+				}
+			}
+			if ( f )
+				addEvent( node, 'click', f );
+			else
+				logError( 'Unknown note click behavior: ' + value );
+			break;
+		default:
+			trace( 'behaviors', 'Unknown property: ' + property );
 	}
 }
 
