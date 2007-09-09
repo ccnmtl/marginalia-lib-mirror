@@ -92,6 +92,13 @@ function Marginalia( service, username, anusername, features )
 	this.defaultAction = null;
 	this.skipContent = function(node) {
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
+		
+	this.editors = {
+		freeform: FreeformNoteEditor,
+		keyword: KeywordNoteEditor,
+		link: SimpleLinkUi
+	};
+	
 	for ( var feature in features )
 	{
 		var value = features[ feature ];
@@ -140,6 +147,11 @@ function Marginalia( service, username, anusername, features )
 				break;
 			case 'userInRequest':	// send the user ID in requests (for the demo)
 				this.userInRequest = value;
+				break;
+			// Replace named editors
+			case 'editors':
+				for ( var name in value )
+					this.editors[ name ] = value[ name ];
 				break;
 			case 'getEditor':
 				this.getEditor = value;

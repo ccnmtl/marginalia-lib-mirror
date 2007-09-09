@@ -221,12 +221,9 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, noteElement, beha
 
 	// Functions to associate with events (click etc.)
 	var eventMappings = { 
-		link: function() {
-			postMicro.showNoteEditor( annotation, new SimpleLinkUi( ), noteElement );
-		},
 		access: _toggleAnnotationAccess,
 		'delete': _deleteAnnotation,
-		edit: _editAnnotation,
+//		edit: _editAnnotation,
 		save: _saveAnnotation };
 		
 	// Apply behavior rules
@@ -244,7 +241,21 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, noteElement, beha
 				switch ( property )
 				{
 					case 'click':
-						addEvent( node, 'click', eventMappings[ value ] );
+						var f = eventMappings[ value ];
+						if ( ! f )
+						{
+							var args = value.split( ' ' );
+							if ( args.length >= 1 && args[ 0 ] == 'edit' )
+							{
+								if ( args.length == 2 )
+									node.clickEditorType = args[ 1 ];
+								f = _editAnnotation;
+							}
+						}
+						if ( f )
+							addEvent( node, 'click', f );
+						else
+							logError( 'Unknown note click behavior: ' + value );
 						break;
 					default:
 						trace( 'behaviors', 'Unknown property: ' + property );
@@ -320,7 +331,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	
 	// Return behavior mappings
 	marginalia.bindNoteBehaviors( annotation, noteElement, [
-		[ 'button.annotation-link', { click: 'link' } ],
+		[ 'button.annotation-link', { click: 'edit link' } ],
 		[ 'button.annotation-access', { click: 'access' } ],
 		[ 'button.annotation-delete', { click: 'delete' } ],
 		[ 'p', { click: 'edit' } ]
@@ -332,9 +343,13 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
  * Show a note editor in the margin
  * If there's already a note editor present, remove it
  */
-PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, nextNode )
+PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor )
 {
-	var noteElement = this.showNoteElement( marginalia, annotation, nextNode );
+	var noteElement = this.showNoteElement( marginalia, annotation );
+
+	// Ensure the window doesn't scroll by saving and restoring scroll position
+	var scrollY = domutil.getWindowYScroll( );
+	var scrollX = domutil.getWindowXScroll( );
 
 	// Check whether there's already an editor present.  If so, remove it.
 	// annotationOrig is a backup of the original unchanged annotation.  It can be used
@@ -347,10 +362,11 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 			marginalia.noteEditor.save( );
 		if ( marginalia.noteEditor.clear )
 			marginalia.noteEditor.clear( );
-		while ( noteElement.firstChild )
-			noteElement.removeChild( noteElement.firstChild );
+		if ( marginalia.noteEditor.annotation != annotation )
+			_saveAnnotation( );
 	}
-	else
+	
+	if ( ! marginalia.noteEditor || marginalia.noteEditor.noteElement != noteElement )
 	{
 		// Since we're editing, set the appropriate class on body
 		domutil.addClass( document.body, AN_EDITINGNOTE_CLASS );
@@ -358,6 +374,9 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 		setEvents = true;
 		editor.annotationOrig = clone( annotation );
 	}
+
+	while ( noteElement.firstChild )
+		noteElement.removeChild( noteElement.firstChild );
 
 	// Initialize the new editor
 	editor.marginalia = marginalia;
@@ -367,18 +386,20 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 
 	marginalia.noteEditor = editor;
 	editor.show( );
+	this.repositionNotes( marginalia, noteElement.nextSibling );
 	editor.focus( );
+	window.scrollTo( scrollX, scrollY );
 
 	// If anywhere outside the note area is clicked, the annotation will be saved.
 	// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
 	// so this only works because I can figure out which element was clicked by looking for
 	// AN_EDITINGNOTE_CLASS.
-	addEvent( document.documentElement, 'click', _saveAnnotation );
-	addEvent( noteElement, 'click', domutil.stopPropagation );
+	if ( setEvents )
+	{
+		addEvent( document.documentElement, 'click', _saveAnnotation );
+		addEvent( noteElement, 'click', domutil.stopPropagation );
+	}
 
-	// Display link editing
-//	else if ( AN_EDIT_LINK == annotation.editing )
-//		marginalia.linkUi.showLinkEdit( marginalia, this, annotation, noteElement );
 	return noteElement;
 }
 
@@ -698,34 +719,27 @@ function _editAnnotation( event )
 {
 	var marginalia = window.marginalia;
 
-	// If an annotation is already being edited, return (don't stop propagation)
-	if ( marginalia.editing )
-		return;
-	
-	event.stopPropagation( );
-	
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
 
-	// Ensure the window doesn't scroll by saving and restoring scroll position
-	var scrollY = domutil.getWindowYScroll( );
-	var scrollX = domutil.getWindowXScroll( );
+	// If an annotation is already being edited and it's not *this* annotation,
+	// return (don't stop propagation)
+	if ( marginalia.noteEditor && marginalia.noteEditor.annotation != annotation )
+		return;
+
+	event.stopPropagation( );
 	
-	var nextNode = post.removeNote( marginalia, annotation );
-	var editor = marginalia.getEditor( marginalia, annotation );
-	var noteElement = post.showNoteEditor( marginalia, annotation, editor, nextNode );
-	post.repositionNotes( marginalia, noteElement.nextSibling );
+//	var nextNode = post.removeNote( marginalia, annotation );
 	
-	var editElement = ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
-		? domutil.childByTagClass( noteElement, null, AN_KEYWORDSCONTROL_CLASS, null )
-		: domutil.childByTagClass( noteElement, 'textarea', null, null );
-	
-	// It is absolutely essential that the element get the focus - otherwise, the
-	// textarea will sit around looking odd until the user clicks *in* and then *out*,
-	// which behavior would be most unimpressive.
-	editor.focus( );
-	
-	window.scrollTo( scrollX, scrollY );
+	// If a specific editor type is to be invoked, its name is stored in clickEditorType.
+	// This is better than spinning off a whole pile of lambda functions, each with its
+	// own huge context.
+	var editor;
+	if ( this.clickEditorType )
+		var editor = new marginalia.editors[ this.clickEditorType ]( );
+	else
+		editor = marginalia.getEditor( marginalia, annotation );
+	post.showNoteEditor( marginalia, annotation, editor );
 }
 
 

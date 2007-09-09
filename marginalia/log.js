@@ -75,15 +75,7 @@ ErrorLogger.prototype.logError = function( s )
 	{
 		// Only works on Mozilla - other browsers have no dump function
 		if ( window.dump )
-		{
-			// Not working - dunno why.  Or why it has to be so obtuse.
-			/*
-			netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
-			var logger = Components.classes["@mozilla.org/consoleservice;1"].getService(Components.interfaces.nsIConsoleService);
-			logger.logStringMessage( s  );
-			*/
 			dump( "ERROR: " + s + "\n" );
-		}
 		if ( this.popup )
 		{
 			var dumpElement = this.getLogElement( );
@@ -104,7 +96,7 @@ ErrorLogger.prototype.setTrace = function( topic, b )
 
 ErrorLogger.prototype.trace = function( topic, s )
 {
-	if ( this.on && !topic || this.traceSettings[ topic ])
+	if ( this.on && ( !topic || this.traceSettings[ topic ] ) )
 	{
 		if ( window.dump )
 			dump( s + "\n");
@@ -116,10 +108,7 @@ ErrorLogger.prototype.trace = function( topic, s )
 				var li = this.logDocument.createElement( 'li' );
 				li.appendChild( this.logDocument.createTextNode( s ) );
 				dumpElement.appendChild( li );
-//				dump( "Logged to window: " + s );
 			}
-//			else
-//				dump( "Unable to log to window" );
 		}
 	}
 }
