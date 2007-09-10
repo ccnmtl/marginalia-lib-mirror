@@ -54,11 +54,11 @@ MAX_QUOTE_LENGTH = 1000;
 
 // The timeout between coop multitasking calls.  Should be short so most time is spent doing
 // something rather than timing out.
-AN_COOP_TIMEOUT = 10;
+AN_COOP_TIMEOUT = 50;
 
 // The maximum time to spend on one coop multitasking call.  Should be short enough to be
 // fairly unnoticeable, but long enough to get some work done.
-AN_COOP_MAXTIME = 240;
+AN_COOP_MAXTIME = 200;
 
 /* ************************ User Functions ************************ */
 
@@ -611,6 +611,25 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor 
 
 
 /**
+ * Cancel an annotation edit in progress
+ * This restores the annotation's previous values or removes one that wasn't
+ * yet created on the server.
+ */
+PostMicro.prototype.cancelAnnotationEdit = function( marginalia, annotation )
+{
+	if ( ! marginalia.noteEditor )
+		return false;
+	
+	this.removeAnnotation( marginalia, annotation );
+	if ( ! annotation.isLocal )
+	{
+		copy( marginalia.noteEditor.annotationOrig, annotation );
+		this.addAnnotation( marginalia, annotation );
+	}
+}
+
+
+/**
  * Save an annotation after editing
  */
 PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
@@ -811,18 +830,6 @@ function _keyupCreateAnnotation( event )
 			if ( createAnnotation( null, false ) )
 				event.stopPropagation( );
 		}
-		// C to create an edit action
-		else if ( marginalia.showActions && 67 == event.keyCode)
-		{
-			var action = null;
-			if ( 67 == event.keyCode || 99 == event.keyCode )
-				action = 'edit';
-			if ( null != action )
-			{
-				if ( createAnnotation( null, false, action ) )
-					event.stopPropagation( );
-			}
-		}
 	}
 }
 
@@ -956,7 +963,7 @@ function clickCreateAnnotation( event, id, editor )
 	// so use the clumsy functions.
 	event = domutil.getEvent( event );
 	domutil.stopPropagation( event );
-	createAnnotation( id, true, null, editor );
+	createAnnotation( id, true, editor );
 }
 
 
@@ -969,10 +976,14 @@ function clickCreateAnnotation( event, id, editor )
  *
  * That said, the standard interface calls this from clickCreateAnnotation
  */
-function createAnnotation( postId, warn, action, editor )
+function createAnnotation( postId, warn, editor )
 {
 	var marginalia = window.marginalia;
 
+	// Can't create an annotation while one is being edited
+	if ( marginalia.noteEditor )
+		return false;
+	
 	// Test for selection support (W3C or IE)
 	if ( ( ! window.getSelection || null == window.getSelection().rangeCount )
 		&& null == document.selection )
@@ -1010,10 +1021,6 @@ function createAnnotation( postId, warn, action, editor )
 		return;
 	
 
-	// Check whether this is an edit overlapping another annotation
-	if ( ! action )
-		action = marginalia.defaultAction;
-	
 	if ( null == postId )
 	{
 		var contentElement = domutil.parentByTagClass( textRange.startContainer, null, PM_CONTENT_CLASS, false, null );
@@ -1025,8 +1032,6 @@ function createAnnotation( postId, warn, action, editor )
 	var post = marginalia.listPosts().getPostById( postId );
 	var annotation = new Annotation( post.url );
 	annotation.setUserId( marginalia.username );
-	if ( action )
-		annotation.setAction( action );
 	
 	// Must strip smartcopy as it contains a <br> element which will confuse
 	// the range engine.  It's safe to do this because stripsubtree only
@@ -1046,21 +1051,11 @@ function createAnnotation( postId, warn, action, editor )
 	
 	if ( 0 == annotation.getQuote().length )
 	{
-		if ( marginalia.showActions && 'edit' == action )
-		{
-			// zero-length quotes are ok for edit actions
-			// Collapse ranges to points
-			sequenceRange.start = sequenceRange.end;
-			xpathRange.start = xpathRange.end;
-		}
-		else
-		{
-			annotation.destruct( );
-			if ( warn )
-				alert( '3' + getLocalized( 'zero length quote' ) );
-			trace( null, "zero length quote '" + annotation.getQuote() + "'" );
-			return false;
-		}
+		annotation.destruct( );
+		if ( warn )
+			alert( '3' + getLocalized( 'zero length quote' ) );
+		trace( null, "zero length quote '" + annotation.getQuote() + "'" );
+		return false;
 	}
 	
 	annotation.setRange( SEQUENCE_RANGE, sequenceRange );
@@ -1074,33 +1069,6 @@ function createAnnotation( postId, warn, action, editor )
 		return false;
 	}
 	
-	// Make sure edit annotations don't overlap
-	if ( 'edit' == action )
-	{
-		// This takes linear time unfortunately, but is very straightforward.
-		// It may be a candidate for optimization (e.g. by caching the annotation
-		// list and/or doing a binary search).
-		var annotations = post.listAnnotations( );
-		for ( var i = 0;  i < annotations.length;  ++i  )
-		{
-			if ( annotations[ i ].getAction( ) == 'edit' )
-			{
-				var tRange = annotations[ i ].getRange( SEQUENCE_RANGE );
-				if ( tRange.start.compare( sequenceRange.end ) <= 0 )
-				{
-					if ( tRange.end.compare( sequenceRange.start ) >= 0 )
-					{
-						alert( getLocalized( 'create overlapping edits' ) );
-						return false;
-					}
-				}
-				// At least save walking through the rest of the list
-				else
-					break;
-			}
-		}
-	}
-
 	// Check to see whether the quote is too long (don't do this based on the raw text 
 	// range because the quote strips leading and trailing spaces)
 	if ( annotation.getQuote().length > MAX_QUOTE_LENGTH )

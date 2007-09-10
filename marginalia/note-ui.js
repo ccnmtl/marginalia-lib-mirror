@@ -384,10 +384,8 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 		noteElement.removeChild( noteElement.firstChild );
 
 	// Initialize the new editor
-	editor.marginalia = marginalia;
-	editor.postMicro = this;
-	editor.annotation = annotation;
-	editor.noteElement = noteElement;
+	trace( null, editor.constructor );
+	editor.bind( marginalia, this, annotation, noteElement );
 
 	marginalia.noteEditor = editor;
 	editor.show( );
@@ -415,6 +413,14 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 function FreeformNoteEditor( )
 {
 	this.editNode = null;
+}
+
+FreeformNoteEditor.prototype.bind = function( marginalia, postMicro, annotation, noteElement )
+{
+	this.marginalia = marginalia;
+	this.postMicro = postMicro;
+	this.annotation = annotation;
+	this.noteElement = noteElement;
 }
 
 FreeformNoteEditor.prototype.clear = function( )
@@ -477,6 +483,8 @@ function KeywordNoteEditor( )
 {
 	this.selectNode = null;
 }
+
+KeywordNoteEditor.prototype.bind = FreeformNoteEditor.prototype.bind;
 
 KeywordNoteEditor.prototype.clear = function( )
 {
@@ -547,17 +555,6 @@ KeywordNoteEditor.prototype.focus = function( )
 }
 
 
-function DummyNoteEditor( f )
-{
-	this.f = f;
-}
-
-DummyNoteEditor.show = function( )
-{
-	this.f( this );
-}
-
- 
 /**
  * Position the notes for an annotation next to the highlight
  * It is not necessary to call this method when creating notes, only when the positions of
@@ -781,14 +778,24 @@ function _editChangedKeyup( event )
 
 
 /**
- * Annotation edit loses focus
+ * Save an annotation being edited
  */
 function _saveAnnotation( event )
 {
 	// Can't truest IE events for information, so go elsewhere
-	var annotation = marginalia.noteEditor.annotation;
-	var post = marginalia.noteEditor.postMicro;
+	var annotation = window.marginalia.noteEditor.annotation;
+	var post = window.marginalia.noteEditor.postMicro;
 	post.saveAnnotation( window.marginalia, annotation );
+}
+
+/**
+ * Cancel an annotation edit in progress
+ */
+function _cancelAnnotationEdit( event )
+{
+	var annotation = window.marginalia.noteEditor.annotation;
+	var post = window.marginalia.noteEditor.postMicro;
+	post.cancelAnnotationEdit( window.marginalia, annotation );
 }
 
 /**
