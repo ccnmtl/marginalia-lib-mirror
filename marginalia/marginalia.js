@@ -827,7 +827,7 @@ function _keyupCreateAnnotation( event )
 		// Enter to create a regular note
 		if ( 13 == event.keyCode )
 		{
-			if ( createAnnotation( null, false ) )
+			if ( createAnnotation( null, false, marginalia.newEditor() ) )
 				event.stopPropagation( );
 		}
 	}
