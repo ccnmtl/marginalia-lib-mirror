@@ -590,23 +590,27 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor 
 	var scrollX = domutil.getWindowXScroll( );
 
 	annotation.isLocal = true;
-	marginalia.editing = annotation;
-	annotation.editing = annotation.defaultNoteEditMode( marginalia.preferences );
 	
 	// Show the annotation and highlight
 	var nextNode = this.getAnnotationNextNote( marginalia, annotation );
 	this.addAnnotation( marginalia, annotation, nextNode, editor );
-	// Focus on the text edit
-	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
-	// Sequencing here (with focus last) is important
-	this.repositionNotes( marginalia, noteElement.nextSibling );
-	marginalia.noteEditor.focus( );
-	// Just in case - IE can't get it right when editing, so I don't trust it
-	// on create either, even if it does work for me.
-	if ( 'exploder' == domutil.detectBrowser( ) )
-		marginalia.noteEditor.focus( );
 	
-	window.scrollTo( scrollX, scrollY );
+	// HACK: Some editors may perform an action, then revert to the regular annotation
+	// display by calling _saveAnnotation or _cancelAnnotationEdit.  If this is the
+	// case, edit mode will be cancelled and there's no more to do display-wise.
+	// I say this is a hack, because there should be a better way to indicate that
+	// outcome (or to trigger it - a show() function that doesn't actually show is
+	// very confusing).
+	if ( marginalia.noteEditor )
+	{
+		// Focus on the text edit
+		var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
+		// Sequencing here (with focus last) is important
+		this.repositionNotes( marginalia, noteElement.nextSibling );
+		marginalia.noteEditor.focus( );
+		
+		window.scrollTo( scrollX, scrollY );
+	}
 }
 
 
