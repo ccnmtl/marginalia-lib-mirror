@@ -57,10 +57,13 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 				var linkTitle = '';
 				if ( null != annotation.getNote() && '' != annotation.getNote() )
 				{
-					var keyword = marginalia.keywordService.getKeyword( annotation.getNote() );
-					if ( keyword )
-						linkTitle = keyword.name + ': ' + keyword.description;
-					else
+					if ( marginalia.keywordService )
+					{
+						var keyword = marginalia.keywordService.getKeyword( annotation.getNote() );
+						if ( keyword )
+							linkTitle = keyword.name + ': ' + keyword.description;
+					}
+					if ( ! linkTitle )
 					{
 						linkTitle = annotation.getNote().length > MAX_NOTEHOVER_LENGTH
 							? annotation.getNote().substr( 0, MAX_NOTEHOVER_LENGTH ) + '...'
@@ -176,10 +179,10 @@ PostMicro.prototype.deleteLink = function( marginalia, annotation )
  */
 function _skipAnnotationLinks( node )
 {
-	return ELEMENT_NODE == node.nodeType 
-		&& node.parentNode
-		&& 'a' == domutil.getLocalName( node )
-		&& domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );
+	return ELEMENT_NODE == node.nodeType && domutil.hasClass( node, AN_LINK_CLASS );
+//		&& node.parentNode
+//		&& 'a' == domutil.getLocalName( node )
+//		&& domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );
 }
 
 

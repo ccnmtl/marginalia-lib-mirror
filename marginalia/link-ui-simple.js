@@ -36,6 +36,8 @@ function SimpleLinkUi( extlinks )
 	this.extlinks = extlinks;	// permit links to other hosts?
 }
 
+SimpleLinkUi.prototype.bind = FreeformNoteEditor.prototype.bind;
+
 SimpleLinkUi.prototype.clear = function( )
 {
 	this.editNode = null;
@@ -61,11 +63,8 @@ SimpleLinkUi.prototype.show = function( )
 		id:  controlId,
 		value:  annotation.getLink() ? annotation.getLink() : '',
 		type:  'text' } ) );
-	if ( this.extlinks )
-	{
-		addEvent( editNode, 'keypress', SimpleLinkUi._editLinkKeypress );
-		addEvent( editNode, 'keyup', _editChangedKeyup );
-	}
+	addEvent( this.editNode, 'keypress', _editNoteKeypress );
+	//addEvent( editNode, 'keyup', _editChangedKeyup );
 	
 	// add the delete button
 	noteElement.appendChild( domutil.button( {
@@ -85,24 +84,6 @@ SimpleLinkUi.prototype.save = function( )
 {
 	this.annotation.setLink( this.editNode.value );
 	this.annotation.setLinkTitle( '' );
-}
-
-
-/**
- * Hit a key while editing an annotation link
- */
-SimpleLinkUi._editLinkKeypress = function( event )
-{
-	if ( event.keyCode == 13 )
-	{
-		_saveAnnotation( event );
-		return false;
-	}
-	// should check for 27 ESC to cancel edit
-	else
-	{
-		return true;
-	}
 }
 
 

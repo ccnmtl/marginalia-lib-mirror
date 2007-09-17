@@ -203,7 +203,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	// Calculating these parameters here makes it much easier to implement note display
 	var params = {
 		isCurrentUser: null != marginalia.username && annotation.getUserId( ) == marginalia.username,
-		linkingEnabled: marginalia.linkUi ? true : false,
+		linkingEnabled: marginalia.editors[ 'link' ] ? true : false,
 		quoteFound: null != domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null),
 		keyword: marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null
 	};
@@ -312,7 +312,9 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	}
 	
 	// add the text content
-	var noteText = document.createElement( 'p' );
+	var noteText = domutil.element( 'p', {
+		content: annotation.getNote() ? annotation.getNote() : '\xa0'
+	} );
 	var titleText = null;
 
 	if ( ! params.quoteFound || ! annotation.getRange( SEQUENCE_RANGE ) )
@@ -331,7 +333,6 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 			className:  'username',
 			content:  annotation.getUserId( ) + ': ' } ) );
 	}
-	noteText.appendChild( document.createTextNode( annotation.getNote() ) );
 	noteElement.appendChild( noteText );
 	
 	// Return behavior mappings

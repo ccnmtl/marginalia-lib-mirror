@@ -92,6 +92,8 @@ function Marginalia( service, username, anusername, features )
 	this.defaultAction = null;
 	this.skipContent = function(node) {
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
+	this.saveEditPrefs = Marginalia.saveEditPrefs;
+	this.displayNote = Marginalia.defaultDisplayNote;
 		
 	this.editors = {
 		'default': Marginalia.newDefaultEditor,
@@ -112,9 +114,6 @@ function Marginalia( service, username, anusername, features )
 				break;
 			case 'keywordService':
 				this.keywordService = value;
-				break;
-			case 'linkUi':
-				this.linkUi = value;
 				break;
 			case 'onkeyCreate':
 				if ( value )
@@ -161,18 +160,18 @@ function Marginalia( service, username, anusername, features )
 				this.displayNote = value;
 				break;
 			default:
-				throw 'Unknown Marginalia feature';
+				if ( typeof( this[ feature ] ) != 'undefined' )
+					throw 'Attempt to override feature: ' + feature;
+				else
+					this[ feature ] = value;
+				break;
 		}
 	}
-	if ( ! this.saveEditPrefs )
-		this.saveEditPrefs = Marginalia.saveEditPrefs;
-	if ( ! this.displayNote )
-		this.displayNote = Marginalia.defaultDisplayNote;
 }
 
 Marginalia.prototype.newEditor = function( annotation, editorName )
 {
-	var f = name ? this.editors[ name ] : this.editors[ 'default' ];
+	var f = editorName ? this.editors[ editorName ] : this.editors[ 'default' ];
 	return f( this, annotation );
 }
 
@@ -194,7 +193,7 @@ Marginalia.newEditorFunc = function( constructor )
 Marginalia.newDefaultEditor = function( marginalia, annotation )
 {
 	if ( ! marginalia.keywordService )
-		return AN_EDIT_NOTE_FREEFORM;
+		return new FreeformNoteEditor( );
 	else if ( '' == annotation.getNote() )
 	{
 		var pref = marginalia.preferences.getPreference( AN_NOTEEDITMODE_PREF );
