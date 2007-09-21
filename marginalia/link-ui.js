@@ -138,7 +138,7 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation, noteE
 	marginalia.editing = null;
 	domutil.removeClass( noteElement, AN_EDITINGLINK_CLASS );
 
-	this.hoverAnnotation( marginalia, annotation, false );
+	this.flagAnnotation( marginalia, annotation, AN_HOVER_CLASS, false );
 	marginalia.updateAnnotation( annotation, null );
 
 	// Update the link display

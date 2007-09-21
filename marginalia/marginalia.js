@@ -553,14 +553,14 @@ PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
  * If flag is false, this will remove the lit-up indication instead.
  * Works even if the highlight region is missing.
  */
-PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
+PostMicro.prototype.flagAnnotation = function( marginalia, annotation, className, flag )
 {
 	// Activate the note
 	var noteNode = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	if ( flag )
-		domutil.addClass( noteNode, AN_HOVER_CLASS );
+		domutil.addClass( noteNode, className );
 	else
-		domutil.removeClass( noteNode, AN_HOVER_CLASS );
+		domutil.removeClass( noteNode, className );
 
 	// Activate the highlighted areas
 	var highlights = domutil.childrenByTagClass( this.contentElement, null, AN_HIGHLIGHT_CLASS, null, null );
@@ -571,12 +571,13 @@ PostMicro.prototype.hoverAnnotation = function( marginalia, annotation, flag )
 		if ( node.tagName.toUpperCase( ) == 'EM' && node.annotation == annotation )
 		{
 			if ( flag )
-				domutil.addClass( node, AN_HOVER_CLASS );
+				domutil.addClass( node, className );
 			else
-				domutil.removeClass( node, AN_HOVER_CLASS );
+				domutil.removeClass( node, className );
 		}
 	}
 }
+
 
 /**
  * Called to start editing a new annotation
@@ -629,6 +630,9 @@ PostMicro.prototype.cancelAnnotationEdit = function( marginalia, annotation )
 		copy( marginalia.noteEditor.annotationOrig, annotation );
 		this.addAnnotation( marginalia, annotation );
 	}
+	
+	this.flagAnnotation( marginalia, annotation, AN_EDITINGNOTE_CLASS, false );
+	domutil.removeClass( document.body, AN_EDITINGNOTE_CLASS );
 }
 
 
@@ -695,8 +699,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	// TODO: listItem is an alias for noteElement
 	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
 	
-	this.hoverAnnotation( marginalia, annotation, false );
-	
+	this.flagAnnotation( marginalia, annotation, AN_EDITINGNOTE_CLASS, false );
 	domutil.removeClass( document.body, AN_EDITINGNOTE_CLASS );
 	
 	// For annotations with links; insert, or substitute actions, must update highlight also
@@ -805,7 +808,7 @@ function _hoverAnnotation( event )
 {
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
-	post.hoverAnnotation( window.marginalia, annotation, true );
+	post.flagAnnotation( window.marginalia, annotation, AN_HOVER_CLASS, true );
 }
 
 /**
@@ -816,7 +819,7 @@ function _unhoverAnnotation( event )
 	// IE doesn't have a source node for the event, so use this
 	var post = domutil.nestedFieldValue( this, AN_POST_FIELD );
 	var annotation = domutil.nestedFieldValue( this, AN_ANNOTATION_FIELD );
-	post.hoverAnnotation( window.marginalia, annotation, false );
+	post.flagAnnotation( window.marginalia, annotation, AN_HOVER_CLASS, false );
 }
 
 /**

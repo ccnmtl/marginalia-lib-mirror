@@ -329,19 +329,22 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	if ( ! params.isCurrentUser )
 	{
 		domutil.addClass( noteElement, 'other-user' );
-		noteText.appendChild( domutil.element( 'span', {
+		noteText.insertBefore( domutil.element( 'span', {
 			className:  'username',
-			content:  annotation.getUserId( ) + ': ' } ) );
+			content:  annotation.getUserId( ) + ': ' } ), noteText.firstChild );
 	}
 	noteElement.appendChild( noteText );
 	
 	// Return behavior mappings
-	marginalia.bindNoteBehaviors( annotation, noteElement, [
-		[ 'button.annotation-link', { click: 'edit link' } ],
-		[ 'button.annotation-access', { click: 'access' } ],
-		[ 'button.annotation-delete', { click: 'delete' } ],
-		[ 'p', { click: 'edit' } ]
-	] );
+	if ( params.isCurrentUser )
+	{
+		marginalia.bindNoteBehaviors( annotation, noteElement, [
+			[ 'button.annotation-link', { click: 'edit link' } ],
+			[ 'button.annotation-access', { click: 'access' } ],
+			[ 'button.annotation-delete', { click: 'delete' } ],
+			[ 'p', { click: 'edit' } ]
+		] );
+	}
 }
 
 
@@ -376,7 +379,8 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 	{
 		// Since we're editing, set the appropriate class on body
 		domutil.addClass( document.body, AN_EDITINGNOTE_CLASS );
-		domutil.addClass( noteElement, AN_EDITINGNOTE_CLASS );
+		this.flagAnnotation( marginalia, annotation, AN_EDITINGNOTE_CLASS, true );
+		
 		setEvents = true;
 		editor.annotationOrig = clone( annotation );
 	}
