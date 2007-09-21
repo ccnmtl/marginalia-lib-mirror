@@ -34,26 +34,60 @@
  */
 function ClickToLinkUi( extlinks )
 {
-	 this.simpleUi = new SimpleLinkUi( extlinks );
+	this.extlinks = extlinks;	// permit links to other hosts?
+}
 
+ClickToLinkUi.prototype.bind = FreeformNoteEditor.prototype.bind;
+
+ClickToLinkUi.prototype.clear = function( )
+{
+	this.editNode = null;
+	_disableLinkTargets( );
+	removeCookie( AN_LINKING_COOKIE );
+	removeCookie( AN_LINKURL_COOKIE );
+	domutil.removeClass( document.body, AN_EDITINGLINK_CLASS );
+}
+
+ClickToLinkUi.prototype.show = function( )
+{
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var post = this.postMicro;
+	var noteElement = this.noteElement;
+	
+	var controlId = AN_ID_PREFIX + annotation.getId() + '-linkedit';
+	
+	// add the link label
+	noteElement.appendChild( domutil.element( 'label', {
+		title:  getLocalized( 'annotation link label' ),
+		attr_for:  controlId,
+		content:  AN_LINKEDIT_LABEL } ) );
+
+	// Add the URL input field
+	this.editNode = noteElement.appendChild( domutil.element( 'input', {
+		id:  controlId,
+		value:  annotation.getLink() ? annotation.getLink() : '',
+		type:  this.extlinks ? 'text' : 'hidden' } ) );
+	if ( this.extlinks )
+	{
+		addEvent( this.editNode, 'keypress', _editNoteKeypress );
+		//addEvent( editNode, 'keyup', _editChangedKeyup );
+	}
+	
+	// add the delete button
+	noteElement.appendChild( domutil.button( {
+		className:  AN_LINKDELETEBUTTON_CLASS,
+		title:  getLocalized( 'delete annotation link button' ),
+		content:  'x',
+		annotationId:  annotation.getId(),
+		onclick: SimpleLinkUi._deleteLink } ) );
+	
 	 // Click-to-link doesn't work in IE because of its weak event model
 	if ( window.addEventListener )
 	{
 		window.addEventListener( 'focus', _enableLinkTargets, false );
 		window.addEventListener( 'focus', _updateLinks, false );
 	}
-}
-
-ClickToLinkUi.prototype.getSimpleLinkUi = function( )
-{
-	return this.simpleUi;
-}
-
-
-ClickToLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, noteElement )
-{
-	// Show the simple link input controls
-	this.simpleUi.showLinkEdit( marginalia, post, annotation, noteElement );
 	
 	// Tell this window and others to be accept clicks for link creation
 	domutil.addClass( document.body, AN_EDITINGLINK_CLASS );
@@ -63,21 +97,21 @@ ClickToLinkUi.prototype.showLinkEdit = function( marginalia, post, annotation, n
 		window.addEventListener( 'blur', _disableLinkTargets, false );
 }
 
-ClickToLinkUi.prototype.showLinkEditComplete = function( marginalia, post, annotation, noteElement )
+ClickToLinkUi.prototype.focus = function( )
 {
-	_disableLinkTargets( );
-	removeCookie( AN_LINKING_COOKIE );
-	removeCookie( AN_LINKURL_COOKIE );
-	domutil.removeClass( document.body, AN_EDITINGLINK_CLASS );
-	
-	this.simpleUi.showLinkEditComplete( marginalia, post, annotation, noteElement );
+	if ( this.extlinks )
+		this.editNode.focus( );
 }
 
-ClickToLinkUi.prototype.saveLink = function( marginalia, post, annotation, noteElement )
+ClickToLinkUi.prototype.save = function( )
 {
-	if ( ! marginalia.editing )
-		return false;
-	this.simpleUi.saveLink( marginalia, post, annotation, noteElement );
+	this.annotation.setLink( this.editNode.value );
+	this.annotation.setLinkTitle( '' );
+}
+
+ClickToLinkUi.prototype.setLink = function( link )
+{
+	this.editNode.value = link;
 }
 
 /**
@@ -100,8 +134,8 @@ function _updateLinks( )
 				var post = domutil.nestedFieldValue( annotationNode, AN_POST_FIELD );
 				var annotation = domutil.nestedFieldValue( annotationNode, AN_ANNOTATION_FIELD );
 				var editNode = domutil.childByTagClass( annotationNode, 'input', null, null );
-				editNode.value = newLink;
-				marginalia.linkUi.saveLink( marginalia, post, annotation, annotation.getNoteElement( ) );
+				marginalia.noteEditor.setLink( newLink );
+				_saveAnnotation( );
 			}
 		}
 	}

@@ -31,10 +31,8 @@
  * An instance is held in th Marginalia object.  Some applications will implement
  * their own versions to provide customized UI behavior.
  */
-function SimpleLinkUi( extlinks )
-{
-	this.extlinks = extlinks;	// permit links to other hosts?
-}
+function SimpleLinkUi( )
+{ }
 
 SimpleLinkUi.prototype.bind = FreeformNoteEditor.prototype.bind;
 
