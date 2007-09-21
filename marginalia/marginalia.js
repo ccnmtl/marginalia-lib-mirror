@@ -194,7 +194,7 @@ Marginalia.newDefaultEditor = function( marginalia, annotation )
 {
 	if ( ! marginalia.keywordService )
 		return new FreeformNoteEditor( );
-	else if ( '' == annotation.getNote() )
+	else if ( ! annotation || '' == annotation.getNote() )
 	{
 		var pref = marginalia.preferences.getPreference( AN_NOTEEDITMODE_PREF );
 		if ( pref == AN_EDIT_NOTE_KEYWORDS )
@@ -1081,6 +1081,10 @@ function createAnnotation( postId, warn, editor )
 			alert( getLocalized( 'quote too long' ) );
 		return false;
 	}
+	
+	// If no editor is specified, use the default
+	if ( ! editor )
+		editor = marginalia.newEditor( annotation );
 	
 	post.createAnnotation( marginalia, annotation, editor );
 	return true;

@@ -754,6 +754,7 @@ function _editNoteKeypress( event )
 	if ( event.keyCode == 13 )
 	{
 		post.saveAnnotation( window.marginalia, annotation );
+		event.stopPropagation( );
 		return false;
 	}
 	// should check for 27 ESC to cancel edit
