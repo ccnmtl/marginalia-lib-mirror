@@ -16,6 +16,13 @@
 	<message key="annotation link label">Select a document to link to.</message>
 	<message key="delete annotation link button">Remove this link.</message>
 	
+	<!-- Action button titles (for track changes) -->
+	<message key='action annotate button'>Annotate...</message>
+	<message key='action insert before button'>Insert before...</message>
+	<message key='action insert after button'>Insert after...</message>
+	<message key='action replace button'>Replace...</message>
+	<message key='action delete button'>Delete</message>
+	
 	<!-- Errors -->
 	<message key="browser support of W3C range required for annotation creation"
 		>Your browser does not support the W3C range standard, so you cannot create annotations.</message>
@@ -32,9 +39,21 @@
 		>The highlighted passage could not be found</message>
 	<message key="create overlapping edits"
 		>You may not create overlapping edits.</message>
+	<message key='blank quote and note'>You must enter some note text</message>
 	
 	<!-- Warnings -->
 	<message key="warn delete"
 		>Delete this annotation?</message>
+		
+	<!-- OJS-specific messages -->
+	<message output="ojs" key="name">Marginalia Plugin</message>
+	<message output="ojs" key="description">This plugin adds the capability for readers to highlight and annotate passages in articles.</message>
+	<message output="ojs" key="descriptionDisabled">This plugin adds the capability for readers to highlight and annotate passages in articles. &lt;strong&gt;Marginalia is not currently installed; please install it in {$marginaliaPath}.&lt;/strong&gt;</message>
+
+	<!-- Labels used in Bungeni -->
+	<message output="bungeni" key='note note label'>Comment:</message>
+	<message output="bungeni" key='note insert label'>Insert:</message>
+	<message output="bungeni" key='note replace label'>Replace:</message>
+	<message output="bungeni" key='note delete label'>Delete</message>
 </locale>
 
