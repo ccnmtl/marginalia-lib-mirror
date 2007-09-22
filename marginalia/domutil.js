@@ -636,12 +636,16 @@ ELEMENT_ATTRIBUTES:  {
 	name: 1,
 	selected: 1,
 	type: 1,
-	value: 1
+	value: 1,
+	rows: 1,
+	cols: 1
 },
 
 EVENTS: {
 	change: 1,
-	click: 1
+	click: 1,
+	focus: 1,
+	blur: 1
 },
 	
 addFields:  function( node, spec )

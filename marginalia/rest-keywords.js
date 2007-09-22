@@ -31,7 +31,6 @@ function Keyword( name, description )
 {
 	this.name = name;
 	this.description = description;
-	return this;
 }
 
 function RestKeywordService( serviceUrl )
@@ -42,14 +41,26 @@ function RestKeywordService( serviceUrl )
 	return this;
 }
 
-RestKeywordService.prototype.init = function( )
+/**
+ * Pass in a keyword list to initialize, or nothing to trigger a fetch from the server
+ */
+RestKeywordService.prototype.init = function( keywords )
 {
-	var keywordService = this;
-	_cacheKeywords = function( responseText )
+	if ( keywords )
 	{
-		keywordService.cacheKeywords( responseText );
+		this.keywords = keywords;
+		for ( var i = 0;  i < this.keywords.length;  ++i )
+			this.keywordHash[ keywords[ i ].name ] = this.keywords[ i ];
 	}
-	this.listKeywords( _cacheKeywords );
+	else
+	{
+		var keywordService = this;
+		_cacheKeywords = function( responseText )
+		{
+			keywordService.cacheKeywords( responseText );
+		}
+		this.listKeywords( _cacheKeywords );
+	}
 }
 
 RestKeywordService.prototype.cacheKeywords = function( responseText )
@@ -98,3 +109,100 @@ RestKeywordService.prototype.listKeywords = function( f )
 	xmlhttp.send( null );
 }
 
+
+RestKeywordService.prototype.createKeyword = function( keyword, f )
+{
+	var serviceUrl = this.serviceUrl;
+		
+	var body
+		= 'name=' + encodeURIComponent( keyword.name )
+		+ '&description=' + encodeURIComponent( keyword.description );
+		
+	var xmlhttp = domutil.createAjaxRequest( );
+	
+	xmlhttp.open( 'POST', serviceUrl, true );
+	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
+	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
+	xmlhttp.setRequestHeader( 'Content-length', body.length );
+	xmlhttp.onreadystatechange = function( ) {
+		if ( xmlhttp.readyState == 4 ) {
+			// No need for Safari hack, since Safari can't create annotations anyway.
+			if ( xmlhttp.status == 201 ) {
+				var url = xmlhttp.getResponseHeader( 'Location' );
+				if ( null != f )
+				{
+					trace( 'annotation-service', 'Create annotation body: ' + xmlhttp.responseText );
+					f( keyword, url );
+				}
+			}
+			else {
+				logError( "AnnotationService.createAnnotation failed with code " + xmlhttp.status + ":\n" + serviceUrl + "\n" + xmlhttp.responseText );
+			}
+			xmlhttp = null;
+		}
+	}
+	trace( 'annotation-service', "AnnotationService.createAnnotation " + decodeURI( serviceUrl ) + "\n" + body );
+	xmlhttp.send( body );
+}
+
+
+RestKeywordService.prototype.updateKeyword = function( keyword, f )
+{
+	var serviceUrl = this.serviceUrl;
+	serviceUrl += this.niceUrls ? ( '/' + keyword.name ) : ( '?name=' + keyword.name );
+	
+	var body = '';
+	body = 'description=' + encodeURIComponent( keyword.description );
+
+	var xmlhttp = domutil.createAjaxRequest( );
+	xmlhttp.open( 'PUT', serviceUrl, true );
+	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
+	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
+	xmlhttp.setRequestHeader( 'Content-length', body.length );
+	xmlhttp.onreadystatechange = function( ) {
+		if ( xmlhttp.readyState == 4 ) {
+			// Safari is braindead here:  any status code other than 200 is converted to undefined
+			// IE invents its own 1223 status code
+			// See http://www.trachtenberg.com/blog/?p=74
+			if ( 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 )
+			{
+				if ( null != f )
+				{
+					this.keywordHash[ keyword.name ] = keyword;
+					f( keyword, xmlhttp.responseText );
+				}
+			}
+			else
+				logError( "KeywordService.updateKeyword failed with code " + xmlhttp.status + " (" + xmlhttp.statusText + ")\n" + xmlhttp.statusText + "\n" + xmlhttp.responseText );
+			xmlhttp = null;
+		}
+	}
+	trace( 'keyword-service', "KeywordService.updateKeyword " + decodeURI( serviceUrl ) );
+	trace( 'keyword-service', "  " + body );
+	xmlhttp.send( body );
+}
+
+RestKeywordService.prototype.deleteKeyword = function( name, f )
+{
+	var serviceUrl = this.serviceUrl;
+	serviceUrl += this.niceUrls ? ( '/' + name ) : ( '?name=' + name );
+	
+	var xmlhttp = domutil.createAjaxRequest( );
+	xmlhttp.open( 'DELETE', serviceUrl, true );
+	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
+	xmlhttp.onreadystatechange = function( ) {
+		if ( xmlhttp.readyState == 4 ) {
+			// Safari is braindead here:  any status code other than 200 is converted to undefined
+			// IE invents its own 1223 status code
+			if ( 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 ) {
+				if ( null != f )
+					f( name, xmlhttp.responseXML );
+			}
+			else
+				logError( "AnnotationService.deleteAnnotation failed with code " + xmlhttp.status + "\n" + xmlhttp.responseText );
+			xmlhttp = null;
+		}
+	}
+	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + decodeURI( serviceUrl ) );
+	xmlhttp.send( null );
+}

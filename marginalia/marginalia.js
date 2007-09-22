@@ -87,7 +87,6 @@ function Marginalia( service, username, anusername, features )
 	this.urlBase = null;
 	this.blockMarkers = false;
 	this.access = false;
-	this.linkUi = null;
 	this.actions = false;
 	this.defaultAction = null;
 	this.skipContent = function(node) {
@@ -133,7 +132,8 @@ function Marginalia( service, username, anusername, features )
 				break;
 			case 'skipContent':
 				var oldSkipContent = this.skipContent;
-				this.skipContent = function(node) { return oldSkipContent(node) || value(node); };
+				var customSkipContentFunc = value;
+				this.skipContent = function(node) { return oldSkipContent(node) || customSkipContentFunc(node); };
 				break;
 			case 'warnDelete':
 				this.warnDelete = value;
