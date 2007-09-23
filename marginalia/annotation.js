@@ -69,6 +69,12 @@ function Annotation( url )
 	this.isLocal = false;
 	// this.editing = null; -- deleted when not needed
 	this.link = '';
+	
+	// The fetch count is like a lock count.  It reflects how many reasons there were to
+	// request the annotation from the server.  This is used with per-block annotation display
+	// to ensure that if an annotation is fetched once for each of two blocks, it won't be
+	// removed (which would affect both blocks) unless it is hidden for both.
+	this.fetchCount = 0;
 }
 
 /**

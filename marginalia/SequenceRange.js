@@ -212,20 +212,14 @@ SequencePoint.prototype.getReferenceElement = function( root, fskip )
 	return node;
 }
 
-SequencePoint.prototype.compare = function( point2 )
+// Only compare the path portion
+SequencePoint.prototype.comparePath = function( point2 )
 {
 	var p1 = this.path;
 	var p2 = point2.path;
 	
 	if ( p1 == p2 )
-	{
-		if ( this.words < point2.words || this.words == point2.words && this.chars < point2.chars )
-			return -1;
-		else if ( this.words > point2.words || this.words == point2.words && this.chars > point2.chars )
-			return 1;
-		else
-			return 0;
-	}
+		return 0;
 	else
 	{
 		p1 = p1.split('/');
@@ -234,29 +228,46 @@ SequencePoint.prototype.compare = function( point2 )
 		{
 			if ( i >= p2.length )
 			{
-				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' > ' + p2 );
+				trace( 'SequencePoint.comparePath', 'Compare ' + p1 + ' > ' + p2 );
 				return 1;
 			}
 			var x1 = Number( p1[ i ] );
 			var x2 = Number( p2[ i ] );
 			if ( x1 < x2 )
 			{
-				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' < ' + p2 );
+				trace( 'SequencePoint.comparePath', 'Compare ' + p1 + ' < ' + p2 );
 				return -1;
 			}
 			if ( x1 > x2 )
 			{
-				trace( 'SequencePoint.compare', 'Compare ' + p1 + ' > ' + p2 );
+				trace( 'SequencePoint.comparePath', 'Compare ' + p1 + ' > ' + p2 );
 				return 1;
 			}
 		}
 		if ( i < p2.length )
 		{
-			trace( 'SequencePoint.compare', 'Compare ' + p1 + ' < ' + p2 );
+			trace( 'SequencePoint.comparePath', 'Compare ' + p1 + ' < ' + p2 );
 			return -1;
 		}
 		else
-			throw "Error in SequencePoint.compare";
+			throw "Error in SequencePoint.comparePath";
+	}
+}
+
+// Compare the whole point (path-only points are treated as if they collpased to start)
+SequencePoint.prototype.compare = function( point2 )
+{
+	var r = this.comparePath( point2 );
+	if ( r )
+		return r;
+	else
+	{
+		if ( this.words < point2.words || this.words == point2.words && this.chars < point2.chars )
+			return -1;
+		else if ( this.words > point2.words || this.words == point2.words && this.chars > point2.chars )
+			return 1;
+		else
+			return 0;
 	}
 }
 

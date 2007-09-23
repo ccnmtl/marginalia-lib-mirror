@@ -290,7 +290,7 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 	// Ideally this would happen automatically.
 	var marginalia = this;
 	this.annotationService.listAnnotations( url, null, block,
-		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, false ) } );
+		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, false, true ) } );
 }
 
 /**
@@ -316,8 +316,11 @@ function _showAnnotationsCallback( marginalia, url, xmldoc, doBlockMarkers )
  * It will also fetch and display block markers if that feature is set and the doBlockMarkers
  * flag is true.  Block markers must be displayed *after* the annotations so that their
  * height will be correct.
+ *
+ * - noCountIncrement: set this if the annotation is simlpy being redisplayed, and is not part
+ *   of an attempt to fetch and display more annotations
  */
-function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers )
+function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, noCountIncrement )
 {
 	var startTime = new Date( );
 	var curTime;
@@ -386,6 +389,12 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers )
 						nextNode = nextNode.nextSibling;
 					}
 					
+					// If the annotation is already present, increment its fetch count
+					if ( ! noCountIncrement )
+					{
+						annotation.fetchCount += 1;
+						trace( null, 'Increment count for annotation ' + annotation.getId( ) );
+					}
 					// Now insert before beforeNote
 					post.addAnnotation( marginalia, annotation, nextNode );
 				}

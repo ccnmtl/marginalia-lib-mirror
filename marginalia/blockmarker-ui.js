@@ -85,12 +85,61 @@ PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 	}
 }
 
-PostMicro.getBlockMarkerClickFcn = function( marginalia, markerElement, url, pointStr )
+/**
+ * Return a function for handling a click on a block marker
+ * Creating the function this way reduces the amount of context stored by the closure
+ * markerElement - the marker in the left margin
+ * url - the url required to fetch the correct annotations from the server
+ * pointStr - the path to the block that was clicked on (excluding word or char specification)
+ */
+PostMicro.prototype.getBlockMarkerClickFcn = function( marginalia, markerElement, url, pointStr )
 {
+	var postMicro = this;
 	return function() {
-		marginalia.showBlockAnnotations( url, pointStr );
-		domutil.addClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+		if ( domutil.hasClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS ) )
+		{
+			domutil.removeClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+			postMicro.hideBlockAnnotations( marginalia, pointStr );
+		}
+		else
+		{
+			domutil.addClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+			marginalia.showBlockAnnotations( url, pointStr );
+		}
 	};
+}
+
+/**
+ * This hiding code is tricky and feels like a big hack.  The problem is that an annotation
+ * may overlap two (or more) blocks, so it could be effectively fetched for multiple blocks.
+ * Hiding annotations for one block should not hide those fetched for another, nor should it
+ * hide "core" annotations - that is, annotations for the current display user which were shown
+ * before any were fetched for the current page.
+ */
+PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
+{
+	var annotations = this.listAnnotations( marginalia );
+	var point = new SequencePoint( pointStr );
+	for ( var i = 0;  i < annotations.length;  ++i )
+	{
+		var annotation = annotations[ i ];
+		var range = annotation.getRange( SEQUENCE_RANGE );
+		if ( range )
+		{
+			if ( annotation.getUserId( ) != marginalia.anusername )
+			{
+				// if we've run past the last relevant annotation, don't bother with the rest
+				if ( range.start.comparePath( point ) > 0 )
+					break;
+				else if ( range.end.comparePath( point ) >= 0 )
+				{
+					annotation.fetchCount -= 1;
+					if ( 0 == annotation.fetchCount )
+						this.removeAnnotation( marginalia, annotation );
+				}
+			}
+		}
+	}
 }
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
@@ -106,15 +155,16 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		{
 			block.blockMarkerUsers = [ ];
 
-			countElement = domutil.element( 'span', {
-				className: AN_USERCOUNT_CLASS,
-				onclick: PostMicro.getBlockMarkerClickFcn( window.marginalia, markerElement, info.url, point.toString() )
-			} );
 			markerElement = domutil.element( 'div', {
 				className: AN_MARKER_CLASS,
-				blockElement: block,
-				content:  countElement
+				blockElement: block
 			} );
+			countElement = domutil.element( 'span', {
+				className: AN_USERCOUNT_CLASS,
+				onclick: this.getBlockMarkerClickFcn( window.marginalia, markerElement, info.url, point.toString() )
+			} );
+			markerElement.appendChild( countElement );
+
 			block.markerElement = markerElement;
 			markers.appendChild( markerElement );
 			
