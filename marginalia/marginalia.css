@@ -204,13 +204,14 @@
 	width: 95%;
 }
 
+/*
 .hentry .notes li.hover,
 .hentry .entry-content em.annotation.hover,
 .hentry .entry-content em.annotation.hover ins,
 .hentry .entry-content em.annotation.hover del {
 	color: red;
-/*	outline: red 1px solid; */
 }
+*/
 
 .hentry .notes li button.expand-edit {
 	position: absolute;

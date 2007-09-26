@@ -255,6 +255,51 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	xmlhttp.send( body );
 }
 
+
+/**
+ * Update multiple annotations at once
+ * The method signature will likely change in future;  for now it only deals with updates to
+ * the note field.
+ */
+RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
+{
+	var serviceUrl = this.serviceUrl;
+		
+	var body
+		= 'note=' + encodeURIComponent( oldNote )
+		+ '&new-note=' + encodeURIComponent( newNote );
+		
+	var xmlhttp = domutil.createAjaxRequest( );
+	
+	// This use of PUT is suspect, as it does not send a full representation of the resource -
+	// instead it sends a delta for the resource (or rather for child resources of which this
+	// resource is composed)
+	xmlhttp.open( 'PUT', serviceUrl, true );
+	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
+	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
+	xmlhttp.setRequestHeader( 'Content-length', body.length );
+	xmlhttp.onreadystatechange = function( ) {
+		if ( xmlhttp.readyState == 4 ) {
+			// No need for Safari hack, since Safari can't create annotations anyway.
+			if ( xmlhttp.status == 201 ) {
+				var url = xmlhttp.getResponseHeader( 'Location' );
+				if ( null != f )
+				{
+					trace( 'annotation-service', 'Create annotation body: ' + xmlhttp.responseText );
+					f( xmlhttp.responseText, url );
+				}
+			}
+			else {
+				logError( "AnnotationService.bulkUpdate failed with code " + xmlhttp.status + ":\n" + serviceUrl + "\n" + xmlhttp.responseText );
+			}
+			xmlhttp = null;
+		}
+	}
+	trace( 'annotation-service', "AnnotationService.bulkUpdate " + decodeURI( serviceUrl ) + "\n" + body );
+	xmlhttp.send( body );
+}
+
+
 /**
  * Delete an annotation on the server
  */

@@ -631,14 +631,15 @@ trim:  function( s )
 
 /* A list of attributes, used by addFields().  Not comprehensive. */
 ELEMENT_ATTRIBUTES:  {
+	cols: 1,
+	'for': 1,
 	href: 1,
-	title: 1,
 	name: 1,
-	selected: 1,
-	type: 1,
-	value: 1,
 	rows: 1,
-	cols: 1
+	selected: 1,
+	title: 1,
+	type: 1,
+	value: 1
 },
 
 EVENTS: {
@@ -655,18 +656,7 @@ addFields:  function( node, spec )
 		// Add child node (s)
 		if ( 'content' == field )
 		{
-			// Add a text child
-			if ( typeof spec[ field ] == 'string' )
-				node.appendChild( document.createTextNode( spec[ field ] ) );
-			// Add an array of passed node children
-			else if ( spec.content.constructor == Array )
-			{
-				for ( var i = 0;  i < spec.content.length;  ++i )
-					node.appendChild( spec.content[ i ] );
-			}
-			// Add a passed node child
-			else
-				node.appendChild( spec.content );
+			domutil.addContent( node, spec, spec.content );
 		}
 //		else if ( 'id' == field )
 //			node.id = spec[ field ];
@@ -688,10 +678,30 @@ addFields:  function( node, spec )
 	return node;
 },
 
-element: function( name, spec )
+addContent: function( node, spec, content )
+{
+	// Add a text child
+	if ( typeof content == 'string' )
+		node.appendChild( document.createTextNode( content ) );
+	// Add an array of passed node children
+	else if ( content.constructor == Array )
+	{
+		for ( var i = 0;  i < content.length;  ++i )
+			node.appendChild( content[ i ] );
+	}
+	// Add a passed node child
+	else
+		node.appendChild( content );
+},
+
+element: function( name, spec, content )
 {
 	var node = document.createElement( name );
-	return domutil.addFields( node, spec );
+	if ( spec )
+		domutil.addFields( node, spec );
+	if ( content )
+		domutil.addContent( node, spec, content );
+	return node;
 },
 
 button: function( spec )

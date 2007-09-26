@@ -38,10 +38,7 @@ function MarginaliaDirect( marginaliaService )
 
 MarginaliaDirect.prototype.init = function( )
 {
-	if ( document.addEventListener )
-	{
-		document.addEventListener ('keyup', _marginaliaDirectKeypressHandler, true );
-	}
+	addEvent( window, 'keyup', _marginaliaDirectKeypressHandler );
 }
 
 function _marginaliaDirectKeypressHandler( event )
@@ -62,38 +59,27 @@ MarginaliaDirect.prototype.show = function( )
 {
 	var direct = this;
 	
-	var box = document.createElement( 'div' );
-	box.id = 'marginalia-direct';
-	
-	var h = document.createElement( 'h1' );
-	h.appendChild( document.createTextNode( 'Marginalia Direct Console' ) );
-	box.appendChild( h );
-	
-/*	box.appendChild( this.newLabel( 'md-annotation-id', 'Annotation ID' ) );
-	box.appendChild( this.newField( 'md- annotation-id', 6 ) );
-	
-	box.appendChild( this.newButton( 'md-get-button', 'Get' ) );
-*/
-
-	var fieldset = document.createElement( 'fieldset' );
-	box.appendChild( fieldset );
-	
-	var legend = document.createElement( 'legend' );
-	legend.appendChild( document.createTextNode( 'Find Annotations' ) );
-	fieldset.appendChild( legend );
-
-	fieldset.appendChild( this.newInputField( 'md-annotation-user', null, 'User', window.marginalia.anusername, true ) );
-	fieldset.appendChild( this.newInputField( 'md-annotation-url', null, 'URL', window.location, true ) );
-	
-	fieldset.appendChild( this.newButton( 'md-find', 'Find', function() { direct.listAnnotations( ) } ) );
-
-	var annotationList = document.createElement( 'div' );
-	annotationList.id = 'md-annotation-list';
-	box.appendChild( annotationList );
-	
-	box.appendChild( this.newButton( 'md-close', 'Close', function() { direct.hide( ) } ) );
-	
-	document.body.appendChild( box );
+	document.body.appendChild( domutil.element( 'div', {
+		id: 'marginalia-direct'
+		}, [
+			domutil.element( 'h1', null, 'Marginalia Direct Console' ),
+			domutil.element( 'fieldset', null, [
+				domutil.element( 'legend', null, 'Find Annotations' ),
+				this.newInputField( 'md-annotation-user', null, 'User', window.marginalia.anusername, true ),
+				this.newInputField( 'md-annotation-url', null, 'URL', window.location, true ),
+				domutil.element( 'button', {
+					id: 'md-find',
+					onclick: function() { direct.listAnnotations( ) }
+				}, 'Find' )
+			] ),
+			domutil.element( 'div', {
+				id: 'md-annotation-list' } ),
+			domutil.element( 'button', {
+				id: 'md-close',
+				onclick: function() { direct.hide() }
+			}, 'Close' )
+		]
+	) );
 }
 
 MarginaliaDirect.prototype.listAnnotations = function( )
@@ -102,13 +88,13 @@ MarginaliaDirect.prototype.listAnnotations = function( )
 	var url = document.getElementById( 'md-annotation-url' );
 	
 	var direct = this;
-	
-	this.marginaliaService.listAnnotations( url.value, user.value, null, function( xml ) { direct.showAnnotations( xml ); } );
-	
+		
 	// Clear out any existing list items
 	var annotationList = document.getElementById( 'md-annotation-list' );
 	while ( annotationList.firstChild )
 		annotationList.removeChild( annotationList.firstChild );
+
+	this.marginaliaService.listAnnotations( url.value, user.value, null, function( xml ) { direct.showAnnotations( xml ); } );
 }
 
 MarginaliaDirect.prototype.deleteAnnotation = function( annotation )
@@ -156,94 +142,72 @@ MarginaliaDirect.prototype.showAnnotations = function( xml )
 	var annotations = parseAnnotationXml( xml );
 	for ( var i = 0;  i < annotations.length;  ++i )
 		this.showAnnotation( annotations[ i ] );
+	return 0;
 }
 
 MarginaliaDirect.prototype.showAnnotation = function( annotation )
 {
 	var direct = this;
 	var annotationList = document.getElementById( 'md-annotation-list' );
-	var listItem = document.createElement( 'fieldset' );
-	listItem.annotation = annotation;
-	annotationList.appendChild( listItem );
-	
-	// ID, User
-	var legend = document.createElement( 'legend' );
-	legend.appendChild( document.createTextNode( '#' + annotation.getId() + ' by ' + annotation.getUserId() ) );
-	listItem.appendChild( legend );
-	
-	// URL, Range, Access
+
 	var xpathRange = annotation.getRange( XPATH_RANGE );
 	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-url', 'URL', annotation.getUrl(), true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-sequence-range', 'Sequence Range', sequenceRange.toString(), true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', 
-		xpathRange ? xpathRange.toString() : '', true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-access', 'Access', annotation.getAccess(), true ) );
 	
-	// Quote, Note, Link
-	listItem.appendChild( this.newInputField( null, 'md-annotation-quote', 'Quote', annotation.getQuote(), true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-note', 'Note', annotation.getNote(), true ) );
-	listItem.appendChild( this.newInputField( null, 'md-annotation-link', 'Link', annotation.getLink(), true ) );
+	var listItem = domutil.element( 'fieldset', {
+		annotation: annotation
+		}, domutil.element( 'legend', null, '#' + annotation.getId() + ' by ' + annotation.getUserId() ) );
+	annotationList.appendChild( listItem );
 	
-	// Last updated
-	var p = document.createElement( 'p' );
-	p.className = 'updated';
-	p.appendChild( document.createTextNode( 'Last updated ' + annotation.updated ) );
-	listItem.appendChild( p );
-	
-	var button = this.newButton( 'md-annotation-update', 'Update', null );
-	addEvent( button, 'click', function() { direct.updateAnnotation( listItem ); } );
-	listItem.appendChild( button );
-	
-	button = this.newButton( 'md-annotation-delete', 'Delete', null );
-	addEvent( button, 'click', function() { direct.deleteAnnotation( annotation ); } );
-	listItem.appendChild( button );
+	domutil.addContent( listItem, null, [
+		// URL, Range, Access
+		this.newInputField( null, 'md-annotation-url', 'URL', annotation.getUrl(), true ),
+		this.newInputField( null, 'md-annotation-sequence-range', 'Sequence Range', sequenceRange.toString(), true ),
+		this.newInputField( null, 'md-annotation-xpath-range', 'XPath Range', 
+			xpathRange ? xpathRange.toString() : '', true ),
+		this.newInputField( null, 'md-annotation-access', 'Access', annotation.getAccess(), true ),
+
+		// Quote, Note, Link
+		this.newInputField( null, 'md-annotation-quote', 'Quote', annotation.getQuote(), true ),
+		this.newInputField( null, 'md-annotation-note', 'Note', annotation.getNote(), true ),
+		this.newInputField( null, 'md-annotation-link', 'Link', annotation.getLink(), true ),
+
+		// Last updated
+		domutil.element( 'p', {
+			className: 'updated'
+			}, 'Last updated ' + annotation.updated ),
+		
+		domutil.element( 'button', {
+			id: 'md-annotation-update',
+			onclick: function() { direct.updateAnnotation( listItem ); }
+			}, 'Update' ),
+		domutil.element( 'button', {
+			id: 'md-annotation-delete',
+			onclick: function() { direct.deleteAnnotation( annotation ); }
+		}, 'Delete' )
+	] );
 }
 
 
 
 MarginaliaDirect.prototype.newInputField = function( id, className, text, value, enabled )
 {
-	var div = document.createElement( 'div' );
-	div.className = 'field ' + className;
-	
-	div.appendChild( this.newLabel( id, text ) );
-	input = this.newInput( id );
-	input.id = id
-	input.value = value;
+	var input = domutil.element( 'input', {
+		id: id,
+		value: value } );
 	if ( ! enabled )
 		input.setAttribute( 'disabled', 'disabled' );
-	div.appendChild( input );
-	return div;
-}
 
-MarginaliaDirect.prototype.newLabel = function( id, labelText )
-{
-	var label = document.createElement( 'label' );
-	label.id = '' + id + '-label';
-	label.setAttribute( 'for', id );
-	label.appendChild( document.createTextNode( labelText ) );
-	return label;
+	return domutil.element ( 'div', {
+		className: 'field ' + className
+		}, [
+			domutil.element( 'label', {
+				id: id + 'label',
+				'for': id
+				}, text ),
+			input
+		]
+	);
 }
-
-MarginaliaDirect.prototype.newInput = function( id, size )
-{
-	var input = document.createElement( 'input' );
-	input.id = id;
-	if ( size )
-		input.setAttribute( 'size', size );
-	return input;
-}
-
-MarginaliaDirect.prototype.newButton = function( id, text, f )
-{
-	button = document.createElement( 'button' );
-	button.id = id;
-	button.appendChild( document.createTextNode( text ) );
-	addEvent( button, 'click', f );
-	return button;
-}
-
 
 MarginaliaDirect.prototype.hide = function( )
 {

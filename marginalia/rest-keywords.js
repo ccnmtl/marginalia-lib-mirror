@@ -38,7 +38,6 @@ function RestKeywordService( serviceUrl )
 	this.serviceUrl = serviceUrl;
 	this.keywords = new Array();
 	this.keywordHash = new Object();
-	return this;
 }
 
 /**
@@ -206,3 +205,4 @@ RestKeywordService.prototype.deleteKeyword = function( name, f )
 	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + decodeURI( serviceUrl ) );
 	xmlhttp.send( null );
 }
+

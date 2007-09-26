@@ -391,10 +391,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					
 					// If the annotation is already present, increment its fetch count
 					if ( ! noCountIncrement )
-					{
 						annotation.fetchCount += 1;
-						trace( null, 'Increment count for annotation ' + annotation.getId( ) );
-					}
 					// Now insert before beforeNote
 					post.addAnnotation( marginalia, annotation, nextNode );
 				}
