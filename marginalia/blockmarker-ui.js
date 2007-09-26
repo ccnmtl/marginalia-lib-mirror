@@ -52,7 +52,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
 		for ( var j = 0;  j < info.users.length;  ++j )
 		{
 			var user = info.users[ j ];
-			if ( user.noteCount > 0 ) // && user.userid != marginalia.anuser )
+			if ( user.noteCount > 0 && user.userid != marginalia.anusername )
 			{
 				var post = marginalia.listPosts( ).getPostByUrl( info.url );
 				post.showPerBlockUserCount( marginalia, info );
@@ -182,7 +182,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		{
 			var user = info.users[ i ];
 			// Don't include the currently-displayed user
-			if ( user.noteCount > 0 ) // && user != marginalia.anusername )
+			if ( user.noteCount > 0 && user.userid != marginalia.anusername )
 				block.blockMarkerUsers[ block.blockMarkerUsers.length ] = user;
 		}
 		
