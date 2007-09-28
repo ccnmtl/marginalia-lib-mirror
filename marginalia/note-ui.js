@@ -673,7 +673,7 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
  */
 PostMicro.prototype.repositionSubsequentNotes = function( marginalia, firstNote )
 {
-	for ( note = firstNote;  note;  note = note.nextSibling )
+	for ( var note = firstNote;  note;  note = note.nextSibling )
 	{
 		if ( ELEMENT_NODE == note.nodeType && note.annotation )
 		{

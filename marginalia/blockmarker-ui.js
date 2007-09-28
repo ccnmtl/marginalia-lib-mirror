@@ -120,6 +120,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 {
 	var annotations = this.listAnnotations( marginalia );
 	var point = new SequencePoint( pointStr );
+	var repositionNote = null;
 	for ( var i = 0;  i < annotations.length;  ++i )
 	{
 		var annotation = annotations[ i ];
@@ -135,11 +136,21 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 				{
 					annotation.fetchCount -= 1;
 					if ( 0 == annotation.fetchCount )
-						this.removeAnnotation( marginalia, annotation );
+					{
+						// Remove the note and keep track of the first note that needs to be
+						// repositioned.
+						var note = annotation.getNoteElement( );
+						var nextNote = this.removeNote( marginalia, annotation );
+						this.removeHighlight( marginalia, annotation );
+						if ( ! repositionNote || note == repositionNote )
+							repositionNote = nextNote;
+					}
 				}
 			}
 		}
 	}
+	if ( repositionNote )
+		this.repositionSubsequentNotes( marginalia, repositionNote );
 }
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
