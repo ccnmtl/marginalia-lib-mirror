@@ -264,10 +264,9 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 {
 	var serviceUrl = this.serviceUrl;
+	serviceUrl += '?note=' + encodeURIComponent( oldNote );
 		
-	var body
-		= 'note=' + encodeURIComponent( oldNote )
-		+ '&new-note=' + encodeURIComponent( newNote );
+	var body = 'note=' + encodeURIComponent( newNote );
 		
 	var xmlhttp = domutil.createAjaxRequest( );
 	
@@ -281,7 +280,7 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 ) {
 			// No need for Safari hack, since Safari can't create annotations anyway.
-			if ( xmlhttp.status == 201 ) {
+			if ( xmlhttp.status == 200 ) {
 				var url = xmlhttp.getResponseHeader( 'Location' );
 				if ( null != f )
 				{
