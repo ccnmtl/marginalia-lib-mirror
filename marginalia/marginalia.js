@@ -106,38 +106,57 @@ function Marginalia( service, username, anusername, features )
 		var value = features[ feature ];
 		switch ( feature )
 		{
+			// Set the default action for a new annotation ("edit" for track changes)
 			case 'action':
 				this.defaultAction = value;
+			
+			// The baseUrl should be stripped from annotatin URLs.  The server must also do this.
 			case 'baseUrl':
 				this.baseUrl = value;
 				break;
+				
+			// Name of cookie to use for preventing cross-site request forgery
+			case 'csrfCookie':
+				this.csrfCookie = value;
+				break;
+			
+			// Override the function for displaying a note in the margin
+			case 'displayNote':
+				this.displayNote = value;
+				break;
+				
+			// Override or add editors for editing margin notes
+			case 'editors':
+				for ( var name in value )
+					this.editors[ name ] = value[ name ];
+				break;
+				
+			// The keyword service to provide the drop-down list of keywords
 			case 'keywordService':
 				this.keywordService = value;
 				break;
+				
+			// Toggle: Create an annotation when the user presses the Enter key
 			case 'onkeyCreate':
 				if ( value )
 					addEvent( document, 'keyup', _keyupCreateAnnotation );
 				break;
+				
+			// A Preferences object used to store/retrieve preferences on the server
 			case 'preferences':
 				this.preferences = value;
 				break;
+				
+			// Toggle: Display the private/public access button for each margin note
 			case 'showAccess':
 				this.showAccess = value;
 				break;
+				
 			case 'showActions':
 				this.showActions = value;
 				break;
-			case 'showBlockMarkers':
-				this.showBlockMarkers = value;
-				break;
-			case 'skipContent':
-				var oldSkipContent = this.skipContent;
-				var customSkipContentFunc = value;
-				this.skipContent = function(node) { return oldSkipContent(node) || customSkipContentFunc(node); };
-				break;
-			case 'warnDelete':
-				this.warnDelete = value;
-				break;
+				
+			// Show a caret where the user clicks the mouse.  Do not use.
 			case 'showCaret':
 				if ( value )
 				{
@@ -145,20 +164,33 @@ function Marginalia( service, username, anusername, features )
 					document.addEventListener( 'mousedown', _caretDownHandler, false );
 				}
 				break;
-			case 'userInRequest':	// send the user ID in requests (for the demo)
+				
+			// Show block markers in the left margin, indicating how many users have annotated a block
+			case 'showBlockMarkers':
+				this.showBlockMarkers = value;
+				break;
+				
+			// Function for ignoring elements embedded in annotatable content
+			case 'skipContent':
+				var oldSkipContent = this.skipContent;
+				var customSkipContentFunc = value;
+				this.skipContent = function(node) { return oldSkipContent(node) || customSkipContentFunc(node); };
+				break;
+				
+			// Send the user ID in requests (for the demo - shouldn't use in actual systems)
+			case 'userInRequest':
 				this.userInRequest = value;
 				break;
-			// Replace named editors
-			case 'editors':
-				for ( var name in value )
-					this.editors[ name ] = value[ name ];
+				
+			// Toggle: Are you sure you want to delete this note? alert box
+			case 'warnDelete':
+				this.warnDelete = value;
 				break;
+			
 			case 'saveEditPrefs':
 				this.saveEditPrefs = value;
 				break;
-			case 'displayNote':
-				this.displayNote = value;
-				break;
+			
 			default:
 				if ( typeof( this[ feature ] ) != 'undefined' )
 					throw 'Attempt to override feature: ' + feature;
