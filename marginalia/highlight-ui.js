@@ -219,6 +219,8 @@ PostMicro.prototype.highlightStripTest = function( tnode, emclass )
  */
 PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 {
+	this.hideLink( marginalia, annotation );
+	
 	var post = this;
 	var contentElement = this.contentElement;
 	var emClass = annotation ? AN_ID_PREFIX + annotation.getId() : AN_HIGHLIGHT_CLASS;

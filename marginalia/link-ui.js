@@ -39,9 +39,7 @@ MAX_LINK_LENGTH = 255;
  */
 PostMicro.prototype.showLink = function( marginalia, annotation )
 {
-	var existingLink = domutil.childByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.getId(), null );
-	if ( existingLink )
-		existingLink.parentNode.removeChild( existingLink );
+	this.hideLink( marginalia, annotation );
 	
 	if ( null != annotation.link && '' != annotation.link )
 	{
@@ -83,6 +81,16 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 	}
 }
 
+
+/**
+ * Remove the link icon (if present)
+ */
+PostMicro.prototype.hideLink = function( marginalia, annotation )
+{
+	var existingLink = domutil.childByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.getId(), null );
+	if ( existingLink )
+		existingLink.parentNode.removeChild( existingLink );	
+}
 
 /**
  * Don't call the linkUI implementation's methods directly - go through here instead so that
