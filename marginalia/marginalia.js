@@ -714,26 +714,15 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	// Now that validation's complete, start storing things
 	Marginalia.saveEditPrefs( marginalia, annotation, marginalia.noteEditor );
 
-	// Remove events
-	removeEvent( document.documentElement, 'click', _saveAnnotation );
-	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
-	removeEvent( noteElement, 'click', domutil.stopPropagation );
-	
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
 	var scrollX = domutil.getWindowXScroll( );
 	
-	// Clear the editor
-	marginalia.noteEditor.clear();
-	marginalia.noteEditor = null;
-	while ( noteElement.firstChild )
-		noteElement.removeChild( noteElement.firstChild );
+	// Remove events and editor display
+	this.stopEditing( marginalia, annotation );
 
 	// TODO: listItem is an alias for noteElement
 	var listItem = document.getElementById( AN_ID_PREFIX + annotation.getId() );
-	
-	this.flagAnnotation( marginalia, annotation, AN_EDITINGNOTE_CLASS, false );
-	domutil.removeClass( document.body, AN_EDITINGNOTE_CLASS );
 	
 	// For annotations with links; insert, or substitute actions, must update highlight also
 	if ( 'edit' == annotation.action && annotation.hasChanged( 'note' ) || annotation.hasChanged( 'link' ) )
@@ -797,6 +786,29 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	return true;
 }
 
+
+/**
+ * Stop edit mode
+ * This removes the editor display, but doesn't replace it with anything
+ */
+PostMicro.prototype.stopEditing = function( marginalia, annotation )
+{
+	// Remove events
+	removeEvent( document.documentElement, 'click', _saveAnnotation );
+	var noteElement = document.getElementById( AN_ID_PREFIX + annotation.getId() );
+	removeEvent( noteElement, 'click', domutil.stopPropagation );
+	
+	// Clear the editor
+	marginalia.noteEditor.clear();
+	marginalia.noteEditor = null;
+	while ( noteElement.firstChild )
+		noteElement.removeChild( noteElement.firstChild );
+
+	this.flagAnnotation( marginalia, annotation, AN_EDITINGNOTE_CLASS, false );
+	domutil.removeClass( document.body, AN_EDITINGNOTE_CLASS );
+}
+
+
 /**
  * Delete an annotation
  */
@@ -813,9 +825,13 @@ PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 	var scrollY = domutil.getWindowYScroll( );
 	var scrollX = domutil.getWindowXScroll( );
 
+	// Check whether this annotation is being edited - if so, cancel the edit
+	if ( marginalia.noteEditor && annotation == marginalia.noteEditor.annotation )
+		this.stopEditing( marginalia, annotation );
+	
 	// Delete it on the server
-	marginalia.deleteAnnotation( annotation.getId(), null );
-	marginalia.editing = null;
+	if ( ! annotation.isLocal )
+		marginalia.deleteAnnotation( annotation.getId(), null );
 	
 	// Find the annotation
 	var next = this.removeAnnotation( marginalia, annotation );
