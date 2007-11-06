@@ -59,10 +59,36 @@ function encodeURIParameter( s )
 /**
  * Initialize the REST annotation service
  */
-function RestAnnotationService( serviceUrl, niceUrls )
+function RestAnnotationService( serviceUrl, features )
 {
 	this.serviceUrl = serviceUrl;
-	this.niceUrls = niceUrls;
+	this.niceUrls = false;
+	
+	if ( features )
+	{
+		for ( feature in features )
+		{
+			value = features[ feature ];
+			switch ( feature )
+			{
+				// Name of cookie to use for preventing cross-site request forgery
+				case 'csrfCookie':
+					this.csrfCookie = value;
+					break;
+				
+				// Use nice service URLs (currently unsupported)
+				case 'niceUrls':
+					this.niceUrls = value;
+					break;
+					
+				default:
+					if ( typeof( this[ feature ] ) != 'undefined' )
+						throw 'Attempt to override feature: ' + feature;
+					else
+						this[ feature ] = value;
+			}
+		}
+	}
 }
 
 
@@ -177,9 +203,8 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&linkTitle=' + encodeURIParameter( annotation.getLinkTitle( ) );
 
 	// Cross-site request forgery protection (if present)
-	var csrfCookie = window.marginalia.csrfCookie;
-	if ( csrfCookie )
-		body += '&' + encodeURIComponent( csrfCookie ) + '=' + encodeURIParameter( readCookie( csrfCookie ) );
+	if ( this.csrfCookie )
+		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 		
 	var xmlhttp = domutil.createAjaxRequest( );
 	
@@ -237,9 +262,8 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 
 	// Cross-site request forgery protection (if present)
-	var csrfCookie = window.marginalia.csrfCookie;
-	if ( csrfCookie )
-		body += '&' + encodeURIComponent( csrfCookie ) + '=' + encodeURIParameter( readCookie( csrfCookie ) );
+	if ( this.csrfCookie )
+		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'PUT', serviceUrl, true );
@@ -279,9 +303,8 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 	var body = 'note=' + encodeURIComponent( newNote );
 		
 	// Cross-site request forgery protection (if present)
-	var csrfCookie = window.marginalia.csrfCookie;
-	if ( csrfCookie )
-		body += '&' + encodeURIComponent( csrfCookie ) + '=' + encodeURIComponent( readCookie( csrfCookie ) );
+	if ( this.csrfCookie )
+		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	
@@ -323,9 +346,8 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 	serviceUrl += this.niceUrls ? ( '/' + annotationId ) : ( '?id=' + annotationId );
 	
 	// Cross-site request forgery protection (if present)
-	var csrfCookie = window.marginalia.csrfCookie;
-	if ( csrfCookie )
-		serviceUrl += '&' + encodeURIComponent( csrfCookie ) + '=' + encodeURIComponent( readCookie( csrfCookie ) );
+	if ( this.csrfCookie )
+		serviceUrl += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
 
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )

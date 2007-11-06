@@ -54,8 +54,8 @@ RestPreferenceService.prototype.listPreferences = function( f )
 				if ( null != f )
 					f( xmlhttp.responseText );
 			}
-			else
-				alert( "serverGetPreference failed with code " + xmlhttp.status + "\n" + xmlhttp.responseText );
+//			else
+//				alert( "serverGetPreference failed with code " + xmlhttp.status + "\n" + xmlhttp.responseText );
 		}
 	}
 	//trace( "PreferenceService.setPreference " + serviceUrl)
@@ -82,8 +82,8 @@ RestPreferenceService.prototype.setPreference = function( setting, value, f )
 				if ( null != f )
 					f( );
 			}
-			else
-				alert( "serverSetPreference failed with code " + xmlhttp.status + "\n" + xmlhttp.responseText );
+//			else
+//				alert( "serverSetPreference failed with code " + xmlhttp.status + "\n" + xmlhttp.responseText );
 		}
 	}
 	//trace( "PreferenceService.setPreference " + serviceUrl)

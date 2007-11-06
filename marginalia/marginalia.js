@@ -115,11 +115,6 @@ function Marginalia( service, username, anusername, features )
 				this.baseUrl = value;
 				break;
 				
-			// Name of cookie to use for preventing cross-site request forgery
-			case 'csrfCookie':
-				this.csrfCookie = value;
-				break;
-			
 			// Override the function for displaying a note in the margin
 			case 'displayNote':
 				this.displayNote = value;
