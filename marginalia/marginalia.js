@@ -1069,6 +1069,19 @@ function createAnnotation( postId, warn, editor )
 	}
 	
 	var post = marginalia.listPosts().getPostById( postId );
+	
+	// Confirm that the selection is within the post
+	var contentElement = post.getContentElement();
+	if ( ! ( ( domutil.isElementDescendant( textRange.startContainer,contentElement )
+		|| textRange.startContainer == contentElement )
+		&& ( domutil.isElementDescendant( textRange.endContainer, contentElement )
+		|| textRange.endContainer == contentElement ) ) )
+	{
+		if ( warn )
+			alert( getLocalized( 'invalid selection' ) );
+		return false;
+	}
+	
 	var annotation = new Annotation( post.url );
 	annotation.setUserId( marginalia.username );
 	
@@ -1092,7 +1105,7 @@ function createAnnotation( postId, warn, editor )
 	{
 		annotation.destruct( );
 		if ( warn )
-			alert( '3' + getLocalized( 'zero length quote' ) );
+			alert( getLocalized( 'zero length quote' ) );
 		trace( null, "zero length quote '" + annotation.getQuote() + "'" );
 		return false;
 	}
@@ -1104,7 +1117,7 @@ function createAnnotation( postId, warn, editor )
 	if ( null == annotation )
 	{
 		if ( warn )
-			alert( '2' + getLocalized( 'invalid selection' ) );
+			alert( getLocalized( 'invalid selection' ) );
 		return false;
 	}
 	
