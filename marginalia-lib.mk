@@ -1,7 +1,8 @@
 MARGINALIA_LIB_3RDPARTY_FILES = \
  $(MARGINALIA_LIB_DIR)/3rd-party/cssQuery.js \
  $(MARGINALIA_LIB_DIR)/3rd-party/cssQuery-standard.js \
- $(MARGINALIA_LIB_DIR)/3rd-party/cssQuery-level2.js
+ $(MARGINALIA_LIB_DIR)/3rd-party/cssQuery-level2.js \
+ $(MARGINALIA_LIB_DIR)/3rd-party/shortcut.js
 
 MARGINALIA_LIB_FILES = \
  $(MARGINALIA_LIB_DIR)/3rd-party.js \
@@ -31,5 +32,6 @@ MARGINALIA_LIB_FILES = \
  $(MARGINALIA_LIB_DIR)/rest-keywords.js \
  $(MARGINALIA_LIB_DIR)/rest-prefs.js \
  $(MARGINALIA_LIB_DIR)/smartcopy.js \
+ $(MARGINALIA_LIB_DIR)/track-changes.js \
  $(MARGINALIA_LIB_DIR)/user-count.js
 

@@ -125,6 +125,11 @@ TextRange.prototype.shrinkwrap = function( fskip )
 		
 	var foundOther = false;
 	var walker = new DOMWalker( node, true );
+	
+	// If we're at the start of a text node, need to walk backward even if that
+	// node contains text
+	if ( node == this.endContainer && this.endOffset == 0 )
+		walker.walk( );
 	do
 	{
 		var node = walker.node;
@@ -135,17 +140,26 @@ TextRange.prototype.shrinkwrap = function( fskip )
 		else if ( foundOther )
 			return false;
 		
-		// Find a non-whitespace-only text node and skip trailing whitespace
+		// Find a non-whitespace-only text node and skip leading whitespace
 		if ( ( !fskip || ! fskip( node ) ) && TEXT_NODE == node.nodeType )
 		{
-			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
+			var ws = node.nodeValue.match( /^(\s|\u00a0)*/ );
+			var wslen = ws[ 1 ] ? ws[ 1 ].length : 0;
+			// Fails is this is an all-whitespace node
+			if ( wslen != node.nodeValue.length )
 			{
-				if ( node != this.endContainer )
+				if ( node == this.endContainer )
+				{
+					// Fails if the offset is within leading whitespace
+					if ( wslen < this.endOffset )
+						break;
+				}
+				else
 				{
 					this.endContainer = walker.node;
 					this.endOffset = node.nodeValue.length;
+					break;
 				}
-				break;
 			}
 		}
 	}
@@ -286,7 +300,7 @@ function WordRange()
  */
 WordRange.prototype.fromTextRange = function( textRange, root, fskip )
 {
-	rel = domutil.closestPrecedingBreakingElement( textRange.startContainer );
+	var rel = domutil.closestPrecedingBreakingElement( textRange.startContainer );
 	this.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
 
 	rel = domutil.closestPrecedingBreakingElement( textRange.endContainer );

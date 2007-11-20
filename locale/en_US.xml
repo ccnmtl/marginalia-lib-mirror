@@ -15,6 +15,8 @@
 	<message key="annotation link button">Link to another document.</message>
 	<message key="annotation link label">Select a document to link to.</message>
 	<message key="delete annotation link button">Remove this link.</message>
+	<message key="annotation expand edit button">Click to display margin note editor</message>
+	<message key="annotation collapse edit button">Click to display margin note drop-down list</message>
 	
 	<!-- Action button titles (for track changes) -->
 	<message key='action annotate button'>Annotate...</message>

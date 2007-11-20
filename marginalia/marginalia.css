@@ -204,6 +204,11 @@
 	width: 95%;
 }
 
+.hentry .notes li button.annotation-access {
+	heigh: 1.2em;
+	width: 1em;
+}
+
 /*
 .hentry .notes li.hover,
 .hentry .entry-content em.annotation.hover,

@@ -453,7 +453,7 @@ FreeformNoteEditor.prototype.show = function( )
 		};
 		this.noteElement.appendChild( domutil.button( {
 			className:	AN_EXPANDBUTTON_CLASS,
-			title: 'annotation expand edit button',
+			title: getLocalized( 'annotation expand edit button' ),
 			content: AN_EXPANDED_ICON,
 			onclick: f } ) );
 	}
@@ -512,7 +512,7 @@ KeywordNoteEditor.prototype.show = function( )
 	// Show the expand/collapse control
 	this.noteElement.appendChild( domutil.button( {
 		className:	AN_EXPANDBUTTON_CLASS,
-		title: 'annotation expand edit button',
+		title: getLocalized( 'annotation collapse edit button' ),
 		content: AN_COLLAPSED_ICON } ) );
 	
 	this.selectNode = document.createElement( 'select' );
