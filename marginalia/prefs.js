@@ -99,7 +99,7 @@ Preferences.prototype.getPreference = function( name, defaultValue )
 Preferences.prototype.setPreference = function( name, value )
 {
 	// Only set the preference if it has changed (saves HTTP requests)
-	if ( this.preferences[ name ] && this.preferences[ name ] != value )
+	if ( ! this.preferences[ name ] || this.preferences[ name ] != value )
 		this.service.setPreference( name, value );
 	this.preferences[ name ] = value;
 }

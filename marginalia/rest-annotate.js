@@ -63,6 +63,7 @@ function RestAnnotationService( serviceUrl, features )
 {
 	this.serviceUrl = serviceUrl;
 	this.niceUrls = false;
+	this.noPutDelete = false;
 	
 	if ( features )
 	{
@@ -79,6 +80,18 @@ function RestAnnotationService( serviceUrl, features )
 				// Use nice service URLs (currently unsupported)
 				case 'niceUrls':
 					this.niceUrls = value;
+					break;
+					
+				// Use HTTP POST instead of PUT and DELETE.  In this case, the operation can be determined as follows:
+				//   create:  no id or search parameters in URL, body contains new annotation data
+				//   delete: id in URL with no body
+				//   update:  id in URL, body contains new annotation data
+				//   bulkUpdate:  search parameters in URL, body contains substitution data
+				// Why not pass method=PUT or method=DELETE in body or URL?
+				// - in URL is incorrect as this does not help identify the resource
+				// - in body is incorrect if mime type is not application/x-www-url-encoded;  makes no sense in XML body
+				case noPutDelete:
+					this.noPutDelete = value;
 					break;
 					
 				default:
@@ -206,6 +219,10 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 		
+	// May need to pass method name instead of using PUT or DELETE
+	if ( this.noPutDelete )
+		serviceUrl += '&method=POST';
+	
 	var xmlhttp = domutil.createAjaxRequest( );
 	
 	xmlhttp.open( 'POST', serviceUrl, true );
@@ -261,12 +278,20 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	if ( annotation.hasChanged( 'range/' + XPATH_RANGE ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
 
-	// Cross-site request forgery protection (if present)
+// Cross-site request forgery protection (if present)
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 
+	// May need to pass method name instead of using PUT or DELETE
+	var method = 'PUT';
+	if ( this.noPutDelete )
+	{
+		serviceUrl += '&method=PUT';
+		method = 'POST';
+	}
+	
 	var xmlhttp = domutil.createAjaxRequest( );
-	xmlhttp.open( 'PUT', serviceUrl, true );
+	xmlhttp.open( method, serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.setRequestHeader( 'Content-length', body.length );
@@ -306,12 +331,20 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
 
+	// May need to pass method name instead of using PUT or DELETE
+	var method = 'PUT';
+	if ( this.noPutDelete )
+	{
+		serviceUrl += '&method=PUT';
+		method = 'POST';
+	}
+	
 	var xmlhttp = domutil.createAjaxRequest( );
 	
 	// This use of PUT is suspect, as it does not send a full representation of the resource -
 	// instead it sends a delta for the resource (or rather for child resources of which this
 	// resource is composed)
-	xmlhttp.open( 'PUT', serviceUrl, true );
+	xmlhttp.open( method, serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.setRequestHeader( 'Content-length', body.length );
@@ -343,19 +376,43 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 {
 	var serviceUrl = this.serviceUrl;
-	serviceUrl += this.niceUrls ? ( '/' + annotationId ) : ( '?id=' + annotationId );
+	var hasParams = false;
+	
+	if ( this.niceUrls )
+		serviceUrl += '/' + annotationId;
+	else
+	{
+		serviceUl += '?' + annotationId;
+		hasParams = true;
+	}
 	
 	// Cross-site request forgery protection (if present)
 	if ( this.csrfCookie )
-		serviceUrl += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
+	{
+		serviceUrl += ( hasParams ? '&' : '?' )
+			+ encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
+		hasParams = true;
+	}
 
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += ( this.niceUrls ? '?' : '&' )
+	{
+		serviceUrl += ( hasParams ? '&' : '?' )
 			+ 'curuser=' + encodeURIParameter( window.marginalia.username );
-
+		hasParams = true;
+	}
+	
+	// May need to pass method name instead of using PUT or DELETE
+	var method = 'DELETE';
+	if ( this.noPutDelete )
+	{
+		serviceUrl += ( hasParams ? '&' : '?' ) + 'method=DELETE';
+		method = 'POST';
+	}
+	
 	var xmlhttp = domutil.createAjaxRequest( );
-	xmlhttp.open( 'DELETE', serviceUrl, true );
+	xmlhttp.open( method, serviceUrl, true );
+	
 	//xmlhttp.setRequestHeader( 'Accept', 'application/xml' );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 ) {
@@ -371,6 +428,6 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 		}
 	}
 	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + decodeURI( serviceUrl ) );
-	xmlhttp.send( null );
+	xmlhttp.send( body );
 }
 
