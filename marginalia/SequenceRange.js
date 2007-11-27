@@ -222,9 +222,9 @@ SequencePoint.prototype.comparePath = function( point2 )
 		return 0;
 	// Path shouldn't be empty, but if it is this should prevent the app from breaking
 	else if ( ! this.path )
-		return 1;
-	else if ( ! point2.path )
 		return -1;
+	else if ( ! point2.path )
+		return 1;
 	else
 	{
 		p1 = p1.split('/');

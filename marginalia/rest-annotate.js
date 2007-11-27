@@ -382,7 +382,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 		serviceUrl += '/' + annotationId;
 	else
 	{
-		serviceUl += '?' + annotationId;
+		serviceUrl += '?id=' + annotationId;
 		hasParams = true;
 	}
 	
@@ -428,6 +428,6 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 		}
 	}
 	trace( 'annotation-service', "AnnotationService.deleteAnnotation " + decodeURI( serviceUrl ) );
-	xmlhttp.send( body );
+	xmlhttp.send( null );
 }
 
