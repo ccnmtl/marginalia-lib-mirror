@@ -110,7 +110,7 @@ function Marginalia( service, username, anusername, features )
 			case 'action':
 				this.defaultAction = value;
 			
-			// The baseUrl should be stripped from annotatin URLs.  The server must also do this.
+			// The baseUrl should be stripped from annotation URLs.  The server must also do this.
 			case 'baseUrl':
 				this.baseUrl = value;
 				break;
@@ -755,10 +755,10 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		annotation.setUrl( this.url );
 		
 		// IE may have made a relative URL absolute, which could cause problems
-		if ( null != marginalia.urlBase
-			&& annotation.url.substring( 0, marginalia.urlBase.length ) == marginalia.UrlBase )
+		if ( null != marginalia.baseUrl
+			&& annotation.url.substring( 0, marginalia.baseUrl.length ) == marginalia.baseUrl )
 		{
-			annotation.setUrl( annotation.getUrl().substring( marginalia.urlBase.length ) );
+			annotation.setUrl( annotation.getUrl().substring( marginalia.baseUrl.length ) );
 		}
 
 		annotation.setQuoteTitle( this.title );
