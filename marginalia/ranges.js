@@ -84,7 +84,7 @@ TextRange.prototype.shrinkwrap = function( fskip )
 
 	// First apply the offset
 	if ( TEXT_NODE != node.nodeType && this.startOffset > 0)
-		node = node.childNodes.item( this.startOffset - 1 );
+		node = node.childNodes.item( this.startOffset );
 		
 	var foundOther = false;
 	var walker = new DOMWalker( node );
@@ -121,7 +121,7 @@ TextRange.prototype.shrinkwrap = function( fskip )
 
 	// First apply the offset
 	if ( TEXT_NODE != this.endContainer.nodeType && this.endOffset > 0 )
-		node = node.childNodes.item( this.endOffset - 1 );
+		node = node.childNodes.item( this.endOffset );
 		
 	var foundOther = false;
 	var walker = new DOMWalker( node, true );
