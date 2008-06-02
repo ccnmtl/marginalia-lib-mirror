@@ -831,7 +831,7 @@ stripMarkup: function( node, test, doNormalize )
 			else if ( domutil.STRIP_TAG == testR )
 			{
 				domutil.stripMarkup( child, test, doNormalize );
-				domutil.unwrapElementChildren( child, doNormalize );
+				nextChild = domutil.unwrapElementChildren( child, doNormalize );
 			}
 		}
 		child = nextChild;

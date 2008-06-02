@@ -327,7 +327,7 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 function _showAnnotationsCallback( marginalia, url, xmldoc, doBlockMarkers )
 {
 	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
-	if ( marginalia.username == marginalia.anusername )
+	if ( marginalia.username == marginalia.anusername || '' == marginalia.anusername )
 		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
 	marginalia.annotationXmlCache = xmldoc;
 	_annotationDisplayCallback( marginalia, url, doBlockMarkers );
