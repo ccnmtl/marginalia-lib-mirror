@@ -330,12 +330,12 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	{
 		domutil.addClass( noteElement, 'other-user' );
 		// If multiple users' notes are being displayed, show the owner's name
-		if ( annotation.getUserId( ) != marginalia.anusername )
-		{
+//		if ( annotation.getUserId( ) != marginalia.anusername )
+//		{
 			noteText.insertBefore( domutil.element( 'span', {
 				className:  'username',
 				content:  annotation.getUserId( ) + ': ' } ), noteText.firstChild );
-		}
+//		}
 	}
 	noteElement.appendChild( noteText );
 	
