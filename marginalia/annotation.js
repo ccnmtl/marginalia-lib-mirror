@@ -75,6 +75,7 @@ function Annotation( url )
 	// to ensure that if an annotation is fetched once for each of two blocks, it won't be
 	// removed (which would affect both blocks) unless it is hidden for both.
 	this.fetchCount = 0;
+	this.updated = new Date( );
 }
 
 /**
@@ -155,6 +156,17 @@ Annotation.prototype.setRange = function( format, range )
 	}
 	else
 		throw "Annotation.setRange:  Unknown range format";
+}
+
+Annotation.prototype.getVersion = function( )
+{
+	return this.version ? this.version : 1;
+}
+
+Annotation.prototype.setVersion = function( version )
+{
+	this.version = version;
+	this.changes[ 'version' ] = true;
 }
 
 Annotation.prototype.getId = function( )
@@ -319,7 +331,7 @@ function compareAnnotationRanges( a1, a2 )
 /* Does anything actually call this anymore? */
 function annotationFromTextRange( marginalia, post, textRange )
 {
-	var range = textRangeToWordRange( textRange, post.contentElement, marginalia.skipContent );
+	var range = WordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation( post.url );
@@ -377,6 +389,8 @@ Annotation.prototype.fromAtom = function( entry )
 {
 	var hOffset, hLength, text, url, id;
 	var rangeStr = null;
+	var version = entry.getAttributeNS( NS_PTR, 'version' );
+	this.version = version ? version : 1;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
 		if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
@@ -417,9 +431,9 @@ Annotation.prototype.fromAtom = function( entry )
 			var format = field.getAttribute( 'format' );
 			// These ranges may throw parse errors
 			if ( 'sequence' == format )
-				this.setRange( format, new SequenceRange( domutil.getNodeText( field ) ) );
+				this.setRange( format, SequenceRange.fromString( domutil.getNodeText( field ) ) );
 			else if ( 'xpath' == format )
-				this.setRange( format, new XPathRange( domutil.getNodeText( field ) ) );
+				this.setRange( format, XPathRange.fromString( domutil.getNodeText( field ) ) );
 			// ignore unknown formats
 		}
 		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )
@@ -427,7 +441,7 @@ Annotation.prototype.fromAtom = function( entry )
 		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'action' )
 			this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
 		else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
-			this.updated = domutil.getNodeText( field );
+			this.updated = domutil.parseIsoDate( domutil.getNodeText( field ) );
 	}
 	// This is here because annotations are only parsed from XML when being initialized.
 	// In future who knows, this might not be the case - and the reset would have to

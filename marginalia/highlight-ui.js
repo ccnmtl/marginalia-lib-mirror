@@ -30,20 +30,18 @@ AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
 
 PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 {
-	var wordRange = new WordRange( );
+	var wordRange;
 	if ( annotation.getRange( XPATH_RANGE ) && this.contentElement.ownerDocument.evaluate)
 	{
 		// the extra test above is because IE doesn't support xpath
-		if ( wordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, marginalia.skipContent ) )
-			return wordRange;
+		wordRange = WordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, marginalia.skipContent );
 	}
 	else if ( annotation.getRange( SEQUENCE_RANGE ) )
 	{
-		if ( wordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, marginalia.skipContent ) )
-			return wordRange;
+		wordRange = WordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, marginalia.skipContent );
 		// TODO: Store XPathRange back to annotation on server
 	}
-	return null;
+	return wordRange;
 }
 
 /**

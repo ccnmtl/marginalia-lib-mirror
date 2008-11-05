@@ -98,7 +98,9 @@ ErrorLogger.prototype.trace = function( topic, s )
 {
 	if ( this.on && ( !topic || this.traceSettings[ topic ] ) )
 	{
-		if ( window.dump )
+		if ( window.console && window.console.log )
+			window.console.log( s );
+		else if ( window.dump )
 			dump( s + "\n");
 		if ( this.popup )
 		{

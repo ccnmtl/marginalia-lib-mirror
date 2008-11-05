@@ -10,83 +10,102 @@
 	<script type="text/javascript" src="../../marginalia/html-model.js"></script>
 	<script type="text/javascript" src="../../marginalia/domutil.js"></script>
     <script language="javaScript" type="text/javascript">
-
-		function testForwardDomWalk( )
-		{
-			var root = document.getElementById( 'dom-walker-test' );
-			var walker = new DOMWalker( root );
-			assertWalkerStartTag( walker, 'div' );
-			assertWalkerWalk( walker, 'whitespace' );
-			assertWalkerWhitespace( walker );
-			assertWalkerWalk( walker, 'ul' );
-			assertWalkerStartTag( walker, 'ul' );
-			assertWalkerWalk( walker, 'li' );
-			assertWalkerStartTag( walker, 'li' );
-			assertWalkerWalk( walker, 'Hello' );
-			assertWalkerText( walker, 'Hello' );
-			assertWalkerWalk( walker, '/li' );
-			assertWalkerEndTag( walker, 'li' );
-			assertWalkerWalk( walker, 'li (2)' );
-			assertWalkerStartTag( walker, 'li' );
-			assertWalkerWalk( walker, 'to the' );
-			assertWalkerText( walker, 'to the ');
-			assertWalkerWalk( walker, 'a' );
-			assertWalkerStartTag( walker, 'a' );
-			assertWalkerWalk( walker, 'world' );
-			assertWalkerText( walker, 'world' );
-			assertWalkerWalk( walker, '/a' );
-			assertWalkerEndTag( walker, 'a' );
-			assertWalkerWalk( walker, '/li (2)' );
-			assertWalkerEndTag( walker, 'li' );
-			assertWalkerWalk( walker, 'space' );
-			assertWalkerWhitespace( walker );
-			assertWalkerWalk( walker, '/ul' );
-			assertWalkerEndTag( walker, 'ul' );
-			assertWalkerWalk( walker, 'done' );
-			assertWalkerText( walker, 'done' );
-			assertWalkerWalk( walker, '/div' );
-			assertWalkerEndTag( walker, 'div' );
-		}
+	function myload()
+	{
+		window.log = new ErrorLogger( true, true );
+		window.log.setTrace( 'WordRange', true );			// Check if quote matches current state of document
+		window.log.setTrace( 'WordPointWalker', true );
+	}
+	
+	function testForwardDomWalk( )
+	{
+		var root = document.getElementById( 'dom-walker-test' );
+		var walker = new DOMWalker( root );
+		assertWalkerStartTag( walker, 'div' );
+		assertWalkerWalk( walker, 'whitespace' );
+		assertWalkerWhitespace( walker );
+		assertWalkerWalk( walker, 'ul' );
+		assertWalkerStartTag( walker, 'ul' );
+		assertWalkerWalk( walker, 'li' );
+		assertWalkerStartTag( walker, 'li' );
+		assertWalkerWalk( walker, 'Hello' );
+		assertWalkerText( walker, 'Hello' );
+		assertWalkerWalk( walker, '/li' );
+		assertWalkerEndTag( walker, 'li' );
+		assertWalkerWalk( walker, 'li (2)' );
+		assertWalkerStartTag( walker, 'li' );
+		assertWalkerWalk( walker, 'to the' );
+		assertWalkerText( walker, 'to the ');
+		assertWalkerWalk( walker, 'a' );
+		assertWalkerStartTag( walker, 'a' );
+		assertWalkerWalk( walker, 'world' );
+		assertWalkerText( walker, 'world' );
+		assertWalkerWalk( walker, '/a' );
+		assertWalkerEndTag( walker, 'a' );
+		assertWalkerWalk( walker, '/li (2)' );
+		assertWalkerEndTag( walker, 'li' );
+		assertWalkerWalk( walker, 'space' );
+		assertWalkerWhitespace( walker );
+		assertWalkerWalk( walker, '/ul' );
+		assertWalkerEndTag( walker, 'ul' );
+		assertWalkerWalk( walker, 'done' );
+		assertWalkerText( walker, 'done' );
+//		assertWalkerWalk( walker, '/div' );
+//		assertWalkerEndTag( walker, 'div' );
+	}
+	
+	function assertWalkerWalk( walker, name )
+	{
+		assertTrue( 'walk to ' + name, walker.walk( true, false ) );
+	}
+	
+	function assertWalkerStartTag( walker, name )
+	{
+		assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
+		assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
+		assertTrue( '<' + name + '> is start tag', walker.startTag );
+	}
+	
+	function assertWalkerEndTag( walker, name )
+	{
+		assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
+		assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
+		assertTrue( '</' + name + '> is end tag', walker.endTag );
+	}
+	
+	function assertWalkerWhitespace( walker )
+	{
+		assertTrue( 'whitespace is text', TEXT_NODE == walker.node.nodeType );
+	}
+	
+	function assertWalkerText( walker, text )
+	{
+		assertTrue( 'text is text', TEXT_NODE == walker.node.nodeType );
+		assertTrue( 'text is ' + text, text == walker.node.nodeValue );
+	}
+	
+	function testClosestPrecedingBreakingElement( )
+	{
+		var s1 = document.getElementById( 's1' );
+		var node = domutil.closestPrecedingBreakingElement( s1 );
+		assertTrue( 'Closest preceding breaking for s1 is li2', node.id == 'li2' );
 		
-		function assertWalkerWalk( walker, name )
-		{
-			assertTrue( 'walk to ' + name, walker.walk( true, false ) );
-		}
-		
-		function assertWalkerStartTag( walker, name )
-		{
-			assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
-			assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
-			assertTrue( '<' + name + '> is start tag', walker.startTag );
-		}
-		
-		function assertWalkerEndTag( walker, name )
-		{
-			assertTrue( name + ' is element', ELEMENT_NODE == walker.node.nodeType );
-			assertTrue( 'element is <' + name + '>', name == walker.node.tagName.toLowerCase( ) );
-			assertTrue( '</' + name + '> is end tag', walker.endTag );
-		}
-		
-		function assertWalkerWhitespace( walker )
-		{
-			assertTrue( 'whitespace is text', TEXT_NODE == walker.node.nodeType );
-		}
-		
-		function assertWalkerText( walker, text )
-		{
-			assertTrue( 'text is text', TEXT_NODE == walker.node.nodeType );
-			assertTrue( 'text is ' + text, text == walker.node.nodeValue );
-		}
-		
-    </script>
+		node = domutil.closestPrecedingBreakingElement( s1.firstChild );
+		assertTrue( 'Closest preceding breaking for s1 text is li2', node.id == 'li2' );
+	}
+	
+</script>
 </head>
+
+<body onload='myload()'>
 
 <body>
 <h1>Marginalia DOM Walker Tests</h1>
+<button onclick="testForwardDomWalk()">Run Test</button>
 
 <div id="dom-walker-test">
-	<ul><li>Hello</li><li>to the <a href="fred">world</a></li>
-	</ul>done</div>
+	<ul id='ul1'><li id='li1'>Hello</li><li id='li2'>to the <a id='a1' href="fred">world</a></li>
+	</ul>done<span id='s1'>ok</span></div>
 
 </body>
 </html>

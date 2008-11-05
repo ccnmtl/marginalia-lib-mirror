@@ -34,20 +34,20 @@
  * XPath ranges are fast (assuming the document.evaluate function is implemented in the
  * browser to resolve XPath expressions), but unlike block ranges cannot be ordered.
  */
-function XPathRange( str )
+function XPathRange( start, end )
 {
-	if ( str )
-		this.fromString( str );
-	return this;
+	this.start = start;
+	this.end = end;
 }
 
-XPathRange.prototype.fromString = function( path )
+XPathRange.fromString = function( path )
 {
 	var parts = path.split( ';' );
 	if ( null == parts || 2 != parts.length )
 		throw "XPathRange parse error";
-	this.start = new XPathPoint( parts[ 0 ] );
-	this.end = new XPathPoint( parts[ 1 ] );
+	return new XPathRange(
+		new XPathPoint( parts[ 0 ] ),
+		new XPathPoint( parts[ 1 ] ) );
 }
 
 XPathRange.prototype.toString = function( )
@@ -60,83 +60,85 @@ XPathRange.prototype.equals = function( range2 )
 	return this.start.equals( range2.start ) && this.end.equals( range2.end );
 }
 
-XPathRange.prototype.makeBlockLevel = function( )
+XPathRange.prototype.collapsedToStart = function( )
 {
-	this.start.makeBlockLevel( )
-	this.end.makeBlockLevel( )
+	return new XPathRange(
+		this.start,
+		this.start );
 }
 
-XPathRange.prototype.collapseToStart = function( )
+XPathRange.prototype.collapsedToEnd = function( )
 {
-	this.end = this.start;
-}
-
-XPathRange.prototype.collapseToEnd = function( )
-{
-	this.start = this.end;
+	return new XPathRange(
+		this.end,
+		this.end );
 }
 
 
-function XPathPoint( str )
+function XPathPoint( path, lines, words, chars )
 {
-	if ( str )
-		this.fromString( str );
-	return this;
-}
-
-XPathPoint.prototype.fromString = function( path, words, chars )
-{
-	if ( words )
+	if ( lines )
 	{
 		this.path = path;
+		this.lines = lines;
 		this.words = words;
 		this.chars = chars;
 	}
 	else
 	{
-		var parts = path.match( /^\s*(.*)\/word\((\d+)\)\/char\((\d+)\)\s*$/ );
+		var parts = path.match( /^\s*(.*)\/line\((\d+)\)\/word\((\d+)\)\/char\((\d+)\)\s*$/ );
 		if ( parts )
 		{
 			this.path = parts[ 1 ];
-			this.words = Number( parts[ 2 ] );
-			this.chars = Number( parts[ 3 ] );
+			this.lines = Number( parts[ 2 ] );
+			this.words = Number( parts[ 3 ] );
+			this.chars = Number( parts[ 4 ] );
 		}
 		else
 		{
-			this.path = path;
-			this.words = this.chars = 0;
+			// Older format
+			var parts = path.match( /^\s*(.*)\/word\((\d+)\)\/char\((\d+)\)\s*$/ );
+			if ( parts )
+			{
+				this.path = parts[ 1 ];
+				this.words = Number( parts[ 2 ] );
+				this.chars = Number( parts[ 3 ] );
+			}
+			else
+			{
+				this.path = path;
+				this.lines = this.words = this.chars = 0;
+			}
 		}
 	}
 }
 
 XPathPoint.prototype.equals = function( point2 )
 {
-	return this.path == point2.path && this.words == point2.words && this.chars == point2.chars;
+	return this.path == point2.path
+		&& this.lines == point2.lines
+		&& this.words == point2.words
+		&& this.chars == point2.chars;
 }
 
 XPathPoint.prototype.toString = function( )
 {
 	if ( this.words )
-		return this.path + '/word(' + this.words + ')/char(' + this.chars + ')';
+		return this.path + ( this.path ? '/' : '' ) + 'line(' + this.lines + ')/word(' + this.words + ')/char(' + this.chars + ')';
 	else
 		return this.path;
-}
-
-XPathPoint.prototype.makeBlockLevel = function( )
-{
-	this.words = null;
-	this.chars = null;
 }
 
 /**
  * Notice the lack of an fskip function.  None of the parent nodes of the current node
  * can be skippable for this to work.
  */
-XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
+XPathPoint.fromNode = function( root, rel, lines, words, chars, idTest )
 {
 	var node = rel;
 	var path = '';
 	var foundId = false;
+	
 	outer: while ( null != node && root != node )
 	{
 		if ( foundId )
@@ -188,7 +190,8 @@ XPathPoint.prototype.pathFromNode = function( root, rel, idTest )
 			}
 		}
 	}
-	this.path = path;
+	
+	return new XPathPoint( path, lines, words, chars );
 }
 
 /*

@@ -196,6 +196,9 @@ function Marginalia( service, username, anusername, features )
 	}
 }
 
+// Recorded in every annotation created by this client
+Marginalia.VERSION = 2;
+
 Marginalia.prototype.newEditor = function( annotation, editorName )
 {
 	var f = editorName ? this.editors[ editorName ] : this.editors[ 'default' ];
@@ -272,8 +275,7 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 		if ( post )
 		{
 			var root = post.getContentElement( );
-			var wordRange = new WordRange( );
-			wordRange.fromSequenceRange( sequenceRange, root, this.skipContent );
+			var wordRange = WordRange.fromSequenceRange( sequenceRange, root, this.skipContent );
 			annotation.setRange( SEQUENCE_RANGE, wordRange.toSequenceRange( root ) );
 		}
 	}
@@ -421,6 +423,9 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 						annotation.fetchCount += 1;
 					// Now insert before beforeNote
 					post.addAnnotation( marginalia, annotation, nextNode );
+					
+					if ( annotation.getUserId( ) == this.username )
+						this.patchAnnotation( annotation, post );
 				}
 			}
 			
@@ -442,6 +447,59 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 	else if ( doBlockMarkers && marginalia.showBlockMarkers )
 	{
 		marginalia.showPerBlockUserCounts( callbackUrl );
+	}
+}
+
+
+/**
+ * Older annotations may be using old path formats or other saved data which is
+ * incorrect or inconsistent with current formatting.  This function checks
+ * for the possibility, makes the changes, and submits the any updates to the
+ * server.  This only applies to annotations owned by the current user.
+ */
+Marginalia.prototype.patchAnnotation = function( annotation, post )
+{
+	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
+	if ( sequenceRange.formatVersion( ) != 'lines' )
+	{
+		// #geof# need code to update even older range formats
+		
+		// Is there even a chance that the sequence range has changed?
+		// (since sequence range calculations can be quite slow)
+		var unchanged = null == domutil.childByTagClass( post.contentElement, 'br' );
+		if ( ! unchanged )
+		{
+			// Determine the correct sequence range
+			var wordRange = post.wordRangeFromAnnotation( this, annotation );
+			var sequenceRange = wordRange.toSequenceRange( post.contentElement );
+			
+			// Don't update unless there has been a change
+			unchanged = sequenceRange == annotation.getRange( SEQUENCE_RANGE );
+			if  (! unchanged )
+			{
+				annotation.setRange( SEQUENCE_RANGE, sequenceRange );
+				annotation.setVersion( Marginalia.VERSION );
+				marginalia.updateAnnotation( annotation, null );
+		
+				// Replace the editable note display
+				this.removeNote( this, annotation );
+				var nextNode = this.getAnnotationNextNote( marginalia, annotation );
+				noteElement = this.showNote( this, annotation, nextNode );
+				this.repositionNotes( this, noteElement.nextSibling );
+			
+				// May need to reposition block markers
+				if ( annotation.action == 'edit' && annotation.hasChanged( 'note' ) || annotation.hasChanged( 'link' ) )
+					this.repositionBlockMarkers( marginalia );
+			}
+		}
+		
+		// If there was no change to make, update the version number to prevent
+		// future attempts to patch.
+		if ( unchanged )
+		{
+			annotation.setVersion( Marginalia.VERSION );
+			marginalia.updateAnnotation( annotation, null );
+		}
 	}
 }
 
@@ -1058,9 +1116,9 @@ function createAnnotation( postId, warn, editor )
 	
 	// Strip off leading and trailing whitespace and preprocess so that
 	// conversion to WordRange will go smoothly.
-	var textRange = new TextRange( );
-	textRange.fromW3C( textRange0 );
-	if ( ! textRange.shrinkwrap( marginalia.skipContent ) )
+	var textRange = TextRange.fromW3C( textRange0 );
+	textRange = textRange.shrinkwrap( marginalia.skipContent );
+	if ( ! textRange )
 	{
 		// this happens if the shrinkwrapped range has no non-whitespace text in it
 		if ( warn )
@@ -1107,8 +1165,7 @@ function createAnnotation( postId, warn, editor )
 	// the text nodes used by the textRange for reference.
 	domutil.stripSubtree( post.contentElement, null, 'smart-copy' );
 
-	var wordRange = new WordRange( );
-	wordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
+	var wordRange = WordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
 	var sequenceRange = wordRange.toSequenceRange( post.contentElement );
 	var xpathRange = wordRange.toXPathRange( post.contentElement );
 	

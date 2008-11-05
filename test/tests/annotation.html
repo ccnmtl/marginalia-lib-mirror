@@ -141,7 +141,7 @@ function testAnnotationQuoteAuthor( )
 function testAnnotationSequenceRange( )
 {
 	var annotation = new Annotation( );
-	var range = new SequenceRange( '/1/2.0;/1/2.4' );
+	var range = new SequenceRange( '1/1.2.0;1/1.2.4' ); //( '/1/2.0;/1/2.4' );
 	assertTrue( 'Initially empty', annotation.getRange( SEQUENCE_RANGE ) == null );
 	assertFalse( 'Initially unchanged', annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) );
 	annotation.setRange( SEQUENCE_RANGE, range );
@@ -152,7 +152,7 @@ function testAnnotationSequenceRange( )
 function testAnnotationXPathRange( )
 {
 	var annotation = new Annotation( );
-	var range = new XPathRange( 'p[1]/word(2)/char(0);p[1]/word(2)/char(4)' );
+	var range = new XPathRange( 'p[1]/line(1)/word(2)/char(0);p[1]/line(1)/word(2)/char(4)' );
 	assertTrue( annotation.getRange( XPATH_RANGE ) == null );
 	assertFalse( annotation.hasChanged( 'range/' + XPATH_RANGE ) );
 	annotation.setRange( XPATH_RANGE, range );

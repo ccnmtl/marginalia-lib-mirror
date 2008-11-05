@@ -121,8 +121,8 @@ MarginaliaDirect.prototype.updateAnnotation = function( listItem )
 	var direct = this;
 	var annotation = listItem.annotation;
 	annotation.setUrl( this.getFieldInput( listItem, 'md-annotation-url' ).value );
-	annotation.setRange( SEQUENCE_RANGE, new SequenceRange( this.getFieldInput( listItem, 'md-annotation-sequence-range' ).value ) );
-	annotation.setRange( XPATH_RANGE, new XPathRange( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value ) );
+	annotation.setRange( SEQUENCE_RANGE, SequenceRange.fromString( this.getFieldInput( listItem, 'md-annotation-sequence-range' ).value ) );
+	annotation.setRange( XPATH_RANGE, XPathRange.fromString( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value ) );
 	annotation.setQuote( this.getFieldInput( listItem, 'md-annotation-quote' ).value );
 	annotation.setNote( this.getFieldInput( listItem, 'md-annotation-note' ).value );
 	annotation.setLink( this.getFieldInput( listItem, 'md-annotation-link' ).value );

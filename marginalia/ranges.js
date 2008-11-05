@@ -65,26 +65,33 @@ function TextRange( startContainer, startOffset, endContainer, endOffset )
 /**
  * Convert from a W3C Range object
  */
-TextRange.prototype.fromW3C = function( range )
+TextRange.fromW3C = function( range )
 {
-	this.startContainer = range.startContainer;
-	this.startOffset = range.startOffset;
-	this.endContainer = range.endContainer;
-	this.endOffset = range.endOffset;
+	return new TextRange(
+		range.startContainer,
+		range.startOffset,
+		range.endContainer,
+		range.endOffset );
 }
 
 /**
  * Shift start and end points until each begins or ends in a text node with text
  * (i.e. pass over whitespace-only and element nodes)
+ * Should be rewritten without the prototype to make TextRange immutable
  */
 TextRange.prototype.shrinkwrap = function( fskip )
 {
+	var startContainer = this.startContainer;
+	var startOffset = this.startOffset;
+	var endContainer = this.endContainer;
+	var endOffset = this.endOffset;
+	
 	// Shrinkwrap start
-	var node = this.startContainer;
+	var node = startContainer;
 
 	// First apply the offset
-	if ( TEXT_NODE != node.nodeType && this.startOffset > 0)
-		node = node.childNodes.item( this.startOffset );
+	if ( TEXT_NODE != node.nodeType && startOffset > 0)
+		node = node.childNodes.item( startOffset );
 		
 	var foundOther = false;
 	var walker = new DOMWalker( node );
@@ -93,10 +100,10 @@ TextRange.prototype.shrinkwrap = function( fskip )
 		var node = walker.node;
 
 		// Make sure endpoints don't pass each other
-		if ( node == this.endContainer )
+		if ( node == endContainer )
 			foundOther = true;
 		else if ( foundOther )
-			return false;
+			return null;
 		
 		
 		// Find a non-whitespace-only text node and skip leading whitespace
@@ -104,10 +111,10 @@ TextRange.prototype.shrinkwrap = function( fskip )
 		{
 			if ( ! node.nodeValue.match( /^(\s|\u00a0)*$/ ) )
 			{
-				if ( node != this.startContainer )
+				if ( node != startContainer )
 				{
-					this.startContainer = node;
-					this.startOffset = 0;
+					startContainer = node;
+					startOffset = 0;
 				}
 				break;
 			}
@@ -117,25 +124,25 @@ TextRange.prototype.shrinkwrap = function( fskip )
 
 	
 	// Shrinkwrap end
-	var node = this.endContainer;
+	var node = endContainer;
 
 	// First apply the offset
-	if ( TEXT_NODE != this.endContainer.nodeType && this.endOffset > 0 )
-		node = node.childNodes.item( this.endOffset );
+	if ( TEXT_NODE != endContainer.nodeType && endOffset > 0 )
+		node = node.childNodes.item( endOffset );
 		
 	var foundOther = false;
 	var walker = new DOMWalker( node, true );
 	
 	// If we're at the start of a text node, need to walk backward even if that
 	// node contains text
-	if ( node == this.endContainer && this.endOffset == 0 )
+	if ( node == endContainer && endOffset == 0 )
 		walker.walk( );
 	do
 	{
 		var node = walker.node;
 		
 		// Make sure endpoints don't pass each other
-		if ( node == this.startContainer )
+		if ( node == startContainer )
 			foundOther = true;
 		else if ( foundOther )
 			return false;
@@ -148,16 +155,16 @@ TextRange.prototype.shrinkwrap = function( fskip )
 			// Fails is this is an all-whitespace node
 			if ( wslen != node.nodeValue.length )
 			{
-				if ( node == this.endContainer )
+				if ( node == endContainer )
 				{
 					// Fails if the offset is within leading whitespace
-					if ( wslen < this.endOffset )
+					if ( wslen < endOffset )
 						break;
 				}
 				else
 				{
-					this.endContainer = walker.node;
-					this.endOffset = node.nodeValue.length;
+					endContainer = walker.node;
+					endOffset = node.nodeValue.length;
 					break;
 				}
 			}
@@ -165,7 +172,9 @@ TextRange.prototype.shrinkwrap = function( fskip )
 	}
 	while ( walker.walk( ! fskip || ! fskip( node ), true ) );
 
-	return true;
+	return new TextRange( 
+		startContainer, startOffset,
+		endContainer, endOffset );
 }
 
 /**
@@ -174,15 +183,16 @@ TextRange.prototype.shrinkwrap = function( fskip )
  * of the document.  A better version would take advantage of the fact that highlights are
  * always shown in order.  Also, it suffers from the same inefficiency as textRangeToWordRange.
  */
-TextRange.prototype.fromWordRange = function( wordRange, fskip )
+TextRange.fromWordRange = function( wordRange, fskip )
 {
 	// These trace statements used to output the SequenceRange string for the word range,
 	// but with that code moved out and without a root parameter, that no longer works
 	trace( 'word-range', 'wordRangeToTextRange' );
 
 	// Walk to the start point
-	var walker = new WordPointWalker( wordRange.start.rel, fskip );
-	if ( ! walker.walkToPoint( wordRange.start ) )
+	var lineNode = wordRange.start.resolveLines( );
+	var walker = new WordPointWalker( lineNode, fskip );
+	if ( ! walker.walkToTarget( lineNode, wordRange.start.words, wordRange.start.chars ) )
 	{
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' );
@@ -192,7 +202,9 @@ TextRange.prototype.fromWordRange = function( wordRange, fskip )
 	var startPoint = new NodePoint( walker.currNode, walker.currChars );
 
 	// Walk to the end point
-	if ( ! walker.walkToPoint( wordRange.end ) )
+	lineNode = wordRange.end.resolveLines( );
+	trace( null, 'lineNode(end): ' + lineNode.tagName + '#' + lineNode.id );
+	if ( ! walker.walkToTarget( lineNode, wordRange.end.words, wordRange.end.chars ) )
 	{
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' );
@@ -201,10 +213,11 @@ TextRange.prototype.fromWordRange = function( wordRange, fskip )
 	}
 	var endPoint = new NodePoint( walker.currNode, walker.currChars );
 
-	this.startContainer = startPoint.container;
-	this.startOffset = startPoint.offset;
-	this.endContainer = endPoint.container;
-	this.endOffset = endPoint.offset;
+	var textRange = new TextRange( 
+		startPoint.container,
+		startPoint.offset,
+		endPoint.container,
+		endPoint.offset );
 
 	walker.destroy( );
 	walker = null;
@@ -212,6 +225,8 @@ TextRange.prototype.fromWordRange = function( wordRange, fskip )
 	startPoint = null;
 	endPoint.destroy( );
 	endPoint = null;
+	
+	return textRange;
 }
 
 TextRange.prototype.destroy = function( )
@@ -224,48 +239,138 @@ TextRange.prototype.destroy = function( )
 /** Represents a point in the document
  * The point is determined relative to a root, which should be the same for
  * all comparable points.  The position is located by finding a character offset
- * within a word counted relative to the beginning of rel, a block level element.
+ * within a line and word counted relative to the beginning of rel, a block 
+ * level element.
  */
-function WordPoint( )
+function WordPoint( rel, lines, words, chars )
 {
-	this.rel = null;
-	this.words = 0;
-	this.chars = 0;
+	this.rel = rel;
+	this.lines = lines;
+	this.words = words;
+	this.chars = chars;
+	this.lineNode = null;
 	return this;
+}
+
+/**
+ * Count the number of line breaks (caused by br elements) between a given
+ * node and a preceding breaking element (in document order)
+ * Returns [ rel, br, count ] where:
+ * block:  block-level element
+ * line:  closest preceding br or block-level
+ * count:  number of lines between block and line (starting from 1)
+ */
+WordPoint.countLines = function( root, node )
+{
+	if ( ELEMENT_NODE == node.nodeType && domutil.isBlockElement( node.tagName ) )
+		return [ node, 1 ];
+	
+	var lineCount = 1;
+	var lineNode = null;
+	var blockNode = null;
+	// Walk backwards until we hit a block-level node
+	var walker = new DOMWalker( node );
+	while ( walker.walk( true, true ) )
+	{
+		if ( walker.node == root )
+			break;
+		else if ( ELEMENT_NODE == walker.node.nodeType )
+		{
+			if ( domutil.isBlockElement( walker.node.tagName ) && walker.startTag )
+			{
+				blockNode = walker.node;
+				break;
+			}
+			else if ( ELEMENT_NODE == walker.node.nodeType && walker.startTag && 'br' == walker.node.tagName.toLowerCase( ) )
+			{
+				lineCount += 1;
+				lineNode = walker.node;
+			}
+		}
+	}
+	return {
+		block: blockNode,
+		line:  lineNode ? lineNode : walker.node,
+		count: lineCount 
+	};
+}
+
+WordPoint.prototype.countLines = function( root )
+{
+	return WordPoint.countLines( this.rel );
+}
+
+/**
+ * Find the node corresponding to the line count
+ * caches the result
+ * (which is why the immutability of WordPoint is so important)
+ */
+WordPoint.prototype.resolveLines = function( )
+{
+	var rel = this.rel;
+	var count = this.lines;
+	
+	if ( true || ! this.lineNode )
+	{
+		if ( ! count || 1 == count )
+			this.lineNode = rel;
+		// Use XPath support if available (as non-Javascript it should run faster)
+		else if ( rel.ownerDocument.evaluate )
+		{
+			var xpath = domutil.isXhtml( rel.ownerDocument )
+				? 'following::html:br[' + ( count - 1 ) + ']'
+				: 'following::br[ ' + ( count - 1 ) + ']';
+			var nodes = rel.ownerDocument.evaluate( xpath, rel, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
+			this.lineNode = nodes.iterateNext( );
+			trace( null, 'evaluate line node' );
+		}
+		else
+		{
+			var node = rel;
+			var walker = new DOMWalker( rel );
+			do
+			{
+				if ( count == 1 )
+					break;
+				else if ( ELEMENT_NODE == walker.node.nodeType && 'br' == walker.node.tagName.toLowerCase( ) )
+					count -= 1;
+			}
+			while ( walker.walk( true ) );
+			this.lineNode = walker.node;
+			trace( null, 'manually calculate line node' );
+		}
+	}
+	return this.lineNode;
 }
 
 WordPoint.prototype.toSequencePoint = function( root )
 {
-	var point = new SequencePoint( );
-	point.pathFromNode( root, this.rel );
-	point.words = this.words;
-	point.chars = this.chars;
-	return point;
+	return SequencePoint.fromNode(root, this.rel, this.lines, this.words, this.chars );
 }
 	
-WordPoint.prototype.fromSequencePoint = function( sequencePoint, root, fskip )
+WordPoint.fromSequencePoint = function( sequencePoint, root, fskip )
 {
-	this.rel = sequencePoint.getReferenceElement( root, fskip )
-	this.words = sequencePoint.words;
-	this.chars = sequencePoint.chars;
-	return null != this.rel;
+	var rel = sequencePoint.getReferenceElement( root, fskip );
+	return rel == null ? null : new WordPoint(
+		rel,
+		sequencePoint.lines,
+		sequencePoint.words,
+		sequencePoint.chars );
 }
 
 WordPoint.prototype.toXPathPoint = function( root )
 {
-	var point = new XPathPoint( );
-	point.pathFromNode( root, this.rel );
-	point.words = this.words;
-	point.chars = this.chars;
-	return point;
+	return XPathPoint.fromNode( root, this.rel, this.lines, this.words, this.chars );
 }
 
-WordPoint.prototype.fromXPathPoint = function( xpathPoint, root, fskip )
+WordPoint.fromXPathPoint = function( xpathPoint, root, fskip )
 {
-	this.rel = xpathPoint.getReferenceElement( root, fskip );
-	this.words = xpathPoint.words;
-	this.chars = xpathPoint.chars;
-	return null != this.rel;
+	var rel = xpathPoint.getReferenceElement( root, fskip );
+	return rel == null ? null : new WordPoint(
+		rel,
+		xpathPoint.lines,
+		xpathPoint.words,
+		xpathPoint.chars );
 }
 
 /*
@@ -274,7 +379,10 @@ WordPoint.prototype.fromXPathPoint = function( xpathPoint, root, fskip )
  */
 WordPoint.prototype.equals = function( point2 )
 {
-	return this.rel == point2.rel && this.words == point2.words && this.chars == point2.chars;
+	return this.rel == point2.rel
+		&& this.lines == point2.lines
+		&& this.words == point2.words
+		&& this.chars == point2.chars;
 }
 	
 WordPoint.prototype.destroy = function( )
@@ -283,11 +391,10 @@ WordPoint.prototype.destroy = function( )
 	this.rel = null;
 }
 
-function WordRange()
+function WordRange( start, end )
 {
-	this.start = null;
-	this.end = null;
-	return this;
+	this.start = start;
+	this.end = end;
 }
 
 /**
@@ -298,24 +405,26 @@ function WordRange()
  * fskip - a function that returns true when an element should not be counted
  * Returns:  A new WordRange object.
  */
-WordRange.prototype.fromTextRange = function( textRange, root, fskip )
+WordRange.fromTextRange = function( textRange, root, fskip )
 {
-	var rel = domutil.closestPrecedingBreakingElement( textRange.startContainer );
-	this.start = nodePointToWordPoint( textRange.startContainer, textRange.startOffset, rel, true, fskip );
+//	var rel = domutil.closestPrecedingBreakingElement( textRange.startContainer );
+	var start = WordPoint.fromNodePoint( textRange.startContainer, textRange.startOffset, root, true, fskip );
 
-	rel = domutil.closestPrecedingBreakingElement( textRange.endContainer );
-	this.end = nodePointToWordPoint( textRange.endContainer, textRange.endOffset, rel, false, fskip );
+//	rel = domutil.closestPrecedingBreakingElement( textRange.endContainer );
+	var end = WordPoint.fromNodePoint( textRange.endContainer, textRange.endOffset, root, false, fskip );
 	
 	// If there was a problem, free memory
-	if ( null == this.start || null == this.end )
+	if ( null == start || null == end )
 	{
-		if ( this.start )
-			this.start.destroy( );
-		if ( this.end )
-			this.end.destroy( );
+		if ( start )
+			start.destroy( );
+		if ( end )
+			end.destroy( );
 		// TODO: a proper exception here or above
 		throw "WordRange.fromTextRange failed";
 	}
+	
+	return new WordRange( start, end );
 }
 
 /**
@@ -323,24 +432,22 @@ WordRange.prototype.fromTextRange = function( textRange, root, fskip )
  */
 WordRange.prototype.toSequenceRange = function( root )
 {
-	var sequenceRange = new SequenceRange( );
-	sequenceRange.start = this.start.toSequencePoint( root );
-	sequenceRange.end = this.end.toSequencePoint( root );
-	return sequenceRange.start && sequenceRange.end ? sequenceRange : null;
+	var start = this.start.toSequencePoint( root );
+	var end = this.end.toSequencePoint( root );
+	return start && end ? new SequenceRange( start, end ) : null;
 }
 
 /**
  * Convert an SequenceRange to a WordRange
  * Returns false if the start and/or end poin could not be resolved
  */
-WordRange.prototype.fromSequenceRange = function( sequenceRange, root, fskip )
+WordRange.fromSequenceRange = function( sequenceRange, root, fskip )
 {
-	var r = true;
-	this.start = new WordPoint( );
-	r = r && this.start.fromSequencePoint( sequenceRange.start, root, fskip );
-	this.end = new WordPoint( );
-	r = r && this.end.fromSequencePoint( sequenceRange.end, root, fskip );
-	return r;
+	var start = WordPoint.fromSequencePoint( sequenceRange.start, root, fskip );
+	var end = WordPoint.fromSequencePoint( sequenceRange.end, root, fskip );
+	return start && end
+		? new WordRange( start, end )
+		: null;
 }
 
 /**
@@ -348,9 +455,9 @@ WordRange.prototype.fromSequenceRange = function( sequenceRange, root, fskip )
  */
 WordRange.prototype.toXPathRange = function( root )
 {
-	var xpathRange = new XPathRange( );
-	xpathRange.start = this.start.toXPathPoint( root );
-	xpathRange.end = this.end.toXPathPoint( root );
+	var xpathRange = new XPathRange( 
+		this.start.toXPathPoint( root ),
+		this.end.toXPathPoint( root ) );
 	return xpathRange;
 }
 
@@ -358,14 +465,11 @@ WordRange.prototype.toXPathRange = function( root )
  * Convert an XPathRange to a WordRange
  * Returns false if the start and/or end poin could not be resolved
  */
-WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
+WordRange.fromXPathRange = function( xpathRange, root, fskip )
 {
-	var r = true;
-	this.start = new WordPoint( );
-	r = r && this.start.fromXPathPoint( xpathRange.start, root, fskip );
-	this.end = new WordPoint( );
-	r = r && this.end.fromXPathPoint( xpathRange.end, root, fskip );
-	return r;
+	var start = WordPoint.fromXPathPoint( xpathRange.start, root, fskip );
+	var end = WordPoint.fromXPathPoint( xpathRange.end, root, fskip );
+	return start && end ? new WordRange( start, end ) : null;
 }
 
 
@@ -377,13 +481,20 @@ WordRange.prototype.fromXPathRange = function( xpathRange, root, fskip )
  */
 WordRange.prototype.partition = function( fskip )
 {
-	var walker = new WordPointWalker( this.start.rel, fskip );
-	walker.walkToPoint( this.start );
+	var startNode = this.start.resolveLines( );
+	
+	var walker = new WordPointWalker( startNode, fskip );
+	var targetRel = this.start.resolveLines( );
+	trace( null, 'Partition from ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.start.words + ' ' + this.start.chars );
+	walker.walkToTarget( targetRel, this.start.words, this.start.chars );
 	var initialOffset = walker.currChars;
 	var initialRel = walker.currNode;
+	trace( null, 'initialOffset=' + initialOffset );
 	
 	var highlightRanges = new Array();
-	walker.setPoint( this.end );
+	targetRel = this.end.resolveLines( );
+	trace( null, '-> partition to ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.end.words + ' ' + this.end.chars );
+	walker.setTarget( targetRel, this.end.words, this.end.chars );
 	var rangeNum = 0;
 	var done = false;
 	var actual = '';	// actual quote text
@@ -397,6 +508,8 @@ WordRange.prototype.partition = function( fskip )
 					walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += t.substring( initialOffset, walker.currChars );
+			trace( null, 'Current node text: ' + t );
+			trace( null, 'Add text: ' + t.substring( initialOffset, walker.currChars ) + ' (' + initialOffset + ' + ' + walker.currChars + ')' );
 		}
 		else
 		{
@@ -405,6 +518,8 @@ WordRange.prototype.partition = function( fskip )
 				walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += ( walker.breakBefore ? ' ' : '' ) + t.substring( 0, walker.currChars );
+			trace( null, 'Current node text: ' + t );
+			trace( null, 'Add text: ' + t.substring( 0, walker.currChars ) + ' (0+ ' + walker.currChars + ')' );
 		}
 		rangeNum += 1;
 	}
@@ -446,12 +561,17 @@ WordRange.prototype.destroy = function( )
  * are not considered word separators, but block-level elements are.
  * fallBack - if position ends following whitespace, count an extra word?
  */
-function nodePointToWordPoint( container, offset, rel, fallForward, fskip )
+WordPoint.fromNodePoint = function( container, offset, root, fallForward, fskip )
 {
-	trace( 'word-range', 'nodePointToWordPoint( ' + container + ',' + offset + ',' + rel + ')' );
-	var state = new NodeToWordPoint_Machine( container, offset, rel, fallForward );
-	RecurseOnElement( state, rel, fskip );
-	var node = rel;
+	trace( 'word-range', 'WordPoint.fromNodePoint( ' + container + ',' + offset + ')' );
+
+	// The container could be inline.  Find its line count and the block-level rel
+	var x = WordPoint.countLines( root, container );
+	trace( null, 'x.line: ' + x.line + '#' + x.line.id );
+	
+	var state = new NodeToWordPoint_Machine( container, offset, x.line, fallForward );
+	RecurseOnElement( state, x.line, fskip );
+	var node = x.line;
 	while ( STATE_DONE != state.state )
 	{
 		while ( ! node.nextSibling )
@@ -464,9 +584,10 @@ function nodePointToWordPoint( container, offset, rel, fallForward, fskip )
 		node = node.nextSibling;
 		RecurseOnElement( state, node, fskip )
 	}
-	var point = state.getPoint( );
 	state.destroy( );
-	return point;
+	
+	trace( null, 'Return new WordPoint' );
+	return new WordPoint( x.block, x.count, state.words, state.chars );
 }
 
 NodeToWordPoint_Machine.prototype.trace = function( input )
@@ -525,16 +646,6 @@ NodeToWordPoint_Machine.prototype.destroy = function( )
 	this.container = null;
 }
 
-
-/** Produce a point based on the state of a NodeToWordPoint_Machine */
-NodeToWordPoint_Machine.prototype.getPoint = function( )
-{
-	var point = new WordPoint( );
-	point.rel = this.container;
-	point.words = this.words;
-	point.chars = this.chars;
-	return point;
-}
 
 /** Callback when a start element is encountered */
 NodeToWordPoint_Machine.prototype.startElement =
@@ -757,8 +868,9 @@ NodePoint.prototype.destroy = function()
  */
 function wordPointToNodePoint( root, wordPoint, fskip )
 {
-	var walker = new WordPointWalker( wordPoint.rel, fskip );
-	if ( ! walker.walkToPoint( wordPoint ) )
+	var node = wordPoint.resolveLines( );
+	var walker = new WordPointWalker( node, fskip );
+	if ( ! walker.walkToTarget( wordPoint.resolveLines( ), wordPoint.words, wordPoint.chars ) )
 	{
 		// Using document.documentElement is a slow hack
 		trace( 'word-range', 'Unable to find point ' + wordPoint.toString( document.documentElement ) );
@@ -776,8 +888,12 @@ function WordPointWalker( rel, fskip )
 	this.walker = new DOMWalker( rel );
 	// Constant:
 	this.fskip = fskip;		// function for skipping over elements
+
 	// Changed only externally:
-	this.targetPoint = null;	// the target point to walk to
+	this.targetRel = null;
+	this.targetWord = 0;
+	this.targetChar = 0;
+	
 	// State info:
 	this.currNode = rel;	// the current node while walking
 	this.currChars = 0;		// (was charOffset) chars inside currNode
@@ -799,20 +915,20 @@ function WordPointWalker( rel, fskip )
 /** Set a destination point for the walk
  * The container for the destination point must be the current node, or it must
  * be ahead in the document. */
-WordPointWalker.prototype.setPoint = function( point )
+WordPointWalker.prototype.setTarget = function( rel, words, chars )
 {
-	trace( 'WordPointWalker', ' WordPointWalker setTarget(' + point.words + '.' + point.chars + ')' );
-	if ( this.currNode == point.rel || this.targetPoint.rel == point.rel )
+	trace( 'WordPointWalker', ' WordPointWalker setTarget(' + rel.tagName + ( rel.id ? '#' + rel.id : '' ) + ', ' + words + ', ' + chars + ')' );
+	if ( this.currNode == rel || rel == this.targetRel )	// because node might not be an element
 	{
 		this.inTargetRel = true;
-		if ( this.targetWords == point.words )
+		if ( this.targetWords == words )
 		{
 			trace( 'WordPointWalker', ' WordPointWalker - start in target word' );
 			this.inTargetWord = true;
 		}
 		else
 		{
-		trace( 'WordPointWalker', ' WordPointWalker - start in target node' );
+			trace( 'WordPointWalker', ' WordPointWalker - start in target node (' + this.targetWords + ' != ' + words + ')' );
 			this.inTargetWord = false;
 			this.targetWordChar = 0;
 		}
@@ -823,12 +939,14 @@ WordPointWalker.prototype.setPoint = function( point )
 		this.targetWords = this.targetWordChar = 0;
 	}
 	// mustn't do this before some of the above tests
-	this.targetPoint = point;
+	this.targetRel = rel;
+	this.targetWord = words;
+	this.targetChar = chars;
 }
 
-WordPointWalker.prototype.walkToPoint = function( point )
+WordPointWalker.prototype.walkToTarget = function( rel, words, chars )
 {
-	this.setPoint( point );
+	this.setTarget( rel, words, chars );
 	while ( ! this.walk( ) )
 		;
 	return ! this.eof;
@@ -860,7 +978,7 @@ WordPointWalker.prototype.walk = function()
 			this.endTag = this.walker.endTag;
 			this.currChars = 0;
 			this.atNodeEnd = false;
-			if ( this.currNode == this.targetPoint.rel )
+			if ( this.currNode == this.targetRel )
 			{
 				this.inTargetRel = true;
 				if ( ! this.walker.endTag )
@@ -871,10 +989,10 @@ WordPointWalker.prototype.walk = function()
 			if ( ELEMENT_NODE == this.currNode.nodeType && domutil.isBreakingElement( this.currNode.tagName ) )
 				this.breakBefore = true;
 			trace( 'WordPointWalker', ' WordPointWalker in <' + this.currNode.tagName + '>'
-				+ ( this.currNode == this.targetPoint.rel && ! this.endTag ? ' (target rel)' : '' ) );
+				+ ( this.currNode == this.targetRel && ! this.endTag ? ' (target rel)' : '' ) );
 		}
 		
-			// Only if we're past the target rel should we look inside the text
+		// Only if we're past the target rel should we look inside the text
 		if ( this.inTargetRel )
 		{
 			// All words are in text elements
@@ -892,10 +1010,10 @@ WordPointWalker.prototype.walk = function()
 						// inword remains true even crossing whitespace boundaries now
 						
 						// See if we can get all the characters we need
-						if ( s.length - this.currChars >= this.targetPoint.chars - this.targetWordChars )
+						if ( s.length - this.currChars >= this.targetChar - this.targetWordChars )
 						{
-							this.currChars += this.targetPoint.chars - this.targetWordChars;
-							this.targetWordChars = this.targetPoint.chars;
+							this.currChars += this.targetChar - this.targetWordChars;
+							this.targetWordChars = this.targetChar;
 							trace( 'WordPointWalker', ' WordWalker DONE(2) at ' + this.targetWords + '/' + this.currChars );
 							return true;
 						}
@@ -957,13 +1075,13 @@ WordPointWalker.prototype.walk = function()
 					this.inWord = true;
 					
 					// Is this the target word?
-					if ( this.targetWords == this.targetPoint.words )
+					if ( this.targetWords == this.targetWord )
 					{
 						// OK, just grab the characters
-						if ( s.length - this.currChars >= this.targetPoint.chars )
+						if ( s.length - this.currChars >= this.targetChar )
 						{
-							this.targetWordChars = this.targetPoint.chars;
-							this.currChars += this.targetPoint.chars;
+							this.targetWordChars = this.targetChar;
+							this.currChars += this.targetChar;
 							trace( 'WordPointWalker', ' WordWalker DONE(6) at ' + this.targetWords + '/' + this.currChars );
 							return true;
 						}
@@ -1033,7 +1151,6 @@ WordPointWalker.prototype.destroy = function()
 	this.currNode = null;
 	this.walker.destroy();
 	this.walker = null;
-	this.targetPoint = null;	// not owned - don't destroy
 }
 
 /**

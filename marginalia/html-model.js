@@ -27,7 +27,7 @@ HTML_CONTENT_MODEL = {
 'big': { model: 'inline', content: {  '%inline': 1} },
 'blockquote': { model: 'block', content: {  '%flow': 1} },
 'body': { model: 'block', content: {  '%flow': 1, 'ins': 1, 'del': 1} },
-'br': { model: 'block', content: { } },
+'br': { model: 'inline', content: { } },
 'button': { model: 'block', content: {  '%flow': 1, 'a': 1, '%formctrl': 1, 'form': 1, 'isindex': 1, 'fieldset': 1, 'iframe': 1} },
 'caption': { model: 'block', content: {  '%inline': 1} },
 'center': { model: 'unknown', content: {  '%flow': 1} },

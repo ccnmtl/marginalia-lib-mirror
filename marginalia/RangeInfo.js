@@ -72,9 +72,9 @@ RangeInfo.prototype.fromXml = function( blockElement )
 			{
 				var format = node.getAttribute( 'format' );
 				if ( 'xpath' == format )
-					this.xpathRange = new XPathRange( domutil.getNodeText( node ) );
+					this.xpathRange = XPathRange.fromString( domutil.getNodeText( node ) );
 				else if ( 'sequence' == format )
-					this.sequenceRange = new SequenceRange( domutil.getNodeText( node ) );
+					this.sequenceRange = SequenceRange.fromString( domutil.getNodeText( node ) );
 			}
 			else if ( 'user' == node.tagName )
 			{

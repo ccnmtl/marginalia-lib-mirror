@@ -60,7 +60,7 @@ function createSimpleAnnotation( id, sequence, quote )
 {
 	var annotation = new Annotation( );
 	annotation.id = id;
-	annotation.sequenceRange = new SequenceRange( sequence );
+	annotation.sequenceRange = SequenceRange.fromString( sequence );
 	annotation.quote = quote;
 	return annotation
 }
@@ -75,17 +75,15 @@ function createEditAnnotation( id, sequence, quote, insert )
 
 function createHighlightRange( sequence )
 {
-	var sequenceRange = new SequenceRange( );
-	sequenceRange.fromString( sequence );
-	var wordRange = new WordRange( );
-	wordRange.fromSequenceRange( sequenceRange, post.contentElement, null );
+	var sequenceRange = new SequenceRange.fromString( sequence );
+	var wordRange = WordRange.fromSequenceRange( sequenceRange, post.contentElement, null );
 	return wordRange;
 }
 
 function testHighlightSimple( )
 {
 	var quote = 'brillig';
-	var annotation = createSimpleAnnotation( 1, '/1/2.0;/1/2.7', quote + 'x' );
+	var annotation = createSimpleAnnotation( 1, '1/1.2.0;1/1.2.7', quote + 'x' );
 	assertFalse( post.showHighlight( marginalia, annotation ) );
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );
@@ -102,7 +100,7 @@ function testHighlightSimple( )
 }*/
 function testHighlightOverlap( )
 {
-	var annotation = createSimpleAnnotation( 2, '/2/2.0;/2/2.7', 'brillig' );
+	var annotation = createSimpleAnnotation( 2, '2/1.2.0;2/1.2.7', 'brillig' ); //( 2, '/2/2.0;/2/2.7', 'brillig' );
 	assertTrue( 'annotation', post.showHighlight( marginalia, annotation ) );
 	inform( 'Paragraph with annotation', htmlencode( document.getElementById( 'p2' ).innerHTML ) );
 }
@@ -110,7 +108,7 @@ function testHighlightOverlap( )
 function testHighlightSpanBlock( )
 {
 	var quote = 'hand: Lo';
-	var annotation = createSimpleAnnotation( 4, '/4/1/7.0;/4/2/1.2', quote + '.' );
+	var annotation = createSimpleAnnotation( 4, '4.1/1.7.0;4.2/1.1.2', quote + '.' ); // ( 4, '/4/1/7.0;/4/2/1.2', quote + '.' );
 	assertFalse( post.showHighlight( marginalia, annotation ) );
 	annotation.quote = quote;
 	assertTrue( post.showHighlight( marginalia, annotation ) );

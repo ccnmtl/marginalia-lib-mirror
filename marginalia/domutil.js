@@ -60,6 +60,19 @@ instanceOf: function( obj, type )
 },
 
 
+parseIsoDate: function( s )
+{
+	var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
+	if ( null == matches )
+		return null;
+	else
+	{
+		// I haven't figured out how to deal with the time zone, so it assumes that server
+		// time and local time are the same - which is rather bad.
+		return new Date( matches[1], matches[2]-1, matches[3], matches[4], matches[5] );
+	}
+},
+
 // W3C/IE event handling:
 
 /** Get an event */
@@ -99,14 +112,22 @@ htmlDisplayModel: function( tagName )
 	return 'unknown';
 },
 
+/**
+ * Determine whether a given HTML element is block-level (as opposed to inline,
+ * although there are some elements, such as script, that are neither)
+ */
+isBlockElement: function( tagName )
+{
+	return 'block' == domutil.htmlDisplayModel( tagName );
+},
+
 /*
  * Determine whether a given HTML element is breaking - i.e., whether the element boundary
- * effectively adds whitespace (inline elements are not breaking;  block, table cell, 
- * and similar elements are)
+ * effectively adds whitespace.  All block-level elements are breaking.  So is <br>.
  */
 isBreakingElement: function( tagName )
 {
-	return 'block' == domutil.htmlDisplayModel( tagName );
+	return 'block' == domutil.htmlDisplayModel( tagName ) || 'br' == tagName.toLowerCase( );
 },
 
 /*
@@ -276,7 +297,7 @@ childByTagClass: function( node, tagName, className, fskip )
 		{
 			for ( var i = 0;  i < node.childNodes.length;  ++i )
 			{
-				var child = domutil.childByTagClass( node.childNodes[ i ], tagName, className );
+				var child = domutil.childByTagClass( node.childNodes[ i ], tagName, className, fskip );
 				if ( child != null )
 					return child;
 			}
@@ -344,7 +365,7 @@ childrenByTagClass: function( node, tagName, className, matches, fskip )
 			}
 		}
 		for ( var i = 0;  i < node.childNodes.length;  ++i )
-			domutil.childrenByTagClass( node.childNodes[ i ], tagName, className, matches );
+			domutil.childrenByTagClass( node.childNodes[ i ], tagName, className, matches, fskip );
 	}
 	return matches;
 },
@@ -467,26 +488,43 @@ getBlockParent: function( node, root )
 	return root;
 },
 
+/**
+ * Find the closest preceding element matching some characteristic
+ */
+closestPrecedingMatchingElement: function( node, f )
+{
+	var walker = new DOMWalker( node );
+	while ( walker.walk( true, true ) )
+	{
+		if ( ELEMENT_NODE == walker.node.nodeType && f( walker.node, walker.startTag ) )
+		{
+			node = walker.node;
+			walker.destroy();
+			return node;
+		}
+	}
+	walker.destroy( );
+	return null;
+},
+
 /*
- * Find the closest preceding breaking element *in document order*
+ * Find the start of the closest preceding breaking element *in document order*
  * This is not the same as the closest preceding element at the same depth as the passed element
  * E.g., for <a> <b>...</b> </a> <rel/>, the closest preceding element for rel is b - not a
  */
 closestPrecedingBreakingElement: function( rel )
 {
-	var walker = new DOMWalker( rel );
-	while ( walker.walk( true, true ) )
-	{
-		if ( ELEMENT_NODE == walker.node.nodeType && domutil.isBreakingElement( walker.node.tagName )
-			&& walker.startTag )
-		{
-			rel = walker.node;
-			walker.destroy();
-			return rel;
-		}
-	}
-	walker.destroy( );
-	return null;
+	return domutil.closestPrecedingMatchingElement( rel, function( node, isStartTag ) {
+		return isStartTag && domutil.isBreakingElement( node.tagName ); } );
+},
+
+/**
+ * Find the start of the closest preceding block-level element in document order
+ */
+closestPrecedingBlockElement: function( rel )
+{
+	return domutil.closestPrecedingMatchingElement( rel, function( node, isStartTag ) {
+		return isStartTag && domutil.isBlockElement( node.tagName ); } );
 },
 
 blockPathToNode: function( root, path, fskip )
@@ -494,7 +532,7 @@ blockPathToNode: function( root, path, fskip )
 	var node;
 	// Locate the rel node based on the path
 	// The simple case:  rel is root
-	if ( '/' == path || '' == path )
+	if ( '' == path )
 		node = root;
 	else
 	{
@@ -502,15 +540,15 @@ blockPathToNode: function( root, path, fskip )
 		/* It would be well worth optimizing this by caching a list of jump points,
 		 * or adding a breaknum attribute usable by xpath (e.g. /*[@breaknum=4]) */
 		node = root;
-		nodes = path.split( '/' );
-		for ( var i = 1;  i < nodes.length;  ++i )
+		nodes = path.split( '.' );
+		for ( var i = 0;  i < nodes.length;  ++i )
 		{
 			var count = Number( nodes[ i ] );
 			for ( node = node.firstChild;  null != node;  node = node.nextSibling )
 			{
 				if ( ! fskip || ! fskip( node ) )
 				{
-					if ( ELEMENT_NODE == node.nodeType && domutil.isBreakingElement( node.tagName ) )
+					if ( ELEMENT_NODE == node.nodeType && domutil.isBlockElement( node.tagName ) )
 					{
 						count -= 1;
 						if ( 0 == count )

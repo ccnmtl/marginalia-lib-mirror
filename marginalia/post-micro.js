@@ -53,7 +53,7 @@ function PostPageInfo( doc, baseUrl )
 
 PostPageInfo.prototype.IndexPosts = function( root )
 {
-	var posts = domutil.childrenByTagClass( root, null, PM_POST_CLASS );
+	var posts = domutil.childrenByTagClass( root, null, PM_POST_CLASS, null, _skipPostContent );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
@@ -138,7 +138,7 @@ function PostMicro( postInfo, element )
 			this.date = null;
 		else
 		{
-			var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})[+-](\d{4})/ );
+			var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
 			if ( null == matches )
 				this.date = null;
 			else
@@ -156,7 +156,7 @@ function PostMicro( postInfo, element )
 	
 	// The node containing the content
 	// Any offsets (e.g. as used by annotations) are from the start of this node's children
-	this.contentElement = domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
+	this.contentElement = domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS );
 
 	return this;
 }
@@ -179,7 +179,7 @@ PostMicro.prototype.getElement = function( )
  */
 PostMicro.prototype.getContentElement = function( )
 {
-	return domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS, _skipPostContent );
+	return domutil.childByTagClass( this.element, null, PM_CONTENT_CLASS );
 }
 
 
