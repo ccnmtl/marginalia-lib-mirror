@@ -424,8 +424,8 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					// Now insert before beforeNote
 					post.addAnnotation( marginalia, annotation, nextNode );
 					
-					if ( annotation.getUserId( ) == this.username )
-						this.patchAnnotation( annotation, post );
+					if ( annotation.getUserId( ) == marginalia.username )
+						marginalia.patchAnnotation( annotation, post );
 				}
 			}
 			
@@ -460,7 +460,8 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 Marginalia.prototype.patchAnnotation = function( annotation, post )
 {
 	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
-	if ( sequenceRange.formatVersion( ) != 'lines' )
+	var format = sequenceRange.formatVersion( );
+	if ( format != 'lines' )
 	{
 		// #geof# need code to update even older range formats
 		
@@ -471,14 +472,16 @@ Marginalia.prototype.patchAnnotation = function( annotation, post )
 		{
 			// Determine the correct sequence range
 			var wordRange = post.wordRangeFromAnnotation( this, annotation );
+			var textRange = TextRange.fromWordRange( wordRange, this.skipContent );
+			wordRange = WordRange.fromTextRange( textRange, post.contentElement, this.skipContent );
 			var sequenceRange = wordRange.toSequenceRange( post.contentElement );
+			console.log( 'New sequence range: ' + sequencRange.toString() );
 			
 			// Don't update unless there has been a change
 			unchanged = sequenceRange == annotation.getRange( SEQUENCE_RANGE );
 			if  (! unchanged )
 			{
 				annotation.setRange( SEQUENCE_RANGE, sequenceRange );
-				annotation.setVersion( Marginalia.VERSION );
 				marginalia.updateAnnotation( annotation, null );
 		
 				// Replace the editable note display
@@ -497,7 +500,13 @@ Marginalia.prototype.patchAnnotation = function( annotation, post )
 		// future attempts to patch.
 		if ( unchanged )
 		{
-			annotation.setVersion( Marginalia.VERSION );
+			if ( format != 'lines' )
+			{
+				sequenceRange = new SequenceRange(
+					new SequencePoint( sequenceRange.start.path, 1, sequenceRange.start.words, sequenceRange.start.chars ),
+					new SequencePoint( sequenceRange.end.path, 1, sequenceRange.end.words, sequenceRange.end.chars ) );
+				annotation.setRange( SEQUENCE_RANGE, sequenceRange );
+			}
 			marginalia.updateAnnotation( annotation, null );
 		}
 	}

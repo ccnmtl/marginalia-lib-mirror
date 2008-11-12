@@ -141,7 +141,6 @@ SequenceRange.prototype.collapsedToEnd = function( )
 		this.notNormalized );
 }
 
-
 function SequencePoint( path, lines, words, chars )
 {
 	if ( lines )
@@ -181,13 +180,15 @@ function SequencePoint( path, lines, words, chars )
 //			this.path = sides[ 1 ].split( '.' );
 			if ( sides.length == 2 )
 			{
-				parts = sides[ 1 ].match( /^(\d+)\.(\d+)\.(\d+)$/ );
-				this.lines = Number( parts[ 1 ] );
-				this.words = Number( parts[ 2 ] );
-				this.chars = Number( parts[ 3 ] );
+				parts = sides[ 1 ].match( /^(\d*)\.(\d*)\.(\d*)$/ );
+				this.lines = '' == parts[ 1 ] ? null : Number( parts[ 1 ] );
+				this.words = '' == parts[ 2 ] ? null : Number( parts[ 2 ] );
+				this.chars = '' == parts[ 3 ] ? null : Number( parts[ 3 ] );
+				if ( this.lines == null && this.words != null )
+					this.noLines = true;
 			}
 			else
-				this.lines = this.words = this.chars = 0;
+				this.lines = this.words = this.chars = null;
 		}
 	}
 }
