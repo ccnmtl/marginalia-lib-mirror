@@ -317,7 +317,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	} );
 	var titleText = null;
 
-	if ( ! params.quoteFound || ! annotation.getRange( SEQUENCE_RANGE ) )
+	if ( ! params.quoteFound || ! annotation.getSequenceRange( ) )
 		titleText = getLocalized( 'quote not found' ) + ': \n"' + annotation.getQuote() + '"';
 	else if ( params.keyword )
 		titleText = params.keyword.description;
@@ -593,10 +593,10 @@ PostMicro.prototype.getNoteAlignElement = function( annotation )
 	// Try to find the matching highlight element
 	var alignElement = domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
 	// If there is no matching highlight element, pick the paragraph.  Prefer XPath range representation.
-	if ( null == alignElement && annotation.getRange( XPATH_RANGE ) )
-		alignElement = annotation.getRange( XPATH_RANGE ).start.getReferenceElement( this.contentElement );
-	if ( null == alignElement && annotation.getRange( SEQUENCE_RANGE ) )
-		alignElement = annotation.getRange( SEQUENCE_RANGE ).start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.getXPathRange( ) )
+		alignElement = annotation.getXPathRange( ).start.getReferenceElement( this.contentElement );
+	if ( null == alignElement && annotation.getSequenceRange( ) )
+		alignElement = annotation.getSequenceRange( ).start.getReferenceElement( this.contentElement );
 	return alignElement;
 }
 

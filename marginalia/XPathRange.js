@@ -40,6 +40,15 @@ function XPathRange( start, end )
 	this.end = end;
 }
 
+/**
+ * Can XPath points be resolved?
+ * Yes on Firefox, no on IE.
+ */
+XPathRange.canResolve = function( root )
+{
+	return root.ownerDocument.evaluate ? true : false;
+}
+
 XPathRange.fromString = function( path )
 {
 	var parts = path.split( ';' );
@@ -72,6 +81,11 @@ XPathRange.prototype.collapsedToEnd = function( )
 	return new XPathRange(
 		this.end,
 		this.end );
+}
+
+XPathRange.prototype.needsUpdate = function( )
+{
+	return this.start.noLines || this.end.noLines;
 }
 
 
@@ -111,6 +125,7 @@ function XPathPoint( path, lines, words, chars )
 			}
 		}
 	}
+	this.noLines = this.words != null && this.lines == null;
 }
 
 XPathPoint.prototype.equals = function( point2 )
@@ -231,6 +246,8 @@ XPathPoint.prototype.getReferenceElement = function( root )
 		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 		rel = rel.iterateNext( );
 	}
+	else
+		return null;
 	/*
 	// Internet Explorer's xpath support might look like the following if it existed for
 	// HTML document nodes (duh):

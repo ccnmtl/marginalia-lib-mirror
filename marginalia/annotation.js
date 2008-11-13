@@ -40,10 +40,6 @@ AN_EDIT_NOTE_FREEFORM = 'note freeform';
 AN_EDIT_NOTE_KEYWORDS = 'note keywords';
 AN_EDIT_LINK = 'link';
 
-// Range formats
-SEQUENCE_RANGE = 'sequence';
-XPATH_RANGE = 'xpath';
-
 
 /* ************************ Annotation Class ************************ */
 /*
@@ -119,54 +115,39 @@ Annotation.prototype.setUrl = function(url)
 Annotation.prototype.getPreferredRangeType = function( )
 {
 	if ( this.xpathRange )
-		return XPATH_RANGE;
+		return 'xpath';
 	else if ( this.sequenceRange )
-		return SEQUENCE_RANGE;
+		return 'sequence';
 	else
 		return null;
 }
 
-Annotation.prototype.getRange = function( format )
+Annotation.prototype.getSequenceRange = function( )
 {
-	if ( SEQUENCE_RANGE == format )
-		return this.sequenceRange;
-	else if ( XPATH_RANGE == format )
-		return this.xpathRange;
-	else
-		throw "Annotation.setRange:  Unknown range format";
+	return this.sequenceRange;
 }
 
-Annotation.prototype.setRange = function( format, range )
+Annotation.prototype.getXPathRange = function( )
 {
-	if ( SEQUENCE_RANGE == format )
+	return this.xpathRange;
+}
+
+Annotation.prototype.setSequenceRange = function( range )
+{
+	if ( this.sequenceRange == null && range != null || ! this.sequenceRange.equals( range ) )
 	{
-		if ( this.sequenceRange == null && range != null || ! this.sequenceRange.equals( range ) )
-		{
-			this.sequenceRange = range;
-			this.changes[ 'range/' + SEQUENCE_RANGE ] = true;
-		}
+		this.sequenceRange = range;
+		this.changes[ 'range/sequence' ] = true;
 	}
-	else if ( 'xpath' == format )
+}
+
+Annotation.prototype.setXPathRange = function( range )
+{
+	if ( this.xpathRange == null && range != null || ! this.xpathRange.equals( range ) )
 	{
-		if ( this.xpathRange == null && range != null || ! this.xpathRange.equals( range ) )
-		{
-			this.xpathRange = range;
-			this.changes[ 'range/' + XPATH_RANGE ] = true;
-		}
+		this.xpathRange = range;
+		this.changes[ 'range/xpath' ] = true;
 	}
-	else
-		throw "Annotation.setRange:  Unknown range format";
-}
-
-Annotation.prototype.getVersion = function( )
-{
-	return this.version ? this.version : 1;
-}
-
-Annotation.prototype.setVersion = function( version )
-{
-	this.version = version;
-	this.changes[ 'version' ] = true;
 }
 
 Annotation.prototype.getId = function( )
@@ -335,8 +316,8 @@ function annotationFromTextRange( marginalia, post, textRange )
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation( post.url );
-	annotation.setRange( SEQUENCE_RANGE, textRange.toSequenceRange( ) );
-	annotation.setRange( XPATH_RANGE, textRange.toXPathRange( ) );
+	annotation.setSequenceRange( textRange.toSequenceRange( ) );
+	annotation.setXPathRange( textRange.toXPathRange( ) );
 	// Can't just call toString() to grab the quote from the text range, because that would
 	// include any smart copy text.
 	annotation.setQuote( getTextRangeContent( textRange, marginalia.skipContent ) );
@@ -431,9 +412,9 @@ Annotation.prototype.fromAtom = function( entry )
 			var format = field.getAttribute( 'format' );
 			// These ranges may throw parse errors
 			if ( 'sequence' == format )
-				this.setRange( format, SequenceRange.fromString( domutil.getNodeText( field ) ) );
+				this.setSequenceRange( SequenceRange.fromString( domutil.getNodeText( field ) ) );
 			else if ( 'xpath' == format )
-				this.setRange( format, XPathRange.fromString( domutil.getNodeText( field ) ) );
+				this.setXPathRange( XPathRange.fromString( domutil.getNodeText( field ) ) );
 			// ignore unknown formats
 		}
 		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )

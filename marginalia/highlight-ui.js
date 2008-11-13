@@ -31,16 +31,11 @@ AN_HIGHLIGHT_CLASS = 'annotation';// class given to em nodes for highlighting
 PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 {
 	var wordRange;
-	if ( annotation.getRange( XPATH_RANGE ) && this.contentElement.ownerDocument.evaluate)
-	{
-		// the extra test above is because IE doesn't support xpath
-		wordRange = WordRange.fromXPathRange( annotation.getRange( XPATH_RANGE ), this.contentElement, marginalia.skipContent );
-	}
-	else if ( annotation.getRange( SEQUENCE_RANGE ) )
-	{
-		wordRange = WordRange.fromSequenceRange( annotation.getRange( SEQUENCE_RANGE ), this.contentElement, marginalia.skipContent );
-		// TODO: Store XPathRange back to annotation on server
-	}
+	// XPath range is faster, but we can only use it if the browser supports it
+	if ( annotation.getXPathRange( ) && this.contentElement.ownerDocument.evaluate )
+		wordRange = WordRange.fromXPathRange( annotation.getXPathRange( ), this.contentElement, marginalia.skipContent );
+	else if ( annotation.getSequenceRange( ) )
+		wordRange = WordRange.fromSequenceRange( annotation.getSequenceRange( ), this.contentElement, marginalia.skipContent );
 	return wordRange;
 }
 
@@ -83,7 +78,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 	{
 		// Older versions (before 2007-06-05) have some context calculation code which could be
 		// modified and used here.
-		var rangeStr = annotation.getRange( SEQUENCE_RANGE ) ? annotation.getRange( SEQUENCE_RANGE ).toString() : '';
+		var rangeStr = annotation.getSequenceRange( ) ? annotation.getSequenceRange( ).toString() : '';
 		trace( 'find-quote', 'Annotation ' + annotation.getId() + ' range (' + rangeStr + ') actual \"' + actual + '\" doesn\'t match quote "' + quote + '"' );
 		return false;
 	}

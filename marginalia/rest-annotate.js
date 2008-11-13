@@ -208,10 +208,10 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		
 	if ( annotation.getAction() )
 		body += '&action=' + encodeURIParameter (annotation.getAction() );
-	if ( annotation.getRange( SEQUENCE_RANGE ) )
-		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
-	if ( annotation.getRange( XPATH_RANGE ) )
-		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
+	if ( annotation.getSequenceRange( ) )
+		body += '&sequence-range=' + encodeURIParameter( annotation.getXPathRange( ).toString( ) );
+	if ( annotation.getXPathRange( ) )
+		body += '&xpath-range=' + encodeURIParameter( annotation.getXPathRange( ).toString( ) );
 	if ( annotation.getLinkTitle( ) )
 		+ '&linkTitle=' + encodeURIParameter( annotation.getLinkTitle( ) );
 
@@ -273,10 +273,10 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 		body += ( body == '' ? '' : '&' ) + 'link=' + encodeURIParameter( annotation.getLink() );
 	if ( annotation.hasChanged( 'linkTitle' ) )
 		body += ( body == '' ? '' : '&' ) + 'link_title=' + encodeURIParameter( annotation.getLinkTitle( ) );
-	if ( annotation.hasChanged( 'range/' + SEQUENCE_RANGE ) )
-		body += '&sequence-range=' + encodeURIParameter( annotation.getRange( SEQUENCE_RANGE ).toString( ) );
-	if ( annotation.hasChanged( 'range/' + XPATH_RANGE ) )
-		body += '&xpath-range=' + encodeURIParameter( annotation.getRange( XPATH_RANGE ).toString( ) );
+	if ( annotation.hasChanged( 'range/sequence' ) )
+		body += '&sequence-range=' + encodeURIParameter( annotation.getSequenceRange( ).toString( ) );
+	if ( annotation.hasChanged( 'range/xpath' ) )
+		body += '&xpath-range=' + encodeURIParameter( annotation.getXPathRange( ).toString( ) );
 
 // Cross-site request forgery protection (if present)
 	if ( this.csrfCookie )

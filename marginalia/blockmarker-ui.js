@@ -124,7 +124,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 	for ( var i = 0;  i < annotations.length;  ++i )
 	{
 		var annotation = annotations[ i ];
-		var range = annotation.getRange( SEQUENCE_RANGE );
+		var range = annotation.getSequenceRange( );
 		if ( range )
 		{
 			if ( annotation.getUserId( ) != marginalia.anusername )

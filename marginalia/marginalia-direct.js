@@ -121,8 +121,8 @@ MarginaliaDirect.prototype.updateAnnotation = function( listItem )
 	var direct = this;
 	var annotation = listItem.annotation;
 	annotation.setUrl( this.getFieldInput( listItem, 'md-annotation-url' ).value );
-	annotation.setRange( SEQUENCE_RANGE, SequenceRange.fromString( this.getFieldInput( listItem, 'md-annotation-sequence-range' ).value ) );
-	annotation.setRange( XPATH_RANGE, XPathRange.fromString( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value ) );
+	annotation.setSequenceRange( SequenceRange.fromString( this.getFieldInput( listItem, 'md-annotation-sequence-range' ).value ) );
+	annotation.setXPathRange( XPathRange.fromString( this.getFieldInput( listItem, 'md-annotation-xpath-range' ).value ) );
 	annotation.setQuote( this.getFieldInput( listItem, 'md-annotation-quote' ).value );
 	annotation.setNote( this.getFieldInput( listItem, 'md-annotation-note' ).value );
 	annotation.setLink( this.getFieldInput( listItem, 'md-annotation-link' ).value );
@@ -150,8 +150,8 @@ MarginaliaDirect.prototype.showAnnotation = function( annotation )
 	var direct = this;
 	var annotationList = document.getElementById( 'md-annotation-list' );
 
-	var xpathRange = annotation.getRange( XPATH_RANGE );
-	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
+	var xpathRange = annotation.getXPathRange( );
+	var sequenceRange = annotation.getSequenceRange( );
 	
 	var listItem = domutil.element( 'fieldset', {
 		annotation: annotation

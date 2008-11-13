@@ -266,25 +266,11 @@ Marginalia.prototype.createAnnotation = function( annotation, f )
 
 Marginalia.prototype.updateAnnotation = function( annotation )
 {
-	// Before storing the annotation, check whether it's using a denormalized sequence range.
-	// If it is, recalculate the block range and store the new (faster) format.
-	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
-	if ( sequenceRange && ! sequenceRange.normalized )
-	{
-		var post = this.listPosts( ).getPostByUrl( annotation.getUrl() );
-		if ( post )
-		{
-			var root = post.getContentElement( );
-			var wordRange = WordRange.fromSequenceRange( sequenceRange, root, this.skipContent );
-			annotation.setRange( SEQUENCE_RANGE, wordRange.toSequenceRange( root ) );
-		}
-	}
 	if ( annotation.hasChanged() )
 	{
-		var f = function( )
-		{
+		var f = function( )	{
 			annotation.resetChanges();
-		}
+		};
 		this.annotationService.updateAnnotation( annotation, f );
 	}
 }
@@ -422,9 +408,9 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					if ( ! noCountIncrement )
 						annotation.fetchCount += 1;
 					// Now insert before beforeNote
-					post.addAnnotation( marginalia, annotation, nextNode );
+					var success = post.addAnnotation( marginalia, annotation, nextNode );
 					
-					if ( annotation.getUserId( ) == marginalia.username )
+					if ( success && annotation.getUserId( ) == marginalia.username )
 						marginalia.patchAnnotation( annotation, post );
 				}
 			}
@@ -456,59 +442,65 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
  * incorrect or inconsistent with current formatting.  This function checks
  * for the possibility, makes the changes, and submits the any updates to the
  * server.  This only applies to annotations owned by the current user.
+ *
+ * Ranges can be out of date for the following reasons:
+ * - because there is no XPath range stored (older version lacked this)
+ * - because the sequence range is in word.char format (e.g. 215.0 215.3)
+ * - because the sequence range lacks a second block (e.g. /3/4/15.0 15.3)
+ * - because the sequence range lacks a line number (e.g. /3/4/15.0;/3/4/15.3)
+ * Current sequence range format looks like 3.4/1.15.0;3.4/1.15.3
  */
 Marginalia.prototype.patchAnnotation = function( annotation, post )
 {
-	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
-	var format = sequenceRange.formatVersion( );
-	if ( format != 'lines' )
+	var root = post.contentElement;
+	var sequenceRange = annotation.getSequenceRange( );
+	var xpathRange = annotation.getXPathRange( );
+	
+	// Don't even try fixing xpath ranges if they can't be resolved on this browser
+	if ( sequenceRange.needsUpdate( ) || (
+			XPathRange.canResolve( root ) && ( null == xpathRange || xpathRange.needsUpdate( ) ) ) )
 	{
-		// #geof# need code to update even older range formats
+		// Determine the physical word range in the document
+		var wordRange = post.wordRangeFromAnnotation( this, annotation );
+		var textRange = TextRange.fromWordRange( wordRange, this.skipContent );
+		wordRange = WordRange.fromTextRange( textRange, root, this.skipContent );
 		
-		// Is there even a chance that the sequence range has changed?
-		// (since sequence range calculations can be quite slow)
-		var unchanged = null == domutil.childByTagClass( post.contentElement, 'br' );
-		if ( ! unchanged )
+		// Update the annotation
+		var quote;
+		if ( sequenceRange.needsUpdate( ) )
 		{
-			// Determine the correct sequence range
-			var wordRange = post.wordRangeFromAnnotation( this, annotation );
-			var textRange = TextRange.fromWordRange( wordRange, this.skipContent );
-			wordRange = WordRange.fromTextRange( textRange, post.contentElement, this.skipContent );
-			var sequenceRange = wordRange.toSequenceRange( post.contentElement );
-			console.log( 'New sequence range: ' + sequencRange.toString() );
-			
-			// Don't update unless there has been a change
-			unchanged = sequenceRange == annotation.getRange( SEQUENCE_RANGE );
-			if  (! unchanged )
-			{
-				annotation.setRange( SEQUENCE_RANGE, sequenceRange );
-				marginalia.updateAnnotation( annotation, null );
-		
-				// Replace the editable note display
-				this.removeNote( this, annotation );
-				var nextNode = this.getAnnotationNextNote( marginalia, annotation );
-				noteElement = this.showNote( this, annotation, nextNode );
-				this.repositionNotes( this, noteElement.nextSibling );
-			
-				// May need to reposition block markers
-				if ( annotation.action == 'edit' && annotation.hasChanged( 'note' ) || annotation.hasChanged( 'link' ) )
-					this.repositionBlockMarkers( marginalia );
-			}
+			var newSequenceRange = wordRange.toSequenceRange( root );
+			// Verify that the new sequence range is correct
+			// Don't want to break existing data because of bad resolution or a code bug
+			wordRange = WordRange.fromSequenceRange( newSequenceRange, root, this.skipContent );
+			textRange = TextRange.fromWordRange( wordRange, this.skipContent );
+			quote = getTextRangeContent( textRange, this.skipContent );
+			quote = quote.replace( /(\s|\u00a0)+/g, ' ' );
+			if ( annotation.getQuote( ) == quote )
+				annotation.setSequenceRange( newSequenceRange );
 		}
-		
-		// If there was no change to make, update the version number to prevent
-		// future attempts to patch.
-		if ( unchanged )
+		if ( XPathRange.canResolve( root ) && ( null == xpathRange || xpathRange.needsUpdate( ) ) )
 		{
-			if ( format != 'lines' )
-			{
-				sequenceRange = new SequenceRange(
-					new SequencePoint( sequenceRange.start.path, 1, sequenceRange.start.words, sequenceRange.start.chars ),
-					new SequencePoint( sequenceRange.end.path, 1, sequenceRange.end.words, sequenceRange.end.chars ) );
-				annotation.setRange( SEQUENCE_RANGE, sequenceRange );
-			}
-			marginalia.updateAnnotation( annotation, null );
+			var newXPathRange = wordRange.toXPathRange( root );
+			// Verify that the new xpath range is correct
+			// Don't want to break existing data because of bad resolution or a code bug
+			wordRange = WordRange.fromXPathRange( newSequenceRange, root, this.skipContent );
+			textRange = TextRange.fromWordRange( wordRange, this.skipContent );
+			quote = getTextRangeContent( textRange, this.skipContent );
+			quote = quote.replace( /(\s|\u00a0)+/g, ' ' );
+			if ( annotation.getQuote( ) == quote )
+				annotation.setXPathRange( newXPathRange );
 		}
+		marginalia.updateAnnotation( annotation, null );
+
+		// Replace the editable note display
+		post.removeNote( this, annotation );
+		var nextNode = post.getAnnotationNextNote( this, annotation );
+		noteElement = post.showNote( this, annotation, nextNode );
+		post.repositionNotes( this, noteElement.nextSibling );
+	
+		// Reposition block markers
+		post.repositionBlockMarkers( this );
 	}
 }
 
@@ -560,6 +552,7 @@ Annotation.prototype.getNoteElement = function( )
 
 /**
  * Add an annotation to the local annotation list and display.
+ * Returns true if the annotation highlight was located successfully
  */
 PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, editor )
 {
@@ -578,6 +571,7 @@ PostMicro.prototype.addAnnotation = function( marginalia, annotation, nextNode, 
 		r = this.showNote( marginalia, annotation, nextNode );
 	// Reposition any following notes that need it
 	this.repositionSubsequentNotes( marginalia, nextNode );
+	return quoteFound;
 }
 
 /**
@@ -770,7 +764,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	}
 	
 	// Note and quote length cannot both be zero
-	var sequenceRange = annotation.getRange( SEQUENCE_RANGE );
+	var sequenceRange = annotation.getSequenceRange( );
 	if ( sequenceRange.start.compare( sequenceRange.end ) == 0 && annotation.getNote( ).length == 0 )
 	{
 		alert( getLocalized( 'blank quote and note' ) );
@@ -1192,8 +1186,8 @@ function createAnnotation( postId, warn, editor )
 		return false;
 	}
 	
-	annotation.setRange( SEQUENCE_RANGE, sequenceRange );
-	annotation.setRange( XPATH_RANGE, xpathRange );
+	annotation.setSequenceRange( sequenceRange );
+	annotation.setXPathRange( xpathRange );
 
 	// TODO: test selection properly
 	if ( null == annotation )

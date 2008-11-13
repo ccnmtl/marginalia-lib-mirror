@@ -51,11 +51,10 @@
  * the element in the document for which the word offsets will be minima.
  * Normalized paths should always be used so that word ranges can be ordered.
  */
-function SequenceRange( start, end, notNormalized )
+function SequenceRange( start, end )
 {
 	this.start = start;
 	this.end = end;
-	this.notNormalized = notNormalized;
 }
 
 SequenceRange.fromString = function( path )
@@ -71,14 +70,9 @@ SequenceRange.fromString = function( path )
 		throw "SequenceRange parse error";
 }
 
-SequenceRange.prototype.formatVersion = function( )
+SequenceRange.prototype.needsUpdate = function( )
 {
-	if ( this.notNmalized )
-		return 'not normalized';
-	else if ( this.start.noLines || this.end.noLines )
-		return 'no lines';
-	else
-		return 'lines';
+	return this.start.noLines || this.end.noLines;
 }
 
 SequenceRange.prototype.toString = function( )
@@ -102,18 +96,12 @@ SequenceRange.prototype.equals = function( range2 )
 
 SequenceRange.prototype.collapsedToStart = function( )
 {
-	return new SequenceRange(
-		this.start,
-		this.start,
-		this.notNormalized );
+	return new SequenceRange( this.start, this.start );
 }
 
 SequenceRange.prototype.collapsedToEnd = function( )
 {
-	return new SequenceRange(
-		this.end,
-		this.end,
-		this.notNormalized );
+	return new SequenceRange( this.end, this.end );
 }
 
 function SequencePoint( path, lines, words, chars )
@@ -136,8 +124,7 @@ function SequencePoint( path, lines, words, chars )
 			this.lines = '' == parts[ 1 ] ? null : Number( parts[ 1 ] );
 			this.words = '' == parts[ 2 ] ? null : Number( parts[ 2 ] );
 			this.chars = '' == parts[ 3 ] ? null : Number( parts[ 3 ] );
-			if ( this.lines == null && this.words != null )
-				this.noLines = true;
+			this.noLines = this.lines == null && this.words != null;
 		}
 		else
 			this.lines = this.words = this.chars = null;
