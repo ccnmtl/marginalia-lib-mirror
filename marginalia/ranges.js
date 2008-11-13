@@ -254,7 +254,12 @@ function WordPoint( rel, lines, words, chars )
 
 /**
  * Count the number of line breaks (caused by br elements) between a given
- * node and a preceding breaking element (in document order)
+ * node and a preceding block-level element (in document order).  The block-level
+ * element must be within root, and it must not have any ancestors (between it
+ * and root) that are not themselves block-level.  That should be impossible in
+ * valid HTML, but lots of HTML isn't valid so it is necessary to check.  In
+ * other words, an element is only considered block level if a) it actually is
+ * block level, and b) it has no non block-level ancestors.
  * Returns [ rel, br, count ] where:
  * block:  block-level element
  * line:  closest preceding br or block-level
@@ -267,7 +272,9 @@ WordPoint.countLines = function( root, node )
 	
 	var lineCount = 1;
 	var lineNode = null;
-	var blockNode = null;
+	var blockNode = root;
+	var tempLineCount = 0;
+	
 	// Walk backwards until we hit a block-level node
 	var walker = new DOMWalker( node );
 	while ( walker.walk( true, true ) )
@@ -276,21 +283,36 @@ WordPoint.countLines = function( root, node )
 			break;
 		else if ( ELEMENT_NODE == walker.node.nodeType )
 		{
-			if ( domutil.isBlockElement( walker.node.tagName ) && walker.startTag )
+			if ( walker.startTag && domutil.isBlockElement( walker.node.tagName ) )
 			{
-				blockNode = walker.node;
-				break;
+				// Confirm that this node has all block-level parents
+				var isValidRefNode = true;
+				for ( var n = walker.node;  n && n != root;  n = n.parentNode )
+				{
+					if ( ! domutil.isBlockElement( n.tagName ) )
+					{
+						isValidRefNode = false;
+						break;
+					}
+				}
+				if ( isValidRefNode )
+				{
+					blockNode = walker.node;
+					break;
+				}
 			}
-			else if ( ELEMENT_NODE == walker.node.nodeType && walker.startTag && 'br' == walker.node.tagName.toLowerCase( ) )
+			else if ( walker.startTag && 'br' == walker.node.tagName.toLowerCase( ) )
 			{
+				if ( null == lineNode )
+					lineNode = walker.node;
 				lineCount += 1;
-				lineNode = walker.node;
 			}
 		}
 	}
+	
 	return {
 		block: blockNode,
-		line:  lineNode ? lineNode : walker.node,
+		line:  lineNode ? lineNode : blockNode,
 		count: lineCount 
 	};
 }
@@ -318,11 +340,10 @@ WordPoint.prototype.resolveLines = function( )
 		else if ( rel.ownerDocument.evaluate )
 		{
 			var xpath = domutil.isXhtml( rel.ownerDocument )
-				? 'following::html:br[' + ( count - 1 ) + ']'
-				: 'following::br[ ' + ( count - 1 ) + ']';
+				? '(descendant::html:br | following::html:br)[' + ( count - 1 ) + ']'
+				: '(descendant::br | following::br)[' + ( count - 1 ) + ']';
 			var nodes = rel.ownerDocument.evaluate( xpath, rel, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 			this.lineNode = nodes.iterateNext( );
-			trace( null, 'evaluate line node' );
 		}
 		else
 		{
@@ -337,7 +358,6 @@ WordPoint.prototype.resolveLines = function( )
 			}
 			while ( walker.walk( true ) );
 			this.lineNode = walker.node;
-			trace( null, 'manually calculate line node' );
 		}
 	}
 	return this.lineNode;
@@ -567,7 +587,6 @@ WordPoint.fromNodePoint = function( container, offset, root, fallForward, fskip 
 
 	// The container could be inline.  Find its line count and the block-level rel
 	var x = WordPoint.countLines( root, container );
-	trace( null, 'x.line: ' + x.line + '#' + x.line.id );
 	
 	var state = new NodeToWordPoint_Machine( container, offset, x.line, fallForward );
 	RecurseOnElement( state, x.line, fskip );
@@ -586,7 +605,6 @@ WordPoint.fromNodePoint = function( container, offset, root, fallForward, fskip 
 	}
 	state.destroy( );
 	
-	trace( null, 'Return new WordPoint' );
 	return new WordPoint( x.block, x.count, state.words, state.chars );
 }
 

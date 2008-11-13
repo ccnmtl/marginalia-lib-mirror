@@ -68,32 +68,7 @@ SequenceRange.fromString = function( path )
 			new SequencePoint( parts[ 1 ] ) );
 	}
 	else
-	{
-		// Possibly we have an old sequence range format with no end block, e.g. /5/2 1.0 1.5
-		parts = path.match( /^\s*(\/[\/0-9]*)\s+(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
-		if ( parts )
-		{
-			return new SequenceRange(
-				new SequencePoint( parts[0], parts[1], parts[2] ),
-				new SequencePoint( parts[0], parts[3], parts[4] ),
-				true );
-		}
-		// We might even have a really ancient word range with no blocks
-		// (words count from start of document), e.g. 204.0 204.5
-		else
-		{
-			parts = path.match( /^\s*(\d+)\.(\d+)\s+(\d+)\.(\d+)\s*$/ );
-			if ( parts )
-			{
-				return new SequenceRange(
-					new SequencePoint( '/', parts[0], parts[1] ),
-					new SequencePoint( '/', parts[2], parts[3] ),
-					true );
-			}
-			else
-				throw "SequenceRange parse error";
-		}
-	}
+		throw "SequenceRange parse error";
 }
 
 SequenceRange.prototype.formatVersion = function( )
@@ -152,44 +127,20 @@ function SequencePoint( path, lines, words, chars )
 	}
 	else
 	{
-		var parts;
-		
-		// Old format:  /5/9/21.0
-		if ( '/' == path[ 0 ] )
+		var sides = path.split( '/' );
+		this.path = sides[ 0 ];
+//		this.path = sides[ 1 ].split( '.' );
+		if ( sides.length == 2 )
 		{
-			parts = path.match( /^(.*)\/(\d+)\.(\d+)$/ );
-			if ( parts )
-			{
-				this.path = parts[ 1 ];
-				this.words = Number( parts[ 2 ] );
-				this.chars = Number( parts[ 3 ] );
-			}
-			else
-			{
-				this.path = path;
-				this.words = this.chars = 0;
-			}
-			this.lines = 1;
-			this.noLines = true;
+			var parts = sides[ 1 ].match( /^(\d*)\.(\d*)\.(\d*)$/ );
+			this.lines = '' == parts[ 1 ] ? null : Number( parts[ 1 ] );
+			this.words = '' == parts[ 2 ] ? null : Number( parts[ 2 ] );
+			this.chars = '' == parts[ 3 ] ? null : Number( parts[ 3 ] );
+			if ( this.lines == null && this.words != null )
+				this.noLines = true;
 		}
-		// New format:  5.9/1.21.0
 		else
-		{
-			var sides = path.split( '/' );
-			this.path = sides[ 0 ];
-//			this.path = sides[ 1 ].split( '.' );
-			if ( sides.length == 2 )
-			{
-				parts = sides[ 1 ].match( /^(\d*)\.(\d*)\.(\d*)$/ );
-				this.lines = '' == parts[ 1 ] ? null : Number( parts[ 1 ] );
-				this.words = '' == parts[ 2 ] ? null : Number( parts[ 2 ] );
-				this.chars = '' == parts[ 3 ] ? null : Number( parts[ 3 ] );
-				if ( this.lines == null && this.words != null )
-					this.noLines = true;
-			}
-			else
-				this.lines = this.words = this.chars = null;
-		}
+			this.lines = this.words = this.chars = null;
 	}
 }
 
