@@ -209,7 +209,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	if ( annotation.getAction() )
 		body += '&action=' + encodeURIParameter (annotation.getAction() );
 	if ( annotation.getSequenceRange( ) )
-		body += '&sequence-range=' + encodeURIParameter( annotation.getXPathRange( ).toString( ) );
+		body += '&sequence-range=' + encodeURIParameter( annotation.getSequenceRange( ).toString( ) );
 	if ( annotation.getXPathRange( ) )
 		body += '&xpath-range=' + encodeURIParameter( annotation.getXPathRange( ).toString( ) );
 	if ( annotation.getLinkTitle( ) )
