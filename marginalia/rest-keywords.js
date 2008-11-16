@@ -33,11 +33,12 @@ function Keyword( name, description )
 	this.description = description;
 }
 
-function RestKeywordService( serviceUrl )
+function RestKeywordService( serviceUrl, canRefresh )
 {
 	this.serviceUrl = serviceUrl;
 	this.keywords = new Array();
 	this.keywordHash = new Object();
+	this.canRefresh = canRefresh;
 }
 
 /**
@@ -59,6 +60,18 @@ RestKeywordService.prototype.init = function( keywords )
 			keywordService.cacheKeywords( responseText );
 		}
 		this.listKeywords( _cacheKeywords );
+	}
+}
+
+/**
+ * Refresh the keyword list
+ */
+RestKeywordService.prototype.refresh = function( )
+{
+	if ( this.canRefresh )
+	{
+		this.keywords = new Array();
+		this.init( );
 	}
 }
 

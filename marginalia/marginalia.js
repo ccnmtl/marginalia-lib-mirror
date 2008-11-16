@@ -261,15 +261,27 @@ Marginalia.prototype.listPosts = function( )
 
 Marginalia.prototype.createAnnotation = function( annotation, f )
 {
-	this.annotationService.createAnnotation( annotation, f );
+	var f2 = null;
+	if ( this.keywordService )
+	{
+		var keywordService = this.keywordService;
+		f2 = function( url ) {
+			f( url );
+			keywordService.refresh( );
+		};
+	}
+	this.annotationService.createAnnotation( annotation, f2 ? f2 : f );
 }
 
 Marginalia.prototype.updateAnnotation = function( annotation )
 {
 	if ( annotation.hasChanged() )
 	{
-		var f = function( )	{
+		var marginalia = this;
+		var f = function( xml )	{
 			annotation.resetChanges();
+			if ( marginalia.keywordService )
+				marginalia.keywordService.refresh( );
 		};
 		this.annotationService.updateAnnotation( annotation, f );
 	}
@@ -277,7 +289,13 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 
 Marginalia.prototype.deleteAnnotation = function( annotationId )
 {
-	this.annotationService.deleteAnnotation( annotationId, null );
+	var f = null;
+	if ( this.keywordService )
+	{
+		var keywordService = this.keywordService;
+		f = function( xml ) { keywordService.refresh( ); };
+	}
+	this.annotationService.deleteAnnotation( annotationId, f );
 }
 
 
