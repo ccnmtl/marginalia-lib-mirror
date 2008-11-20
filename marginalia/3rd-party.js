@@ -1,31 +1,50 @@
 /* The following cookie functions are from Peter-Paul Koch's Quirksmode at
  * http://www.quirksmode.org/js/cookies.html
- *
+ * Added semicolon escaping.  Not quite perfect:  if $: occurs in the original
+ * text, it will be replaced by $$:, which will then be replaced by $;.  Argh.
  * $Id$
  */
-function createCookie(name,value,days) {
-	if (days) {
+function createCookie( name, value, days)
+{
+	if (days)
+	{
 		var date = new Date();
-		date.setTime(date.getTime()+(days*24*60*60*1000));
-		var expires = "; expires="+date.toGMTString();
+		date.setTime ( date.getTime( ) + ( days * 24 * 60 * 60 * 1000 ) );
+		var expires = "; expires=" + date.toGMTString( );
 	}
-	else var expires = "";
+	else
+		var expires = "";
+	if ( value && 'string' == typeof value )
+	{
+		value = value.replace( '$', '$S' );
+		value = value.replace( ';', '$:' );
+	}
 	document.cookie = name+"="+value+expires+"; path=/";
 }
 
-function readCookie(name) {
+function readCookie( name )
+{
 	var nameEQ = name + "=";
-	var ca = document.cookie.split(';');
-	for(var i=0;i < ca.length;i++) {
-		var c = ca[i];
-		while (c.charAt(0)==' ') c = c.substring(1,c.length);
-		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+	var ca = document.cookie.split( ';' );
+	for( var i = 0;  i < ca.length;  i++)
+	{
+		var c = ca[ i ];
+		while ( c.charAt( 0 ) == ' ')
+			c = c.substring( 1, c.length );
+		if ( c.indexOf( nameEQ ) == 0)
+		{
+			var value = c.substring( nameEQ.length, c.length );
+			value.replace( '$:', ';' );
+			value.replace( '$S', '$' );
+			return value;
+		}
 	}
 	return null;
 }
 
-function removeCookie(name) {
-	createCookie(name,"",-1);
+function removeCookie( name )
+{
+	createCookie( name, "", -1);
 }
 
 

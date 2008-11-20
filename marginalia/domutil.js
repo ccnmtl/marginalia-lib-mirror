@@ -73,6 +73,43 @@ parseIsoDate: function( s )
 	}
 },
 
+htmlEncode: function( s )
+{
+	s = s.replace( /&/, '&amp;' );
+	s = s.replace( /</, '&lt;' );
+	s = s.replace( />/, '&gt;' );
+	return s;
+},
+
+// Cookies
+
+/**
+ * Read all cookies with a given name prefix
+ * returns hash on names
+ * Based on the readCookie code at quirksmode.org
+ */
+readCookiePrefix: function( prefix )
+{
+	var result = { };
+	var cookies = document.cookie.split( /;/ );
+	for ( var i = 0;  i < cookies.length;  ++i )
+	{
+		// Strip leading whitespace
+		var c = cookies[ i ];
+		while ( ' ' == c.charAt( 0 ) )
+			c = c.substring( 1, c.length );
+		
+		// Check for prefix match
+		if ( 0 == c.indexOf( prefix ) )
+		{
+			var parts = c.split( /=/, c );
+			result[ parts[ 0 ] ] = parts[ 1 ];
+		}
+	}
+	return result;
+},
+
+
 // W3C/IE event handling:
 
 /** Get an event */
@@ -1267,3 +1304,237 @@ DOMWalker.prototype.walk = function( gointo, reverse )
 	return null == this.node ? false : true;
 }
 
+
+/**
+ * Simple publish/subscribe between browser windows using cookies
+ * Will only work within a domain of course
+ * Multiple publish attempts will overwrite each other
+ * (I'm only using it for single publish items anyway)
+ * Beware: if different browser windows run Javascript in different threads,
+ * there could be concurrency issues (ouch).  So this should not be used for
+ * critical communications (I'm using it for quoting, which should be ok).
+ *
+ * Cookies used are:
+ * <name>_subscribers - the number of subscribers to the bus
+ * <name>_read_counts - array of [ publication #, count ] of how many subscribers
+ *                      have read a given publication
+ * <name>_publication_n - content of publication #n
+ * <name>_publish_count - maximum publication # used so far
+ */
+function CookieBus( cookieName )
+{
+	this.cookieName = cookieName;
+	this.subscribed = false;
+	this.interval = null;
+	this.readPubs = new Object( );
+}
+
+CookieBus.prototype.getSubscriberCount = function( )
+{
+	var n = readCookie( this.cookieName + '_subscribers' );
+	return n ? Number( n ) : 0;
+}
+
+CookieBus.prototype.setSubscriberCount = function( n )
+{
+	createCookie( this.cookieName + '_subscribers', Number( n ), 1 );
+}
+
+CookieBus.prototype.getReadCounts = function( )
+{
+	var readCounts = readCookie( this.cookieName + '_read_counts' );
+	if ( readCounts )
+	{
+		var counts = readCounts.split( /,/ );
+		var result = [ ];
+		for ( var i = 0;  i < counts.length;  ++i )
+		{
+			var count = counts[ i ];
+			var parts = count.split( /:/ );
+			result[ result.length ] = {
+				publication: parts[ 0 ],
+				count: Number( parts[ 1 ] )
+			};
+		}
+		return result;
+	}
+	else
+		return [ ];
+}
+
+CookieBus.prototype.setReadCounts = function( counts )
+{
+	var s = '';
+	for ( var i = 0;  i < counts.length;  ++i )
+	{
+		if ( i > 0 )
+			s += ',';
+		s += counts[ i ].publication + ':' + counts[ i ].count;
+	}
+	createCookie( this.cookieName + '_read_counts', s, 1 );
+}
+
+CookieBus.prototype.getPublication = function( name )
+{
+	var rawPub = readCookie( this.cookieName + '_publication_' + name );
+	if ( rawPub )
+	{
+		return {
+			name: name,
+			value: rawPub
+		};
+	}
+	else
+		return null;
+}	
+		
+/**
+ * If f is called, the bus is automatically closed down
+ */
+CookieBus.prototype.subscribe = function( interval, f, opts )
+{
+	if ( ! this.subscribed )
+	{
+		var n = this.getSubscriberCount( );
+		n = null == n ? 1 : 1 + Number( n );
+		this.setSubscriberCount( n );
+		this.subscribed = true;
+		
+		// Bump read counts for existing articles
+		var counts = this.getReadCounts( );
+		for ( var i = 0;  i < counts.length;  ++i )
+		{
+			counts[ i ].count += 1;
+			this.readPubs[ counts[ i ].publication ] = true;
+		}
+		this.setReadCounts( counts );
+		
+		if ( interval && f )
+		{
+			var bus = this;
+			this.interval = setInterval( function( ) {
+				while ( bus.subscribed )
+				{
+					var s = bus.read( );
+					if ( s )
+						f( s );
+					else
+						break;
+				}
+			}, interval );
+		}
+	}
+}
+
+CookieBus.prototype.unsubscribe = function( )
+{
+	if ( this.subscribed )
+	{
+		var n = this.getSubscriberCount( );
+		if ( n )
+		{
+			n -= 1;
+			
+			var readCounts = this.getReadCounts( );
+			var newCounts = [ ];
+			for ( var i = 0;  i < readCounts.length;  ++i )
+			{
+				var count = readCounts[ i ];
+				if ( this.readPubs[ count.name ] )
+				{
+					count.count -= 1;
+					if ( count.count <= n )
+						removePublication( count.publication );
+					else
+						newCounts[ newCounts.length ] = count;
+					this.readPubs[ count.name ] = false;
+				}
+				else
+					newCounts[ newCounts.length ] = count;
+			}
+			this.setReadCounts( newCounts );
+			
+			if ( 0 == n )
+				removeCookie( this.cookieName + '_subscribers' );
+			else
+				this.setSubscriberCount( n );
+		}
+		this.subscribed = false;
+		
+		if ( this.interval )
+		{
+			this.clearInterval( this.interval );
+			this.interval = null;
+		}
+	}
+}
+
+CookieBus.prototype.terminate = function( )
+{
+	removeCookie( this.cookieName + '_subscribers' );
+	removeCookie( this.cookieName + '_publish_count' );
+	removeCookie( this.cookieName + '_read_counts' );
+	var publications = readCookiePrefix( this.cookieName + '_publication_' );
+	for ( var i = 0;  i < publications.length;  ++i )
+		removeCookie( publications[ i ][ 0 ] );
+}
+
+CookieBus.prototype.publish = function( s )
+{
+	// Don't bother publishing if noone subscribes
+	var subscribers = this.getSubscriberCount( );
+	if ( subscribers )
+	{
+		// Find the highest publish count
+		var n = readCookie( this.cookieName + '_publish_count' );
+		n = n ? Number( n ) + 1 : 1;
+		
+		// Publish a new item
+		createCookie( this.cookieName + '_publish_count', n );
+		createCookie( this.cookieName + '_publication_' + n, s, 1 );
+		var counts = this.getReadCounts( );
+		counts[ counts.length ] = {
+			publication: n,
+			count: 0
+		};
+		this.setReadCounts( counts );
+		return n;
+	}
+	else
+		return 0;
+}
+
+CookieBus.prototype.unpublish = function( n )
+{
+	removeCookie( this.cookieName + '_publication_' + n );
+	var counts = this.getReadCounts( );
+	for ( var i = 0;  i < counts.length;  ++i )
+	{
+		if ( counts[ i ].publication == n )
+		{
+			counts.splice( i, 1 );
+			break;
+		}
+	}
+}
+
+CookieBus.prototype.read = function( )
+{
+	if ( this.subscribed )
+	{
+		var subscribers = this.getSubscriberCount( );
+		var counts = this.getReadCounts( );
+		for ( var i = 0;  i < counts.length;  ++i )
+		{
+			var count = counts[ i ];
+			if ( ! this.readPubs[ count.publication ] )
+			{
+				count.count += 1;
+				this.setReadCounts( counts );
+				this.readPubs[ count.publication ] = true;
+				return this.getPublication( count.publication ).value;
+			}
+		}
+	}
+	return null;
+}
