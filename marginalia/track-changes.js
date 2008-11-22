@@ -217,16 +217,16 @@ trackchanges = {
 	makeInsertBefore: function( annotation )
 	{
 		annotation.setAction( 'edit' );
-		annotation.getSequenceRange( ).collapseToStart( );
-		annotation.getXPathRange( ).collapseToStart( );
+		annotation.setSequenceRange( annotation.getSequenceRange( ).collapsedToStart( ) );
+		annotation.setXPathRange( annotation.getXPathRange( ).collapsedToStart( ) );
 		annotation.setQuote( '' );
 	},
 	
 	makeInsertAfter: function( annotation )
 	{
 		annotation.setAction( 'edit' );
-		annotation.getSequenceRange( ).collapseToEnd( );
-		annotation.getXPathRange( ).collapseToEnd( );
+		annotation.setSequenceRange( annotation.getSequenceRange( ).collapsedToEnd( ) );
+		annotation.setXPathRange( annotation.getXPathRange( ).collapsedToEnd( ) );
 		annotation.setQuote( '' );
 	},
 
