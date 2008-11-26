@@ -155,10 +155,10 @@ function addSmartcopy( )
 	var range = selection.getRangeAt( 0 );
 		
 	// Check that the selection is within a post
-	var postElement = domutil.parentByTagClass( range.startContainer, null, PM_POST_CLASS, true, _skipPostContent );
+	var postElement = domutil.parentByTagClass( range.startContainer, null, PM_POST_CLASS, true, PostMicro.skipPostContent );
 	if ( null == postElement )
 		return false;
-	var postInfo = new PostPageInfo( document );
+	var postInfo = PostPageInfo.getPostPageInfo( document );
 	var post = postInfo.getPostMicro( postElement );
 	var contentElement = post.getContentElement( );
 	
@@ -184,13 +184,13 @@ function addSmartcopy( )
 	span.className = 'smart-copy';
 	span.appendChild( document.createTextNode( 'From ') );
 	var a = document.createElement( 'a' );
-	a.setAttribute( 'href', post.url );
-	a.appendChild( document.createTextNode( post.title ) );
+	a.setAttribute( 'href', post.getUrl( ) );
+	a.appendChild( document.createTextNode( post.getTitle( ) ) );
 	span.appendChild( a );
-	if ( null == post.date )
-		span.appendChild( document.createTextNode( ' by ' + post.author + ': ') );
+	if ( null == post.getDate( ) )
+		span.appendChild( document.createTextNode( ' by ' + post.getAuthor( ) + ': ') );
 	else
-		span.appendChild( document.createTextNode( ' by ' + post.author + ' on ' + post.date.toLocaleString() + ': ') );
+		span.appendChild( document.createTextNode( ' by ' + post.getAuthor( ) + ' on ' + post.getDate( ).toLocaleString() + ': ') );
 	span.appendChild( document.createElement( 'br' ) );
 	range.insertNode( span );
 	

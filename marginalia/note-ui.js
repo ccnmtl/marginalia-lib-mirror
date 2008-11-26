@@ -61,7 +61,7 @@ PostMicro.prototype.getNotesElement = function( marginalia )
 	// Make sure it has the additional annotation properties added
 	if ( ! this.notesElement )
 	{
-		var t = domutil.childByTagClass( this.element, null, AN_NOTES_CLASS, _skipPostContent );
+		var t = domutil.childByTagClass( this.getElement( ), null, AN_NOTES_CLASS, PostMicro.skipPostContent );
 		this.notesElement = t.getElementsByTagName( 'ol' )[ 0 ];
 	}
 	return this.notesElement;
@@ -125,7 +125,7 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 	// Will need to align the note with the highlight.
 	// If the highlight is not found, then the quote doesn't match - display
 	// the annotation, but with an error and deactivate some behaviors.
-	var highlightElement = domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
+	var highlightElement = domutil.childByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null );
 	var quoteFound = highlightElement != null;
 	
 	// Find or create the list item
@@ -204,7 +204,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	var params = {
 		isCurrentUser: null != marginalia.username && annotation.getUserId( ) == marginalia.username,
 		linkingEnabled: marginalia.editors[ 'link' ] ? true : false,
-		quoteFound: null != domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null),
+		quoteFound: null != domutil.childByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null),
 		keyword: marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null
 	};
 	
@@ -591,12 +591,12 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 PostMicro.prototype.getNoteAlignElement = function( annotation )
 {
 	// Try to find the matching highlight element
-	var alignElement = domutil.childByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null );
+	var alignElement = domutil.childByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null );
 	// If there is no matching highlight element, pick the paragraph.  Prefer XPath range representation.
 	if ( null == alignElement && annotation.getXPathRange( ) )
-		alignElement = annotation.getXPathRange( ).start.getReferenceElement( this.contentElement );
+		alignElement = annotation.getXPathRange( ).start.getReferenceElement( this.getContentElement( ) );
 	if ( null == alignElement && annotation.getSequenceRange( ) )
-		alignElement = annotation.getSequenceRange( ).start.getReferenceElement( this.contentElement );
+		alignElement = annotation.getSequenceRange( ).start.getReferenceElement( this.getContentElement( ) );
 	return alignElement;
 }
 

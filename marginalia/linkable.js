@@ -40,7 +40,7 @@ function _enableLinkTargets( )
 {
 	if ( readCookie( AN_LINKING_COOKIE ) )
 	{
-		var postInfo = new PostPageInfo( document );
+		var postInfo = PostPageInfo.getPostPageInfo( document );
 		var posts = postInfo.getAllPosts( );
 		for ( var i = 0;  i < posts.length;  ++i )
 		{
@@ -58,7 +58,7 @@ function _enableLinkTargets( )
  */
 function _disableLinkTargets( )
 {	
-	var postInfo = new PostPageInfo( document );
+	var postInfo = PostPageInfo.getPostPageInfo( document );
 	var posts = postInfo.getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{

@@ -78,6 +78,7 @@ htmlEncode: function( s )
 	s = s.replace( /&/, '&amp;' );
 	s = s.replace( /</, '&lt;' );
 	s = s.replace( />/, '&gt;' );
+	s = s.replace( /"/, '&quot;' );
 	return s;
 },
 
@@ -151,17 +152,20 @@ readCookiePrefix: function( prefix )
 		while ( ' ' == c.charAt( 0 ) )
 			c = c.substring( 1, c.length );
 		
+		var parts0 = c.split( /=/ );
+			
 		// Check for prefix match
 		if ( 0 == c.indexOf( prefix ) )
 		{
-			var parts = c.split( /=/ );
-			if ( 2 == parts.length )
+			var equals = c.indexOf( '=' );
+			if ( equals )
 			{
-				var value = parts[ 1 ];
+				var name = c.substring( 0, equals );
+				var value = c.substring( equals + 1 );
 				value.replace( '$:', ';' );
 				value.replace( '$S', '$' );
 				result[ result.length ] = {
-					name: parts[ 0 ],
+					name: name,
 					value: value 
 				};
 			}

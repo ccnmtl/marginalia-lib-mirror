@@ -32,10 +32,10 @@ PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 {
 	var wordRange;
 	// XPath range is faster, but we can only use it if the browser supports it
-	if ( annotation.getXPathRange( ) && this.contentElement.ownerDocument.evaluate )
-		wordRange = WordRange.fromXPathRange( annotation.getXPathRange( ), this.contentElement, marginalia.skipContent );
+	if ( annotation.getXPathRange( ) && this.getContentElement( ).ownerDocument.evaluate )
+		wordRange = WordRange.fromXPathRange( annotation.getXPathRange( ), this.getContentElement( ), marginalia.skipContent );
 	else if ( annotation.getSequenceRange( ) )
-		wordRange = WordRange.fromSequenceRange( annotation.getSequenceRange( ), this.contentElement, marginalia.skipContent );
+		wordRange = WordRange.fromSequenceRange( annotation.getSequenceRange( ), this.getContentElement( ), marginalia.skipContent );
 	return wordRange;
 }
 
@@ -167,7 +167,7 @@ PostMicro.prototype.showHighlight = function( marginalia, annotation )
 PostMicro.prototype.showActionInsert = function( marginalia, annotation )
 {
 	trace( 'actions', 'showActionInsert for ' + annotation.getQuote() );
-	var highlights = domutil.childrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, marginalia.skipContent );
+	var highlights = domutil.childrenByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null, marginalia.skipContent );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
 		if ( domutil.hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
@@ -215,7 +215,7 @@ PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
 	this.hideLink( marginalia, annotation );
 	
 	var post = this;
-	var contentElement = this.contentElement;
+	var contentElement = this.getContentElement( );
 	var emClass = annotation ? AN_ID_PREFIX + annotation.getId() : AN_HIGHLIGHT_CLASS;
 	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, emClass );  };
 
@@ -246,7 +246,7 @@ PostMicro.prototype.removeHighlight = function ( marginalia, annotation )
  */
 PostMicro.prototype.removeAllHighlights = function( marginalia )
 {
-	var contentElement = this.contentElement;
+	var contentElement = this.getContentElement( );
 	for ( var i = 0;  i < highlights.length;  ++i )
 		highlights[ i ].annotation = null;
 	var stripTest = function( tnode )  {  return post.highlightStripTest( tnode, null );  };

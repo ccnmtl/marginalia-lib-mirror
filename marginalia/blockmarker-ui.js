@@ -54,7 +54,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
 			var user = info.users[ j ];
 			if ( user.noteCount > 0 && user.userid != marginalia.anusername )
 			{
-				var post = marginalia.listPosts( ).getPostByUrl( info.url );
+				var post = marginalia.listPosts( ).getPostByUrl( info.url, marginalia.baseUrl );
 				post.showPerBlockUserCount( marginalia, info );
 				break;
 			}
@@ -68,7 +68,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
  */
 PostMicro.prototype.showPerBlockUserCount = function( marginalia, info )
 {
-	var node = info.resolveStart( this.contentElement );
+	var node = info.resolveStart( this.getContentElement( ) );
 	if ( node && info.sequenceRange )
 	{
 		var resolver = new SequencePathResolver( node, info.sequenceRange.start.path );
@@ -155,7 +155,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, marginalia.skipContent );
+	var markers = domutil.childByTagClass( this.getElement( ), null, AN_MARKERS_CLASS, marginalia.skipContent );
 	if ( markers )
 	{
 		var countElement;
@@ -216,8 +216,8 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerElement )
 {
 	var blockElement = markerElement.blockElement;
-	var blockOffset = domutil.getElementYOffset( blockElement, this.element );
-	var markersOffset = domutil.getElementYOffset( markers, this.element );
+	var blockOffset = domutil.getElementYOffset( blockElement, this.getElement( ) );
+	var markersOffset = domutil.getElementYOffset( markers, this.getElement( ) );
 	var offset = blockOffset - markersOffset;
 	markerElement.style.top = String( offset ) + 'px';
 
@@ -234,8 +234,8 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
 	// Was one found?  If so, don't extend this far down.
 	if ( walker.node && ELEMENT_NODE == walker.node.nodeType && domutil.isBreakingElement( walker.node.tagName ) )
 	{
-		var nextTop = domutil.getElementYOffset( walker.node, this.contentElement );
-		var thisTop = domutil.getElementYOffset( blockElement, this.contentElement );
+		var nextTop = domutil.getElementYOffset( walker.node, this.getContentElement( ) );
+		var thisTop = domutil.getElementYOffset( blockElement, this.getContentElement( ) );
 		height = nextTop - thisTop;
 	}
 	else
@@ -249,10 +249,10 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
  */
 PostMicro.prototype.repositionBlockMarkers = function( marginalia )
 {
-	var markers = domutil.childByTagClass( this.element, null, AN_MARKERS_CLASS, marginalia.skipContent );
+	var markers = domutil.childByTagClass( this.getElement( ), null, AN_MARKERS_CLASS, marginalia.skipContent );
 	if ( markers )
 	{
-		var markerElements = domutil.childrenByTagClass( this.element, null, AN_MARKER_CLASS, null );
+		var markerElements = domutil.childrenByTagClass( this.getElement( ), null, AN_MARKER_CLASS, null );
 		for ( var i = 0;  i < markerElements.length;  ++i )
 			this.positionBlockMarker( marginalia, markers, markerElements[ i ] );
 	}

@@ -255,7 +255,7 @@ Marginalia.saveEditPrefs = function( marginalia, annotation, editor )
 Marginalia.prototype.listPosts = function( )
 {
 	if ( ! this.posts )
-		this.posts = new PostPageInfo( document, this.baseUrl );
+		this.posts = PostPageInfo.getPostPageInfo( document );
 	return this.posts;
 }
 
@@ -293,7 +293,9 @@ Marginalia.prototype.deleteAnnotation = function( annotationId )
 	if ( this.keywordService )
 	{
 		var keywordService = this.keywordService;
-		f = function( xml ) { keywordService.refresh( ); };
+		f = function( xml ) {
+			keywordService.refresh( );
+		};
 	}
 	this.annotationService.deleteAnnotation( annotationId, f );
 }
@@ -392,7 +394,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 				if ( annotation.getUrl( ) != url )
 				{
 					url = annotation.getUrl( );
-					post = marginalia.listPosts( ).getPostByUrl( url );
+					post = marginalia.listPosts( ).getPostByUrl( url, marginalia.baseUrl );
 					
 					// Find the first note in the list (if there is one)
 					if ( post )
@@ -470,7 +472,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
  */
 Marginalia.prototype.patchAnnotation = function( annotation, post )
 {
-	var root = post.contentElement;
+	var root = post.getContentElement( );
 	var sequenceRange = annotation.getSequenceRange( );
 	var xpathRange = annotation.getXPathRange( );
 	
@@ -634,9 +636,9 @@ PostMicro.prototype.removeAnnotations = function( marginalia )
 	var micro = this;
 	var stripTest = function( tnode )
 		{ return micro.highlightStripTest( tnode, null ); };
-	domutil.stripMarkup( this.contentElement, stripTest, true );
-	//portableNormalize( this.contentElement );
-	domutil.removeClass( this.element, AN_ANNOTATED_CLASS );
+	domutil.stripMarkup( this.getContentElement( ), stripTest, true );
+	//portableNormalize( this.getContentElement( ) );
+	domutil.removeClass( this.getElement( ), AN_ANNOTATED_CLASS );
 	return annotations;
 }
 
@@ -675,7 +677,7 @@ PostMicro.prototype.flagAnnotation = function( marginalia, annotation, className
 		domutil.removeClass( noteNode, className );
 
 	// Activate the highlighted areas
-	var highlights = domutil.childrenByTagClass( this.contentElement, null, AN_HIGHLIGHT_CLASS, null, null );
+	var highlights = domutil.childrenByTagClass( this.getContentElement( ), null, AN_HIGHLIGHT_CLASS, null, null );
 	for ( var i = 0;  i < highlights.length;  ++i )
 	{
 		var node = highlights[ i ];
@@ -824,14 +826,14 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 			annotation.isLocal = false;
 			var noteElement = document.getElementById( AN_ID_PREFIX + '0' );
 			noteElement.id = AN_ID_PREFIX + annotation.getId();
-			var highlightElements = domutil.childrenByTagClass( postMicro.contentElement, 'em', AN_ID_PREFIX + '0', null, null );
+			var highlightElements = domutil.childrenByTagClass( postMicro.getContentElement( ), 'em', AN_ID_PREFIX + '0', null, null );
 			for ( var i = 0;  i < highlightElements.length;  ++i )
 			{
 				domutil.removeClass( highlightElements[ i ], AN_ID_PREFIX + '0' );
 				domutil.addClass( highlightElements[ i ], AN_ID_PREFIX + annotation.getId() );
 			}
 		};
-		annotation.setUrl( this.url );
+		annotation.setUrl( this.getUrl( ) );
 		
 		// IE may have made a relative URL absolute, which could cause problems
 		if ( null != marginalia.baseUrl
@@ -840,8 +842,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 			annotation.setUrl( annotation.getUrl().substring( marginalia.baseUrl.length ) );
 		}
 
-		annotation.setQuoteTitle( this.title );
-		annotation.setQuoteAuthor( this.author );
+		annotation.setQuoteTitle( this.getTitle( ) );
+		annotation.setQuoteAuthor( this.getAuthor( ) );
 		marginalia.createAnnotation( annotation, f );
 	}
 	// The annotation already exists and needs to be updated
@@ -1160,13 +1162,13 @@ function createAnnotation( postId, warn, editor )
 		var contentElement = domutil.parentByTagClass( textRange.startContainer, null, PM_CONTENT_CLASS, false, null );
 		if ( null == contentElement )
 			return false;
-		postId = domutil.parentByTagClass( contentElement, null, PM_POST_CLASS, true, _skipPostContent ).id;
+		postId = domutil.parentByTagClass( contentElement, null, PM_POST_CLASS, true, PostMicro.skipPostContent ).id;
 	}
 	
-	var post = marginalia.listPosts().getPostById( postId );
+	var post = marginalia.listPosts( ).getPostById( postId );
 	
 	// Confirm that the selection is within the post
-	var contentElement = post.getContentElement();
+	var contentElement = post.getContentElement( );
 	if ( ! ( ( domutil.isElementDescendant( textRange.startContainer,contentElement )
 		|| textRange.startContainer == contentElement )
 		&& ( domutil.isElementDescendant( textRange.endContainer, contentElement )
@@ -1177,18 +1179,18 @@ function createAnnotation( postId, warn, editor )
 		return false;
 	}
 	
-	var annotation = new Annotation( post.url );
+	var annotation = new Annotation( post.getUrl( ) );
 	annotation.setUserId( marginalia.username );
 	
 	// Must strip smartcopy as it contains a <br> element which will confuse
 	// the range engine.  It's safe to do this because stripsubtree only
 	// removes elements - it doesn't remove, normalize, or otherwise modify
 	// the text nodes used by the textRange for reference.
-	domutil.stripSubtree( post.contentElement, null, 'smart-copy' );
+	domutil.stripSubtree( post.getContentElement( ), null, 'smart-copy' );
 
-	var wordRange = WordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
-	var sequenceRange = wordRange.toSequenceRange( post.contentElement );
-	var xpathRange = wordRange.toXPathRange( post.contentElement );
+	var wordRange = WordRange.fromTextRange( textRange, post.getContentElement( ), marginalia.skipContent );
+	var sequenceRange = wordRange.toSequenceRange( post.getContentElement( ) );
+	var xpathRange = wordRange.toXPathRange( post.getContentElement( ) );
 	
 	// Compress whitespace in quote down to a single space
 	var quote = getTextRangeContent( textRange, marginalia.skipContent );

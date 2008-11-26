@@ -43,7 +43,7 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 	
 	if ( null != annotation.link && '' != annotation.link )
 	{
-		var highlights = domutil.childrenByTagClass( this.contentElement, 'em', AN_ID_PREFIX + annotation.getId(), null, null );
+		var highlights = domutil.childrenByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null, null );
 		for ( var i = 0;  i < highlights.length;  ++i )
 		{
 			if ( domutil.hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
@@ -87,7 +87,7 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
  */
 PostMicro.prototype.hideLink = function( marginalia, annotation )
 {
-	var existingLink = domutil.childByTagClass( this.contentElement, 'a', AN_ID_PREFIX + annotation.getId(), null );
+	var existingLink = domutil.childByTagClass( this.getContentElement( ), 'a', AN_ID_PREFIX + annotation.getId(), null );
 	if ( existingLink )
 		existingLink.parentNode.removeChild( existingLink );	
 }

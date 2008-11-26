@@ -273,8 +273,8 @@ Annotation.prototype.setQuoteTitle = function( title )
 
 Annotation.prototype.fieldsFromPost = function( post )
 {
-	this.setQuoteAuthor( post.author );
-	this.setQuoteTitle( post.title );
+	this.setQuoteAuthor( post.getAuthor( ) );
+	this.setQuoteTitle( post.getTitle( ) );
 }	
 
 
@@ -312,10 +312,10 @@ function compareAnnotationRanges( a1, a2 )
 /* Does anything actually call this anymore? */
 function annotationFromTextRange( marginalia, post, textRange )
 {
-	var range = WordRange.fromTextRange( textRange, post.contentElement, marginalia.skipContent );
+	var range = WordRange.fromTextRange( textRange, post.getContentElement( ), marginalia.skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
-	var annotation = new Annotation( post.url );
+	var annotation = new Annotation( post.getUrl( ) );
 	annotation.setSequenceRange( textRange.toSequenceRange( ) );
 	annotation.setXPathRange( textRange.toXPathRange( ) );
 	// Can't just call toString() to grab the quote from the text range, because that would
