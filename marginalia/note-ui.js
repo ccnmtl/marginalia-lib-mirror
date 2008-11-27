@@ -565,6 +565,64 @@ KeywordNoteEditor.prototype.focus = function( )
 
 
 /**
+ * YUI Autocomplete margin note editor
+ * Autocompletes to the keyword list
+ * Requires YUI autocomplete
+ */
+function YuiAutocompleteNoteEditor( )
+{
+	this.editNode = null;
+	this.queryNode = null;
+	this.autocomplete = null;
+}
+
+YuiAutocompleteNoteEditor.prototype.bind = FreeformNoteEditor.prototype.bind;
+YuiAutocompleteNoteEditor.prototype.clear = FreeformNoteEditor.prototype.clear;
+YuiAutocompleteNoteEditor.prototype.save = FreeformNoteEditor.prototype.save;
+YuiAutocompleteNoteEditor.prototype.focus = FreeformNoteEditor.prototype.focus;
+
+YuiAutocompleteNoteEditor.prototype.show = function( )
+{
+	var postMicro = this.postMicro;
+	var marginalia = this.marginalia;
+	var annotation = this.annotation;
+	var noteElement = this.noteElement;
+	
+	// Create the edit box
+	this.editNode = document.createElement( "textarea" );
+	this.editNode.rows = 3;
+	this.editNode.appendChild( document.createTextNode( annotation.getNote() ) );
+	
+	// Create the query results box
+	this.queryNode = domutil.element( 'div' );
+
+	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
+	this.editNode.annotationId = this.annotation.getId();
+	addEvent( this.editNode, 'keypress', _editNoteKeypress );
+	addEvent( this.editNode, 'keyup', _editChangedKeyup );
+	
+	this.noteElement.appendChild( this.editNode );
+	this.noteElement.appendChild( this.queryNode );
+	domutil.addClass( noteElement, 'yui-skin-sam' );
+
+	var keywords = marginalia.keywordService.keywords;
+	var keywordArray = [ ];
+	for ( var i = 0;  i < keywords.length;  ++i )
+		keywordArray[ keywordArray.length ] = keywords[ i ].name;
+
+	var datasource;
+	if ( YAHOO.util.LocalDataSource )
+		datasource = new YAHOO.util.LocalDataSource( keywordArray ); 
+	else
+		datasource = new YAHOO.widget.DS_JSArray( keywordArray );
+
+	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource ); 
+	this.autocomplete.minQueryLength = 0;
+	this.autocomplete.typeAhead = true;
+}
+
+
+/**
  * Position the notes for an annotation next to the highlight
  * It is not necessary to call this method when creating notes, only when the positions of
  * existing notes are changing
