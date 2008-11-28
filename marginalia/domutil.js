@@ -1251,16 +1251,27 @@ clearEventHandlers: function( element, recurse, childrenOnly )
 {
 	if ( ! childrenOnly )
 	{
-		element.onmousedown = null;
-		element.onmouseup = null;
-		element.onkeydown = null;
-		element.onkeypress = null;
-		element.onkeyup = null;
-		element.onmouseover = null;
-		element.onmouseout = null;
-		element.onfocus = null;
-		element.onblur = null;
-		element.onclick = null;
+		// tests necessary for IE
+		if ( element.onmousedown )
+			element.onmousedown = null;
+		if ( element.onmouseup )
+			element.onmouseup = null;
+		if ( element.onkeydown )
+			element.onkeydown = null;
+		if ( element.onkeypress )
+			element.onkeypress = null;
+		if ( element.onkeyup )
+			element.onkeyup = null;
+		if (element.onmouseover )
+			element.onmouseover = null;
+		if ( element.onmouseout )
+			element.onmouseout = null;
+		if ( element.onfocus )
+			element.onfocus = null;
+		if ( element.onblur )
+			element.onblur = null;
+		if ( element.onclick )
+			element.onclick = null;
 	}
 
 	if ( recurse )

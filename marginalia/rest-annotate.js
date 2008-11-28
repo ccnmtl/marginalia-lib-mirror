@@ -168,7 +168,6 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 				if ( null != f )
 				{
 					trace( 'list-annotations-xml', "listAnnotations result:\n" + xmlhttp.responseText );
-					// alert( serviceUrl + "\n" + xmlhttp.responseText );
 					f( xmlhttp.responseXML );
 				}
 			}
@@ -302,7 +301,9 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 			// See http://www.trachtenberg.com/blog/?p=74
 			if ( 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 ) {
 				if ( null != f )
+				{
 					f( xmlhttp.responseXML );
+				}
 			}
 			else
 				logError( "AnnotationService.updateAnnotation failed with code " + xmlhttp.status + " (" + xmlhttp.statusText + ")\n" + xmlhttp.statusText + "\n" + xmlhttp.responseText );
