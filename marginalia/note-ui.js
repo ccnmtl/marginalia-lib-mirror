@@ -398,7 +398,7 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 
 	marginalia.noteEditor = editor;
 	editor.show( );
-	this.repositionNotes( marginalia, noteElement.nextSibling );
+	this.repositionNotes( marginalia, this.nextSibling );
 	editor.focus( );
 	window.scrollTo( scrollX, scrollY );
 
@@ -601,10 +601,11 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	addEvent( this.editNode, 'keypress', _editNoteKeypress );
 	addEvent( this.editNode, 'keyup', _editChangedKeyup );
 	
-	this.noteElement.appendChild( this.editNode );
-	this.noteElement.appendChild( this.queryNode );
+	var wrapperNode = domutil.element( 'div', { className: 'yui-skin-sam' } );
+	wrapperNode.appendChild( this.editNode );
+	wrapperNode.appendChild( this.queryNode );
 	this.queryNode.style.display = 'none';
-	domutil.addClass( noteElement, 'yui-skin-sam' );
+	this.noteElement.appendChild( wrapperNode );
 
 	var keywords = marginalia.keywordService.keywords;
 	var keywordArray = [ ];
@@ -617,9 +618,18 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	else
 		datasource = new YAHOO.widget.DS_JSArray( keywordArray );
 
+	// The autocomplete uses absolute positioning on the noteElement, resulting
+	// in an incorrect height and then an incorrect pushdown for following
+	// notes.  So grab the height here and reset it later.  repositionNotes is
+	// needed otherwise wrapperNode.style won't be set below (why I don't know).
+	var wrapperHeight = wrapperNode.offsetHeight;
+	postMicro.repositionNotes( marginalia, this.noteElement.nextSibling );
+
 	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource, {
 		typeAhead: true
 	} ); 
+	
+	wrapperNode.style.height = String( wrapperHeight ) + 'px';
 }
 
 
@@ -669,7 +679,8 @@ PostMicro.prototype.calculateNotePushdown = function( marginalia, previousNoteEl
 {
 	var noteY = domutil.getElementYOffset( previousNoteElement, null ) + previousNoteElement.offsetHeight;
 	var alignY = domutil.getElementYOffset( alignElement, null );
-	return alignY - noteY;
+	var pushdown = alignY - noteY;
+	return pushdown > 0 ? pushdown : 0;
 }
 
 /**
@@ -684,52 +695,53 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 	// (I believe it's a timing thing)
 	while ( element )
 	{
-		var annotation = element.annotation;
-		console.log( 'Has an annotation? ' + annotation );
-		if ( annotation )
-		{
-			var alignElement = this.getNoteAlignElement( annotation );
-			console.log( 'Has an align element? ' + alignElement );
-			if ( alignElement )
-			{
-				var goback = false;
-				var previous = element.previousSibling;
-				var pushdown = this.calculateNotePushdown( marginalia, previous, alignElement );
-				console.log( 'previous height: ' + previous.offsetHeight );
-				console.log( 'pushdown: ' + pushdown );
+		this.repositionNote( marginalia, element );
+		element = element.nextSibling;
+	}
+}
 
-			/* uncomment this to automatically collapse some notes: *
-				// If there's negative pushdown, check whether the preceding note also has pushdown
-				if ( pushdown < 0
-					&& previous 
-					&& previous.annotation 
-					&& ! hasClass( previous, AN_NOTECOLLAPSED_CLASS )
-					&& previous.pushdown
-					&& previous.pushdown < 0 )
+PostMicro.prototype.repositionNote = function( marginalia, element )
+{
+	var annotation = element.annotation;
+	if ( annotation )
+	{
+		var alignElement = this.getNoteAlignElement( annotation );
+		if ( alignElement )
+		{
+			var goback = false;
+			var previous = element.previousSibling;
+			var pushdown = this.calculateNotePushdown( marginalia, previous, alignElement );
+
+		/* uncomment this to automatically collapse some notes: *
+			// If there's negative pushdown, check whether the preceding note also has pushdown
+			if ( pushdown < 0
+				&& previous 
+				&& previous.annotation 
+				&& ! hasClass( previous, AN_NOTECOLLAPSED_CLASS )
+				&& previous.pushdown
+				&& previous.pushdown < 0 )
+			{
+				// So now two in a row have negative pushdown.
+				// Go back two elements and collapse, then restart pushdown 
+				// calculations at the previous element.
+				var collapseElement = previous.previousSibling;
+				if ( collapseElement && collapseElement.annotation )
 				{
-					// So now two in a row have negative pushdown.
-					// Go back two elements and collapse, then restart pushdown 
-					// calculations at the previous element.
-					var collapseElement = previous.previousSibling;
-					if ( collapseElement && collapseElement.annotation )
-					{
-						addClass( collapseElement, AN_NOTECOLLAPSED_CLASS );
-						element = previous;
-						goback = true;
-					}
-				}
-			*/
-				// If we didn't have to go back and collapse a previous element,
-				// set this note's pushdown correctly.
-				if ( ! goback )
-				{
-					element.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
-					domutil.removeClass( element, AN_NOTECOLLAPSED_CLASS );
-					element.pushdown = pushdown;
+					addClass( collapseElement, AN_NOTECOLLAPSED_CLASS );
+					element = previous;
+					goback = true;
 				}
 			}
+		*/
+			// If we didn't have to go back and collapse a previous element,
+			// set this note's pushdown correctly.
+			if ( ! goback )
+			{
+				element.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
+				domutil.removeClass( element, AN_NOTECOLLAPSED_CLASS );
+				element.pushdown = pushdown;
+			}
 		}
-		element = element.nextSibling;
 	}
 }
 
