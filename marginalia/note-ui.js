@@ -202,7 +202,7 @@ PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
 	
 	// Calculating these parameters here makes it much easier to implement note display
 	var params = {
-		isCurrentUser: null != marginalia.username && annotation.getUserId( ) == marginalia.username,
+		isCurrentUser: null != marginalia.loginUserId && annotation.getUserId( ) == marginalia.loginUserId,
 		linkingEnabled: marginalia.editors[ 'link' ] ? true : false,
 		quoteFound: null != domutil.childByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null),
 		keyword: marginalia.keywordService ? marginalia.keywordService.getKeyword( annotation.getNote() ) : null
@@ -330,11 +330,11 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	{
 		domutil.addClass( noteElement, 'other-user' );
 		// If multiple users' notes are being displayed, show the owner's name
-//		if ( annotation.getUserId( ) != marginalia.anusername )
+//		if ( annotation.getUserId( ) != marginalia.displayUserId )
 //		{
 			noteText.insertBefore( domutil.element( 'span', {
 				className:  'username',
-				content:  annotation.getUserId( ) + ': ' } ), noteText.firstChild );
+				content:  annotation.getUserName( ) + ': ' } ), noteText.firstChild );
 //		}
 	}
 	noteElement.appendChild( noteText );
@@ -603,6 +603,7 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	
 	this.noteElement.appendChild( this.editNode );
 	this.noteElement.appendChild( this.queryNode );
+	this.queryNode.style.display = 'none';
 	domutil.addClass( noteElement, 'yui-skin-sam' );
 
 	var keywords = marginalia.keywordService.keywords;
@@ -616,9 +617,9 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	else
 		datasource = new YAHOO.widget.DS_JSArray( keywordArray );
 
-	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource ); 
-	this.autocomplete.minQueryLength = 0;
-	this.autocomplete.typeAhead = true;
+	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource, {
+		typeAhead: true
+	} ); 
 }
 
 
@@ -684,14 +685,18 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 	while ( element )
 	{
 		var annotation = element.annotation;
+		console.log( 'Has an annotation? ' + annotation );
 		if ( annotation )
 		{
 			var alignElement = this.getNoteAlignElement( annotation );
+			console.log( 'Has an align element? ' + alignElement );
 			if ( alignElement )
 			{
 				var goback = false;
 				var previous = element.previousSibling;
 				var pushdown = this.calculateNotePushdown( marginalia, previous, alignElement );
+				console.log( 'previous height: ' + previous.offsetHeight );
+				console.log( 'pushdown: ' + pushdown );
 
 			/* uncomment this to automatically collapse some notes: *
 				// If there's negative pushdown, check whether the preceding note also has pushdown

@@ -114,7 +114,7 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.loginUserId );
 	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -144,20 +144,20 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 /**
  * Fetch a list of annotations from the server
  */
-RestAnnotationService.prototype.listAnnotations = function( url, username, block, f )
+RestAnnotationService.prototype.listAnnotations = function( url, userid, block, f )
 {
 	// exclude content to lighten the size across the wire
 	var serviceUrl = this.serviceUrl;
 	serviceUrl += '?format=atom';
 	if ( block )
 		serviceUrl += '&block=' + encodeURIParameter( block );
-	if ( username )
-		serviceUrl += '&user=' + encodeURIParameter( username );
+	if ( userid )
+		serviceUrl += '&user=' + encodeURIParameter( userid );
 	serviceUrl += '&url=' + encodeURIParameter( url );
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.loginUserId );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -168,6 +168,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, username, block
 				if ( null != f )
 				{
 					trace( 'list-annotations-xml', "listAnnotations result:\n" + xmlhttp.responseText );
+					// alert( serviceUrl + "\n" + xmlhttp.responseText );
 					f( xmlhttp.responseXML );
 				}
 			}
@@ -191,7 +192,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '?curuser=' + encodeURIParameter( window.marginalia.username );
+		serviceUrl += '?curuser=' + encodeURIParameter( window.marginalia.loginUserId );
 
 	var body
 		= 'url=' + encodeURIParameter( annotation.getUrl() )
@@ -199,7 +200,8 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&access=' + encodeURIParameter( annotation.getAccess() )
 		+ '&quote=' + encodeURIParameter( annotation.getQuote() )
 		+ '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() )
-		+ '&quote_author=' + encodeURIParameter( annotation.getQuoteAuthor() )
+		+ '&quote_author_id=' + encodeURIParameter( annotation.getQuoteAuthorId() )
+		+ '&quote_author_name=' + encodeURIParameter( annotation.getQuoteAuthorName() )
 		+ '&link=' + encodeURIParameter( annotation.getLink() )
 		+ '&userid=' + encodeURIParameter( annotation.getUserId() );
 	// userid shouldn't be trusted by the server of course, except for demo applications for
@@ -261,7 +263,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
 		serviceUrl += ( this.niceUrls ? '?' : '&' )
-			+ 'curuser=' + encodeURIParameter( window.marginalia.username );
+			+ 'curuser=' + encodeURIParameter( window.marginalia.loginUserId );
 
 	var body = '';
 	if ( annotation.hasChanged( 'note' )  )
@@ -301,9 +303,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 			// See http://www.trachtenberg.com/blog/?p=74
 			if ( 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 ) {
 				if ( null != f )
-				{
 					f( xmlhttp.responseXML );
-				}
 			}
 			else
 				logError( "AnnotationService.updateAnnotation failed with code " + xmlhttp.status + " (" + xmlhttp.statusText + ")\n" + xmlhttp.statusText + "\n" + xmlhttp.responseText );
@@ -399,7 +399,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 	if ( window.marginalia && window.marginalia.userInRequest )
 	{
 		serviceUrl += ( hasParams ? '&' : '?' )
-			+ 'curuser=' + encodeURIParameter( window.marginalia.username );
+			+ 'curuser=' + encodeURIParameter( window.marginalia.loginUserId );
 		hasParams = true;
 	}
 	

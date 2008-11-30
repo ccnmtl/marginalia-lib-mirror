@@ -52,7 +52,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
 		for ( var j = 0;  j < info.users.length;  ++j )
 		{
 			var user = info.users[ j ];
-			if ( user.noteCount > 0 && user.userid != marginalia.anusername )
+			if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
 			{
 				var post = marginalia.listPosts( ).getPostByUrl( info.url, marginalia.baseUrl );
 				post.showPerBlockUserCount( marginalia, info );
@@ -127,7 +127,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 		var range = annotation.getSequenceRange( );
 		if ( range )
 		{
-			if ( annotation.getUserId( ) != marginalia.anusername )
+			if ( annotation.getUserId( ) != marginalia.displayUserId )
 			{
 				// if we've run past the last relevant annotation, don't bother with the rest
 				if ( range.start.comparePath( point ) > 0 )
@@ -193,7 +193,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		{
 			var user = info.users[ i ];
 			// Don't include the currently-displayed user
-			if ( user.noteCount > 0 && user.userid != marginalia.anusername )
+			if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
 				block.blockMarkerUsers[ block.blockMarkerUsers.length ] = user;
 		}
 		
@@ -201,7 +201,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		for ( var i = 0;  i < block.blockMarkerUsers.length;  ++i )
 		{
 			var user = block.blockMarkerUsers[ i ];
-			userStr += userStr ? ', ' + user.userid : user.userid;
+			userStr += userStr ? ', ' + user.userName : user.userName;
 		}
 			
 		countElement.setAttribute( 'title', userStr );

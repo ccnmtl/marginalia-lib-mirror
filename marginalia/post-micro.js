@@ -188,16 +188,29 @@ PostMicro.prototype.getTitle = function( )
 	return this._title;
 }
 
-PostMicro.prototype.getAuthor = function( )
+PostMicro.prototype.getAuthorId = function( )
 {
-	if ( ! this._fetchedAuthor )
+	if ( ! this._fetchedAuthorId )
 	{
 		// The author
 		metadata = domutil.childByTagClass( this._element, null, PM_AUTHOR_CLASS, PostMicro.skipPostContent );
-		this._author = metadata == null ? '' : domutil.getNodeText( metadata );
-		this._fetchedAuthor = true;
+		this._author = metadata == null ? '' : metadata.getAttribute( 'title' );
+		this._fetchedAuthorId = true;
 	}
-	return this._author;
+	return this._authorId;
+}
+
+PostMicro.prototype.getAuthorName = function( )
+{
+	if ( ! this._fetchedAuthorName )
+	{
+		// The author
+		metadata = domutil.childByTagClass( this._element, null, PM_AUTHOR_CLASS, PostMicro.skipPostContent );
+		this._authorName = metadata == null ? '' : domutil.getNodeText( metadata );
+		this._fetchedAuthorName = true;
+	}
+	console.log( 'Author name: ' + this._authorName );
+	return this._authorName;
 }
 
 PostMicro.prototype.getDate = function( )

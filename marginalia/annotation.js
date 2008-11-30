@@ -174,6 +174,18 @@ Annotation.prototype.setUserId = function( userid )
 	}
 }
 
+Annotation.prototype.getUserName = function( )
+{ return this.userName ? this.userName : ''; }
+
+Annotation.prototype.setUserName = function( userName )
+{
+	if ( this.userName != userName )
+	{
+		this.userName = userName;
+		this.changes[ 'userName' ] = true;
+	}
+}
+
 Annotation.prototype.getNote = function( )
 { return this.note ? this.note : ''; }
 
@@ -246,15 +258,27 @@ Annotation.prototype.setLinkTitle = function( title )
 	}
 }
 
-Annotation.prototype.getQuoteAuthor = function( )
-{ return this.quoteAuthor ? this.quoteAuthor : ''; }
+Annotation.prototype.getQuoteAuthorId = function( )
+{ return this.quoteAuthorId ? this.quoteAuthorId : ''; }
 
-Annotation.prototype.setQuoteAuthor = function( author )
+Annotation.prototype.setQuoteAuthorId = function( authorId )
 {
-	if ( this.quoteAuthor != author )
+	if ( this.quoteAuthorId != authorId )
 	{
-		this.quoteAuthor = author;
-		this.changes[ 'quoteAuthor' ] = true;
+		this.quoteAuthorId = authorId;
+		this.changes[ 'quoteAuthorId' ] = true;
+	}
+}
+
+Annotation.prototype.getQuoteAuthorName = function( )
+{ return this.quoteAuthorName ? this.quoteAuthorName : ''; }
+
+Annotation.prototype.setQuoteAuthorName = function( authorName )
+{
+	if ( this.quoteAuthorName != authorName )
+	{
+		this.quoteAuthorName = authorName;
+		this.changes[ 'quoteAuthorName' ] = true;
 	}
 }
 
@@ -273,7 +297,8 @@ Annotation.prototype.setQuoteTitle = function( title )
 
 Annotation.prototype.fieldsFromPost = function( post )
 {
-	this.setQuoteAuthor( post.getAuthor( ) );
+	this.setQuoteAuthorId( post.getAuthorId( ) );
+	this.setQuoteAuthorName( post.getAuthorName( ) );
 	this.setQuoteTitle( post.getTitle( ) );
 }	
 
@@ -370,7 +395,8 @@ Annotation.prototype.fromAtom = function( entry )
 {
 	var hOffset, hLength, text, url, id;
 	var rangeStr = null;
-
+	var version = entry.getAttributeNS( NS_PTR, 'version' );
+	this.version = version ? version : 1;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
 		if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
@@ -403,6 +429,8 @@ Annotation.prototype.fromAtom = function( entry )
 			for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
 			{
 				if ( NS_ATOM == nameElement.namespaceURI && 'name' == domutil.getLocalName( nameElement ) )
+					this.userName = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+				else if ( NS_PTR == nameElement.namespaceURI && 'userid' == domutil.getLocalName( nameElement ) )
 					this.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
 			}
 		}
@@ -446,7 +474,8 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 	this.quoteTitle = a ? domutil.getNodeText( a ) : '';
 	
 	var quoteAuthor = domutil.childByTagClass( pquote, null, 'quoteAuthor' );
-	this.quoteAuthor = quoteAuthor ? domutil.getNodeText( quoteAuthor ) : null;
+	this.quoteAuthorName = quoteAuthor ? domutil.getNodeText( quoteAuthor ) : null;
+	this.quoteAuthorId = quoteAuthor ? quoteAuthor.getAttribute( 'title' ) : null;
 	
 	var note = domutil.childByTagClass( parent, 'p', 'note' );
 	this.note = note ? domutil.getNodeText( note ) : '';

@@ -85,9 +85,10 @@ RangeInfo.prototype.fromXml = function( blockElement )
 	}
 }
 
-function UserInfo( userid, noteCount, editCount )
+function UserInfo( userid, userName, noteCount, editCount )
 {
 	this.userid = userid;
+	this.userName = userName;
 	this.noteCount = noteCount;
 	this.editCount = editCount;
 	return this;
@@ -95,9 +96,8 @@ function UserInfo( userid, noteCount, editCount )
 
 UserInfo.prototype.fromXml = function( userElement )
 {
-	this.userid = domutil.getNodeText( userElement );
-	this.noteCount = userElement.getAttribute( 'notes' );
-	this.noteCount = this.noteCount ? Number( this.noteCount ) : 0;
-	this.editCount = userElement.getAttribute( 'edits' );
-	this.editCount = this.editCount ? Number( this.editCount ) : 0;
+	this.userName = domutil.getNodeText( userElement );
+	this.userid = userElement.getAttribute( 'id', '' );
+	this.noteCount = Number( userElement.getAttribute( 'notes', 0 ) );
+	this.editCount = Number( userElement.getAttribute( 'edits', 0 ) );
 }

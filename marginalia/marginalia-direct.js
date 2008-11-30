@@ -65,7 +65,7 @@ MarginaliaDirect.prototype.show = function( )
 			domutil.element( 'h1', null, 'Marginalia Direct Console' ),
 			domutil.element( 'fieldset', null, [
 				domutil.element( 'legend', null, 'Find Annotations' ),
-				this.newInputField( 'md-annotation-user', null, 'User', window.marginalia.anusername, true ),
+				this.newInputField( 'md-annotation-user', null, 'User', window.marginalia.displayUserId, true ),
 				this.newInputField( 'md-annotation-url', null, 'URL', window.location, true ),
 				domutil.element( 'button', {
 					id: 'md-find',

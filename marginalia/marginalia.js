@@ -65,19 +65,19 @@ AN_COOP_MAXTIME = 200;
 /**
  * Must be called before any other annotation functions
  * service - used to connect to the server side
- * username - the current user
- * anuser - the user whose annotations are to be shown (may differ from username)
+ * loginUserId - the current user
+ * displayUserId - the user whose annotations are to be shown (may differ from username)
  * urlBase - if null, annotation URLs are used as normal.  Otherwise, they are searched for this
  * string and anything preceeding it is chopped off.  This is necessary because IE lies about
  * hrefs:  it provides an absolute URL for that attribute, rather than the actual text.  In some
  * cases, absolute URLs aren't desirable (e.g. because the annotated resources might be moved
  * to another host, in which case the URLs would all break).
  */
-function Marginalia( service, username, anusername, features )
+function Marginalia( service, loginUserId, displayUserId, features )
 {
 	this.annotationService = service;
-	this.username = username;
-	this.anusername = anusername;
+	this.loginUserId = loginUserId;
+	this.displayUserId = displayUserId;
 	this.editing = null;	// annotation currently being edited (if any)
 	this.noteEditor = null;	// state for note currently being edited (if any) - should replace editing, above
 	
@@ -209,9 +209,9 @@ Marginalia.prototype.newEditor = function( annotation, editorName )
  * Call this to create a function for constructing an editor with the given constructor
  * Avoids excessive context in the lambda
  */
-Marginalia.newEditorFunc = function( constructor )
+Marginalia.newEditorFunc = function( constructor, params )
 {
-	var f = function( marginalia, annotation ) { return new constructor( ); };
+	var f = function( marginalia, annotation ) { return new constructor( params ); };
 	return f;
 }
 
@@ -315,7 +315,7 @@ Marginalia.prototype.showAnnotations = function( url, block )
 {
 	var marginalia = this;
 	marginalia.hideAnnotations( );
-	this.annotationService.listAnnotations( url, this.anusername, block,
+	this.annotationService.listAnnotations( url, this.displayUserId, block,
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }
 
@@ -335,7 +335,7 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 function _showAnnotationsCallback( marginalia, url, xmldoc, doBlockMarkers )
 {
 	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
-	if ( marginalia.username == marginalia.anusername || '' == marginalia.anusername )
+	if ( marginalia.loginUserId == marginalia.displayUserId || '' == marginalia.displayUserId )
 		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
 	marginalia.annotationXmlCache = xmldoc;
 	_annotationDisplayCallback( marginalia, url, doBlockMarkers );
@@ -430,7 +430,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					// Now insert before beforeNote
 					var success = post.addAnnotation( marginalia, annotation, nextNode );
 					
-					if ( success && annotation.getUserId( ) == marginalia.username )
+					if ( success && annotation.getUserId( ) == marginalia.loginUserId )
 						marginalia.patchAnnotation( annotation, post );
 				}
 			}
@@ -843,7 +843,10 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		}
 
 		annotation.setQuoteTitle( this.getTitle( ) );
-		annotation.setQuoteAuthor( this.getAuthor( ) );
+		annotation.setQuoteAuthorId( this.getAuthorId( ) );
+		annotation.setQuoteAuthorName( this.getAuthorName( ) );
+		// ^ author name is usually ignored, as the server will know from the ID
+		//   but conceivably there might be systems where this is not so
 		marginalia.createAnnotation( annotation, f );
 	}
 	// The annotation already exists and needs to be updated
@@ -958,7 +961,7 @@ function _unhoverAnnotation( event )
 function _keyupCreateAnnotation( event )
 {
 	var marginalia = window.marginalia;
-	if ( null != marginalia.username && ( marginalia.username == marginalia.anusername || '' == marginalia.anusername ) )
+	if ( null != marginalia.loginUserId && ( marginalia.loginUserId == marginalia.displayUserId || '' == marginalia.displayUserId ) )
 	{
 		// Enter to create a regular note
 		if ( 13 == event.keyCode )
@@ -1180,7 +1183,7 @@ function createAnnotation( postId, warn, editor )
 	}
 	
 	var annotation = new Annotation( post.getUrl( ) );
-	annotation.setUserId( marginalia.username );
+	annotation.setUserId( marginalia.loginUserId );
 	
 	// Must strip smartcopy as it contains a <br> element which will confuse
 	// the range engine.  It's safe to do this because stripsubtree only
