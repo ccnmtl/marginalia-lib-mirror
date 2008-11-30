@@ -278,11 +278,23 @@ Marginalia.prototype.bindNoteBehavior = function( node, property, value )
  */
 Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, params )
 {
+	var controls = domutil.element( 'div', { className: 'controls' } );
+	noteElement.appendChild( controls );
+		
+	// add custom buttons
+	// (do it here so they will be to the left of the standard buttons)
+	if ( params.customButtons )
+	{
+		for ( var i = 0;  i < params.customButtons.length;  ++i )
+		{
+			var buttonSpec = params.customButtons[ i ];
+			if ( marginalia.loginUserId == annotation.getUserId( ) ? buttonSpec.owner : buttonSpec.others )
+				controls.appendChild( domutil.element( 'button', buttonSpec.params ) );
+		}
+	}
+	
 	if ( params.isCurrentUser )
 	{
-		var controls = domutil.element( 'div', { className: 'controls' } );
-		noteElement.appendChild( controls );
-		
 		// add the link button
 		if ( params.linkingEnabled )
 		{
