@@ -721,22 +721,27 @@ nodeWordCount: function( node, fskip )
 /*
  * Return the text contained within a node, with all tags stripped (this is like casting to text in XPath)
  */
-getNodeText: function( node )
+getNodeText: function( node, fskip )
 {
-	return node.textContent || node.innerText || domutil._getNodeText( node );
+	if ( fskip )
+		return domutil._getNodeText( node, fskip );
+	else
+		return node.textContent || node.innerText || domutil._getNodeText( node );
 },
 
-_getNodeText: function( node )
+_getNodeText: function( node, fskip )
 {
 	if ( node.nodeType == TEXT_NODE || node.nodeType == CDATA_SECTION_NODE )
 		return node.nodeValue;
-	else if ( node.nodeType == ELEMENT_NODE )
+	else if ( node.nodeType == ELEMENT_NODE && ( ! fskip || ! fskip( node ) ) )
 	{
 		var s = "";
 		for ( var i = 0;  i < node.childNodes.length;  ++i )
-			s += domutil._getNodeText( node.childNodes[ i ] );
+			s += domutil._getNodeText( node.childNodes[ i ], fskip );
 		return s;
 	}
+	else
+		return '';
 },
 
 /**
@@ -1262,7 +1267,7 @@ clearEventHandlers: function( element, recurse, childrenOnly )
 			element.onkeypress = null;
 		if ( element.onkeyup )
 			element.onkeyup = null;
-		if (element.onmouseover )
+		if ( element.onmouseover )
 			element.onmouseover = null;
 		if ( element.onmouseout )
 			element.onmouseout = null;

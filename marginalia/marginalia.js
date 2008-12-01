@@ -1182,8 +1182,10 @@ function createAnnotation( postId, warn, editor )
 		return false;
 	}
 	
-	var annotation = new Annotation( post.getUrl( ) );
-	annotation.setUserId( marginalia.loginUserId );
+	var annotation = new Annotation( {
+		url: post.getUrl( ),
+		userid: marginalia.loginUserId
+	} );
 	
 	// Must strip smartcopy as it contains a <br> element which will confuse
 	// the range engine.  It's safe to do this because stripsubtree only

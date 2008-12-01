@@ -209,7 +209,6 @@ PostMicro.prototype.getAuthorName = function( )
 		this._authorName = metadata == null ? '' : domutil.getNodeText( metadata );
 		this._fetchedAuthorName = true;
 	}
-	console.log( 'Author name: ' + this._authorName );
 	return this._authorName;
 }
 

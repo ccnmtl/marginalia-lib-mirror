@@ -49,22 +49,28 @@ AN_EDIT_LINK = 'link';
  * An annotation is based on a selection range relative to a contentElement.
  * The ID of a new range is 0, as it doesn't yet exist on the server.
  */
-function Annotation( url )
+function Annotation( params )
 {
+	if ( ! params )
+		params = new Object( );
+	
 	// Used to track which fields have changed.  Must precede following code (esp. setUrl)
 	this.changes = new Object( );
-	if ( url )
-		this.setUrl( url );
-	this.sequenceRange = null;
-	this.xpathRange = null;
-	this.id = 0;
-	this.note = '';
-	this.access = ANNOTATION_ACCESS_DEFAULT;
-	this.action = '';
-	this.quote = '';
-	this.isLocal = false;
+	this.userid = params.userid || null;
+	this.userName = params.userName || null
+	this.url = params.url || null;
+	this.sequenceRange = params.sequenceRange || null;
+	this.xpathRange = params.xpathRange || null;
+	this.id = params.id || 0;
+	this.quote = params.quote || '';
+	this.note = params.note || '';
+	this.access = params.access || ANNOTATION_ACCESS_DEFAULT;
+	this.action = params.action || '';
+	this.quote = params.quote || '';
+	this.quoteAuthorName = params.quoteAuthorName || '';
+	this.isLocal = params.isLocal || false;
 	// this.editing = null; -- deleted when not needed
-	this.link = '';
+	this.link = params.link || '';
 	
 	// The fetch count is like a lock count.  It reflects how many reasons there were to
 	// request the annotation from the server.  This is used with per-block annotation display
@@ -340,13 +346,12 @@ function annotationFromTextRange( marginalia, post, textRange )
 	var range = WordRange.fromTextRange( textRange, post.getContentElement( ), marginalia.skipContent );
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
-	var annotation = new Annotation( post.getUrl( ) );
-	annotation.setSequenceRange( textRange.toSequenceRange( ) );
-	annotation.setXPathRange( textRange.toXPathRange( ) );
-	// Can't just call toString() to grab the quote from the text range, because that would
-	// include any smart copy text.
-	annotation.setQuote( getTextRangeContent( textRange, marginalia.skipContent ) );
-	//annotation.quote = textRange.toString( );
+	var annotation = new Annotation ( {
+		url:  post.getUrl( ),
+		sequenceRange:  textRange.toSequenceRange( ),
+		xpathRange:  textRange.toXPathRange( ),
+		quote:  getTextRangeContent( textRange, marginalia.skipContent )
+	} );
 	return annotation;
 }
 
