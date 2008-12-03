@@ -1184,7 +1184,9 @@ function createAnnotation( postId, warn, editor )
 	
 	var annotation = new Annotation( {
 		url: post.getUrl( ),
-		userid: marginalia.loginUserId
+		userid: marginalia.loginUserId,
+		quoteAuthorId: post.getAuthorId( ),
+		quoteAuthorName: post.getAuthorName( )
 	} );
 	
 	// Must strip smartcopy as it contains a <br> element which will confuse

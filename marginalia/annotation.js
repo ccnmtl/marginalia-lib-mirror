@@ -67,6 +67,7 @@ function Annotation( params )
 	this.access = params.access || ANNOTATION_ACCESS_DEFAULT;
 	this.action = params.action || '';
 	this.quote = params.quote || '';
+	this.quoteAuthorId = params.quoteAuthorId || '';
 	this.quoteAuthorName = params.quoteAuthorName || '';
 	this.isLocal = params.isLocal || false;
 	// this.editing = null; -- deleted when not needed

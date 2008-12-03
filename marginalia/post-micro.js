@@ -194,7 +194,7 @@ PostMicro.prototype.getAuthorId = function( )
 	{
 		// The author
 		metadata = domutil.childByTagClass( this._element, null, PM_AUTHOR_CLASS, PostMicro.skipPostContent );
-		this._author = metadata == null ? '' : metadata.getAttribute( 'title' );
+		this._authorId = metadata == null ? '' : metadata.getAttribute( 'title' );
 		this._fetchedAuthorId = true;
 	}
 	return this._authorId;
