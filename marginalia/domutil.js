@@ -1441,6 +1441,25 @@ CookieBus.prototype.getAllPublications = function( )
 }
 
 /**
+ * Get the subscriber count
+ */
+CookieBus.prototype.getSubscriberCount = function( )
+{
+	// Update the subscriber count so it won't expire
+	var n = domutil.readCookie( this.cookieName + '_subscriber_count' );
+	n = n ? Number( n ) : 0;
+	return n;
+}
+
+CookieBus.prototype.getUpdateSubscriberCount = function( )
+{
+	// Update the subscriber count so it won't expire
+	var n = this.getSubscriberCount( );
+	domutil.createCookie( this.cookieName + '_subscriber_count', n, 0, 0, 2 );
+	return n;
+}
+
+/**
  * If f is called, the bus is automatically closed down
  */
 CookieBus.prototype.subscribe = function( interval, f, opts )
@@ -1448,6 +1467,11 @@ CookieBus.prototype.subscribe = function( interval, f, opts )
 	if ( ! this.subscribed )
 	{
 		this.subscribed = true;
+		
+		// Get and update the subscriber count (expires in 2 minutes)
+		var n = domutil.readCookie( this.cookieName + '_subscriber_count' );
+		n = n ? Number( n ) + 1 : 1;
+		domutil.createCookie( this.cookieName + '_subscriber_count', n, 0, 0, 2 );
 		
 		// We won't read existing publications, so record them as read
 		var publications = this.getAllPublications( );
@@ -1463,6 +1487,7 @@ CookieBus.prototype.subscribe = function( interval, f, opts )
 			this.interval = setInterval( function( ) {
 				while ( bus.subscribed )
 				{
+					bus.getUpdateSubscriberCount( );
 					var pub = bus.read( );
 					if ( pub )
 						f( pub );
@@ -1479,10 +1504,14 @@ CookieBus.prototype.unsubscribe = function( )
 	if ( this.subscribed )
 	{
 		this.subscribed = false;
+		// Get and update the subscriber count (expires in 2 minutes)
+		var n = domutil.readCookie( this.cookieName + '_subscriber_count' );
+		n = n ? Number( n ) - 1 : 0;
+		domutil.createCookie( this.cookieName + '_subscriber_count', n, 0, 0, 2 );
 		
 		if ( this.interval )
 		{
-			this.clearInterval( this.interval );
+			clearInterval( this.interval );
 			this.interval = null;
 		}
 	}
@@ -1491,6 +1520,7 @@ CookieBus.prototype.unsubscribe = function( )
 CookieBus.prototype.terminate = function( )
 {
 	domutil.removeCookie( this.cookieName + '_publish_count' );
+	domutil.removeCookie( this.cookieName + '_subscriber_count' );
 	var publications = domutil.readCookiePrefix( this.cookieName + '_publication_' );
 	for ( var i = 0;  i < publications.length;  ++i )
 		domutil.removeCookie( publications[ i ].name );
