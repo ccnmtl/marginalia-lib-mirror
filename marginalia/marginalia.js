@@ -93,6 +93,7 @@ function Marginalia( service, loginUserId, displayUserId, features )
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
 	this.saveEditPrefs = Marginalia.saveEditPrefs;
 	this.displayNote = Marginalia.defaultDisplayNote;
+	this.allowAnyUserPatch = false;
 		
 	this.editors = {
 		'default': Marginalia.newDefaultEditor,
@@ -109,6 +110,11 @@ function Marginalia( service, loginUserId, displayUserId, features )
 			// Set the default action for a new annotation ("edit" for track changes)
 			case 'action':
 				this.defaultAction = value;
+			
+			// Allow this user to submit patches for out-of-date annotations by any other user
+			case 'allowAnyUserPatch':
+				this.allowAnyUserUpdate = value;
+				break;
 			
 			// The baseUrl should be stripped from annotation URLs.  The server must also do this.
 			case 'baseUrl':
@@ -430,7 +436,7 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					// Now insert before beforeNote
 					var success = post.addAnnotation( marginalia, annotation, nextNode );
 					
-					if ( success && annotation.getUserId( ) == marginalia.loginUserId )
+					if ( success && annotation.getUserId( ) == marginalia.loginUserId || marginalia.allowAnyUserPatch )
 						marginalia.patchAnnotation( annotation, post );
 				}
 			}
