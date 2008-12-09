@@ -1288,7 +1288,7 @@ function getPortableSelectionRange( )
  * .offset
  * .length
  */
-function getSelectionRangeIE()
+function getSelectionRangeIE( fskip )
 {
 	// Return if there's no selection
 	if ( document.selection.type == 'None' )
@@ -1350,7 +1350,7 @@ function getSelectionRangeIE()
 	{
 		walker = new DOMWalker( result.startContainer );
 		while ( null != walker.node && TEXT_NODE != walker.node.nodeType )
-			walker.walk( ! _skipSmartcopy( walker.node ) );
+			walker.walk( ! fskip || ! fskip( walker.node ) );
 		result.startContainer = walker.node;
 	}
 	
@@ -1387,7 +1387,7 @@ function getSelectionRangeIE()
 				++i;
 			}
 		}
-		walker.walk( ! _skipSmartcopy( walker.node ) );
+		walker.walk( ! fskip || ! fskip( walker.node ) );
 	}
 	
 	// A full implementation would need to replace the selection here, because

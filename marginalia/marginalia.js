@@ -94,6 +94,7 @@ function Marginalia( service, loginUserId, displayUserId, features )
 	this.saveEditPrefs = Marginalia.saveEditPrefs;
 	this.displayNote = Marginalia.defaultDisplayNote;
 	this.allowAnyUserPatch = false;
+	this.onMarginHeight = null;
 		
 	this.editors = {
 		'default': Marginalia.newDefaultEditor,
@@ -141,6 +142,11 @@ function Marginalia( service, loginUserId, displayUserId, features )
 			case 'onkeyCreate':
 				if ( value )
 					addEvent( document, 'keyup', _keyupCreateAnnotation );
+				break;
+				
+			// Callback for when margin height changes
+			case 'onMarginHeight':
+				this.onMarginHeight = value;
 				break;
 				
 			// A Preferences object used to store/retrieve preferences on the server
@@ -399,6 +405,10 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 				// Determine whether we're moving on to a new post (hence a new note list)
 				if ( annotation.getUrl( ) != url )
 				{
+					// Margin height callback
+					if ( post && marginalia.onMarginHeight )
+						marginalia.onMarginHeight( post );
+					
 					url = annotation.getUrl( );
 					post = marginalia.listPosts( ).getPostByUrl( url, marginalia.baseUrl );
 					
@@ -730,6 +740,9 @@ PostMicro.prototype.createAnnotation = function( marginalia, annotation, editor 
 		marginalia.noteEditor.focus( );
 		
 		window.scrollTo( scrollX, scrollY );
+		
+		if ( marginalia.onMarginHeight )
+			marginalia.onMarginHeight( this );
 	}
 }
 
@@ -873,6 +886,11 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		this.repositionBlockMarkers( marginalia );
 	
 	window.scrollTo( scrollX, scrollY );
+	
+	// Margin height callback
+	if ( marginalia.onMarginHeight )
+		marginalia.onMarginHeight( this );
+	
 	return true;
 }
 
@@ -933,6 +951,10 @@ PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 	annotation.destruct( );
 	
 	window.scrollTo( scrollX, scrollY );
+	
+	// Margin height callback
+	if ( marginalia.onMarginHeight )
+		marginalia.onMarginHeight( this );
 }
 
 
@@ -1245,5 +1267,6 @@ function createAnnotation( postId, warn, editor )
 		editor = marginalia.newEditor( annotation );
 	
 	post.createAnnotation( marginalia, annotation, editor );
+	
 	return true;
 }

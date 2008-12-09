@@ -401,8 +401,6 @@ Annotation.prototype.fromAtom = function( entry )
 {
 	var hOffset, hLength, text, url, id;
 	var rangeStr = null;
-	var version = entry.getAttributeNS( NS_PTR, 'version' );
-	this.version = version ? version : 1;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
 		if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
