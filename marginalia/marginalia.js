@@ -325,8 +325,14 @@ Marginalia.prototype.deleteAnnotation = function( annotationId )
  */
 Marginalia.prototype.showAnnotations = function( url, block )
 {
+	// Must set the class here so that annotations margins will expand so that,
+	// in turn, any calculations done by the caller (e.g. to resize margin
+	// buttons) will take the correct size into account.
+	domutil.addClass( document.body, AN_ANNOTATED_CLASS );
+	if ( this.loginUserId == this.displayUserId || '' == this.displayUserId )
+		domutil.addClass( document.body, AN_SELFANNOTATED_CLASS );
+	// marginalia.hideAnnotations( );
 	var marginalia = this;
-	marginalia.hideAnnotations( );
 	this.annotationService.listAnnotations( url, this.displayUserId, block,
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }

@@ -31,7 +31,6 @@ MARGINALIA_LIB_FILES = \
  $(MARGINALIA_LIB_DIR)/rest-annotate.js \
  $(MARGINALIA_LIB_DIR)/rest-keywords.js \
  $(MARGINALIA_LIB_DIR)/rest-prefs.js \
- $(MARGINALIA_LIB_DIR)/smartcopy.js \
  $(MARGINALIA_LIB_DIR)/track-changes.js \
  $(MARGINALIA_LIB_DIR)/user-count.js
 
