@@ -42,21 +42,24 @@ Marginalia.prototype.showPerBlockUserCounts = function( url )
 
 function _showPerBlockUserCountsCallback( xmldoc )
 {
-	var rangeInfos = parseRangeInfoXml( xmldoc );
-	var marginalia = window.marginalia;
-	for ( var i = 0;  i < rangeInfos.length;  ++i )
+	if ( xmldoc )
 	{
-		var info = rangeInfos[ i ];
-		
-		// Only include markers for non-edit annotations by users other than the displayed one
-		for ( var j = 0;  j < info.users.length;  ++j )
+		var rangeInfos = parseRangeInfoXml( xmldoc );
+		var marginalia = window.marginalia;
+		for ( var i = 0;  i < rangeInfos.length;  ++i )
 		{
-			var user = info.users[ j ];
-			if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
+			var info = rangeInfos[ i ];
+			
+			// Only include markers for non-edit annotations by users other than the displayed one
+			for ( var j = 0;  j < info.users.length;  ++j )
 			{
-				var post = marginalia.listPosts( ).getPostByUrl( info.url, marginalia.baseUrl );
-				post.showPerBlockUserCount( marginalia, info );
-				break;
+				var user = info.users[ j ];
+				if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
+				{
+					var post = marginalia.listPosts( ).getPostByUrl( info.url, marginalia.baseUrl );
+					post.showPerBlockUserCount( marginalia, info );
+					break;
+				}
 			}
 		}
 	}
