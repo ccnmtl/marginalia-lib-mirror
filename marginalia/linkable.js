@@ -86,8 +86,7 @@ function _clickLinkTarget( event )
 		target = target.parentNode;
 	
 	// Calculate path to target
-	var point = new SequencePoint( );
-	point.pathFromNode( content, target, null );
+	var point = SequencePoint.fromNode( content, target );
 	var path = point.toString( );
 	//	var path = NodeToPath( content, target );
 	var link = '' + window.location;
