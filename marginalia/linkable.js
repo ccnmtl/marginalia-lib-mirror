@@ -92,7 +92,7 @@ function _clickLinkTarget( event )
 	var link = '' + window.location;
 	if ( -1 != link.indexOf( '#' ) )
 		link = link.substring( 0, link.indexOf( '#' ) );
-	link = link + '#' + path;
+	link = link + '#node-path:' + path;
 	
 	// Get the annotation
 	var annotationId = readCookie( AN_LINKING_COOKIE );
