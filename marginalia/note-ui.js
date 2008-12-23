@@ -42,12 +42,14 @@ AN_DELETEBUTTON_CLASS = 'annotation-delete';
 AN_EXPANDBUTTON_CLASS = 'expand-edit';
 AN_KEYWORDSCONTROL_CLASS = 'keywords';
 
-AN_SUN_SYMBOL = '\u25cb'; //'\u263c';
+//AN_SUN_SYMBOL = '\u25cb'; //'\u263c';
+AN_SUN_SYMBOL = '\u26aa';
 AN_MOON_SYMBOL = '\u25c6'; //'\u2641';
 AN_LINK_ICON = '\u263c'; //'\u238b'; circle-arrow // \u2318 (point of interest) \u2020 (dagger) \u203b (reference mark) \u238b (circle arrow)
 AN_LINK_EDIT_ICON = '\u263c'; //'\u238b'; circle-arrow// \u2021 (double dagger)
 AN_COLLAPSED_ICON = '+'; // '\u25b7'; triangle
 AN_EXPANDED_ICON = '-'; // '\u25bd';
+AN_DELETE_ICON = '\u00d7';
 AN_LINKEDIT_LABEL = '\u263c'; // '\u238b'; circle-arrow
 
 
@@ -319,7 +321,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 		controls.appendChild( domutil.button( {
 			className:  AN_DELETEBUTTON_CLASS,
 			title:  getLocalized( 'delete annotation button' ),
-			content:  'x'
+			content:  AN_DELETE_ICON
 		} ) );
 	}
 	

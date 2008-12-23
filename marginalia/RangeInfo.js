@@ -97,7 +97,10 @@ function UserInfo( userid, userName, noteCount, editCount )
 UserInfo.prototype.fromXml = function( userElement )
 {
 	this.userName = domutil.getNodeText( userElement );
-	this.userid = userElement.getAttribute( 'id', '' );
-	this.noteCount = Number( userElement.getAttribute( 'notes', 0 ) );
-	this.editCount = Number( userElement.getAttribute( 'edits', 0 ) );
+	this.userid = userElement.getAttribute( 'id' );
+	this.userid = this.userid ? this.userid : '';
+	this.noteCount = userElement.getAttribute( 'notes' );
+	this.noteCount = Number( this.noteCount ? this.noteCount : 0 );
+	this.editCount = userElement.getAttribute( 'edits' );
+	this.editCount = Number( this.editCount ? this.editCount : 0 );
 }
