@@ -618,7 +618,7 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	var wrapperNode = domutil.element( 'div', { className: 'yui-skin-sam' } );
 	wrapperNode.appendChild( this.editNode );
 	wrapperNode.appendChild( this.queryNode );
-	this.queryNode.style.display = 'none';
+	// this.queryNode.style.display = 'none';
 	this.noteElement.appendChild( wrapperNode );
 
 	var keywords = marginalia.keywordService.keywords;
@@ -640,8 +640,13 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	postMicro.repositionNotes( marginalia, this.noteElement.nextSibling );
 
 	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource, {
-		typeAhead: true
+		autoHighlight: false
+		//, typeAhead: true //  -- disabled as drop-down must be shown anyway
 	} ); 
+	this.autocomplete.doBeforeExpandContainer = function ( elTextbox , elContainer , sQuery , aResults ) {
+		elContainer.style.top = wrapperNode.style.height;
+		return true;
+	};
 	
 	wrapperNode.style.height = String( wrapperHeight ) + 'px';
 }
