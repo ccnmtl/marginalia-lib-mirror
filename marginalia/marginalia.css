@@ -64,21 +64,6 @@
 
 
 /*
- * Annotation create button
- */
-
-.hentry button.createAnnotation {
-	height: 100%;
-	width: 1em;
-	position: absolute;
-	top: 0 ;
-}
-.editing-note .hentry button.createAnnotation {
-	visibility: hidden;
-}
-
-
-/*
  * Annotation margin notes
  */
 

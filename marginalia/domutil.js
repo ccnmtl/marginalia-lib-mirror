@@ -177,6 +177,23 @@ readCookiePrefix: function( prefix )
 
 // W3C/IE event handling:
 
+/** Register an event handler (bubbling only) */
+addEventListener: function( node, eventName, f )
+{
+	if ( window.addEventListener )
+		node.addEventListener( eventName, f, false );
+	else
+		node.attachEvent( 'on' + eventName, f );
+},
+
+removeEventListener: function( node, eventName, f )
+{
+	if ( window.removeEventListener )
+		node.removeEventListener( eventName, f, false );
+	else
+		node.detachEvent( 'on' + eventName, f );
+},
+
 /** Get an event */
 getEvent: function( event )
 {

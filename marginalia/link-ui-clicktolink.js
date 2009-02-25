@@ -82,19 +82,14 @@ ClickToLinkUi.prototype.show = function( )
 		annotationId:  annotation.getId(),
 		onclick: SimpleLinkUi._deleteLink } ) );
 	
-	 // Click-to-link doesn't work in IE because of its weak event model
-	if ( window.addEventListener )
-	{
-		window.addEventListener( 'focus', _enableLinkTargets, false );
-		window.addEventListener( 'focus', _updateLinks, false );
-	}
+	domutil.addEventListener( window, 'focus', _enableLinkTargets );
+	domutil.addEventListener( window, 'focus', _updateLinks );
 	
 	// Tell this window and others to be accept clicks for link creation
 	domutil.addClass( document.body, AN_EDITINGLINK_CLASS );
 	createCookie( AN_LINKING_COOKIE, annotation.id, 1 );
 	_enableLinkTargets( );
-	if ( window.addEventListener )
-		window.addEventListener( 'blur', _disableLinkTargets, false );
+	domutil.addEventListener( window, 'blur', _disableLinkTargets );
 }
 
 ClickToLinkUi.prototype.focus = function( )

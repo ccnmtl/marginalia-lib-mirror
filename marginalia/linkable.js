@@ -47,7 +47,7 @@ function _enableLinkTargets( )
 			var post = posts[ i ];
 			var content = post.getContentElement( );
 			domutil.addClass( content, AN_MAKELINKTARGET_CLASS );
-			content.addEventListener( 'click', _clickLinkTarget, false );
+			domutil.addEventListener( content, 'click', _clickLinkTarget, false );
 		}
 	}
 }
@@ -65,9 +65,9 @@ function _disableLinkTargets( )
 		var post = posts[ i ];
 		var content = post.getContentElement( );
 		domutil.removeClass( content, AN_MAKELINKTARGET_CLASS );
-		content.removeEventListener( 'click', _clickLinkTarget, false );
+		domutil.removeEventListener( content, 'click', _clickLinkTarget, false );
 	}
-	window.removeEventListener( 'blur', _disableLinkTargets, false );
+	domutil.removeEventListener( window, 'blur', _disableLinkTargets, false );
 }
 
 
@@ -77,11 +77,12 @@ function _disableLinkTargets( )
  */
 function _clickLinkTarget( event )
 {
-	event.stopPropagation( );
-	var content = domutil.parentByTagClass( event.target, null, PM_CONTENT_CLASS, false, null );
+	event = domutil.getEvent( event );
+	domutil.stopPropagation( event );
+	var content = domutil.parentByTagClass( domutil.getEventTarget( event ), null, PM_CONTENT_CLASS, false, null );
 	
 	// Need to look at parent targets until a block level element is found
-	var target = event.target;
+	var target = domutil.getEventTarget( event, target );
 	while ( 'block' != domutil.htmlDisplayModel( target.tagName ) )
 		target = target.parentNode;
 	
@@ -101,7 +102,7 @@ function _clickLinkTarget( event )
 		// TODO: must replace ; characters in cookie
 		createCookie( AN_LINKURL_COOKIE, link, 1 );
 
-		content.removeEventListener( 'click', _clickLinkTarget, false );
+		domutil.removeEventListener( content, 'click', _clickLinkTarget, false );
 		domutil.removeClass( content, AN_MAKELINKTARGET_CLASS );
 		domutil.addClass( target, AN_FLASH_CLASS );
 		target.flashcount = 4;
@@ -129,7 +130,8 @@ function _flashLinkTarget( )
 	{
 		domutil.removeClass( target, AN_LINKTARGET_CLASS );
 		domutil.removeClass( target, AN_FLASH_CLASS );
-		delete target.flashcount;
+		if ( target.flashcount )
+			delete target.flashcount;
 	}
 }
 
