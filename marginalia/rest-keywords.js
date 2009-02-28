@@ -44,7 +44,7 @@ function RestKeywordService( serviceUrl, canRefresh )
 /**
  * Pass in a keyword list to initialize, or nothing to trigger a fetch from the server
  */
-RestKeywordService.prototype.init = function( keywords )
+RestKeywordService.prototype.init = function( keywords, f )
 {
 	if ( keywords )
 	{
@@ -58,6 +58,8 @@ RestKeywordService.prototype.init = function( keywords )
 		_cacheKeywords = function( responseText )
 		{
 			keywordService.cacheKeywords( responseText );
+			if ( f )
+				f( );
 		}
 		this.listKeywords( _cacheKeywords );
 	}
@@ -66,12 +68,12 @@ RestKeywordService.prototype.init = function( keywords )
 /**
  * Refresh the keyword list
  */
-RestKeywordService.prototype.refresh = function( )
+RestKeywordService.prototype.refresh = function( f )
 {
 	if ( this.canRefresh )
 	{
 		this.keywords = new Array();
-		this.init( );
+		this.init( null, f );
 	}
 }
 
