@@ -407,7 +407,6 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 		noteElement.removeChild( noteElement.firstChild );
 
 	// Initialize the new editor
-	trace( null, editor.constructor );
 	editor.bind( marginalia, this, annotation, noteElement );
 
 	marginalia.noteEditor = editor;

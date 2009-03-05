@@ -659,7 +659,6 @@ PostMicro.prototype.removeAnnotations = function( marginalia )
 	var stripTest = function( tnode )
 		{ return micro.highlightStripTest( tnode, null ); };
 	domutil.stripMarkup( this.getContentElement( ), stripTest, true );
-	//portableNormalize( this.getContentElement( ) );
 	domutil.removeClass( this.getElement( ), AN_ANNOTATED_CLASS );
 	return annotations;
 }

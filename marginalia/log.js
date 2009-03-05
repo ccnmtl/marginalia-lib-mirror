@@ -38,6 +38,16 @@ function ErrorLogger( on, popup )
 	return this;
 }
 
+ErrorLogger.initLogging = function( on, popup )
+{
+	window.log = new ErrorLogger( on, popup );	
+}
+
+ErrorLogger.getLogger = function( )
+{
+	return window.log;
+}
+
 ErrorLogger.prototype.getLogElement =  function( )
 {
 	if ( ! this.logElement )
@@ -91,7 +101,9 @@ ErrorLogger.prototype.logError = function( s )
 
 ErrorLogger.prototype.setTrace = function( topic, b )
 {
+	var oldSetting = this.traceSettings[ topic ];
 	this.traceSettings[ topic ] = b;
+	return oldSetting;
 }
 
 ErrorLogger.prototype.trace = function( topic, s )

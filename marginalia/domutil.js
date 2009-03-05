@@ -174,25 +174,20 @@ readCookiePrefix: function( prefix )
 	return result;
 },
 
+// Stylesheets
+
+loadStylsheet: function( url )
+{
+	var node = domutil.element( 'link', {
+		rel: 'stylesheet',
+		type: 'text/css',
+		href: url
+	} );
+	var head = document.getElementsByTagName( 'head' )[ 0 ];
+	head.appendChild( node );
+},
 
 // W3C/IE event handling:
-
-/** Register an event handler (bubbling only) */
-addEventListener: function( node, eventName, f )
-{
-	if ( window.addEventListener )
-		node.addEventListener( eventName, f, false );
-	else
-		node.attachEvent( 'on' + eventName, f );
-},
-
-removeEventListener: function( node, eventName, f )
-{
-	if ( window.removeEventListener )
-		node.removeEventListener( eventName, f, false );
-	else
-		node.detachEvent( 'on' + eventName, f );
-},
 
 /** Get an event */
 getEvent: function( event )
@@ -995,6 +990,8 @@ stripMarkup: function( node, test, doNormalize )
 				domutil.stripMarkup( child, test, doNormalize );
 				nextChild = domutil.unwrapElementChildren( child, doNormalize );
 			}
+			else
+				domutil.stripMarkup( child, test, doNormalize );
 		}
 		child = nextChild;
 	}
@@ -1007,22 +1004,21 @@ stripMarkup: function( node, test, doNormalize )
  */
 unwrapElementChildren: function( node, doNormalize )
 {
+	domutil.clearEventHandlers( node, false );
 	var next = node.nextSibling;
-	if ( node.firstChild )
+	var firstChild = node.firstChild;
+	// Node has children
+	if ( firstChild )
 	{
-		var firstChild = node.firstChild;
 		var lastChild = node.lastChild;
 		var child = firstChild;
 		while ( child )
 		{
 			var nextChild = child.nextSibling;
 			node.removeChild( child );
-			domutil.clearEventHandlers( child, false );
 			node.parentNode.insertBefore( child, node );
 			child = nextChild;
 		}
-		node.parentNode.removeChild( node );
-		domutil.clearEventHandlers( node, false );
 		
 		// Normalize by merging first and last children with any adjacent identical text nodes
 		if ( doNormalize )
@@ -1031,6 +1027,13 @@ unwrapElementChildren: function( node, doNormalize )
 			next = lastChild.nextSibling;
 			domutil.normalizeNodePair( firstChild.previousSibling );
 		}
+	}
+	// Node has no children, so remove it and normalize surrounding
+	else
+	{
+		node.parentNode.removeChild( node );
+		if ( doNormalize && next && next.previousSibling )
+			domutil.normalizeNodePair( next.previusSibling );
 	}
 	return next;
 },
@@ -1406,8 +1409,6 @@ DOMWalker.prototype.walk = function( gointo, reverse )
 /**
  * Simple publish/subscribe between browser windows using cookies
  * Will only work within a domain of course
- * Multiple publish attempts will overwrite each other
- * (I'm only using it for single publish items anyway)
  * Beware: if different browser windows run Javascript in different threads,
  * there could be concurrency issues (ouch).  So this should not be used for
  * critical communications (I'm using it for quoting, which should be ok).
@@ -1427,6 +1428,9 @@ function CookieBus( cookieName )
 	this.readPubs = new Object( );
 }
 
+/**
+ * Fetch a named publication from the bus
+ */
 CookieBus.prototype.getPublication = function( name )
 {
 	var rawPub = domutil.readCookie( this.cookieName + '_publication_' + name );
@@ -1464,10 +1468,15 @@ CookieBus.prototype.getSubscriberCount = function( )
 {
 	// Update the subscriber count so it won't expire
 	var n = domutil.readCookie( this.cookieName + '_subscriber_count' );
-	n = n ? Number( n ) : 0;
-	return n;
+	return n ? Number( n ) : 0;
 }
 
+/**
+ * Get the subscriber count, and update it so it will last a little longer
+ * Since each subscriber will be polling the bus, this should ensure that the 
+ * subscriber count stays alive as long as it is needed, but
+ * clears shortly after it is not.
+ */
 CookieBus.prototype.getUpdateSubscriberCount = function( )
 {
 	// Update the subscriber count so it won't expire

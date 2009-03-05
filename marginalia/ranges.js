@@ -203,7 +203,7 @@ TextRange.fromWordRange = function( wordRange, fskip )
 
 	// Walk to the end point
 	lineNode = wordRange.end.resolveLines( );
-	trace( null, 'lineNode(end): ' + lineNode.tagName + '#' + lineNode.id );
+	//trace( null, 'lineNode(end): ' + lineNode.tagName + '#' + lineNode.id );
 	if ( ! walker.walkToTarget( lineNode, wordRange.end.words, wordRange.end.chars ) )
 	{
 		// Using document.documentElement is a slow hack
@@ -505,15 +505,15 @@ WordRange.prototype.partition = function( fskip )
 	
 	var walker = new WordPointWalker( startNode, fskip );
 	var targetRel = this.start.resolveLines( );
-	trace( null, 'Partition from ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.start.words + ' ' + this.start.chars );
+	trace( 'WordRange.partition', 'Partition from ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.start.words + ' ' + this.start.chars );
 	walker.walkToTarget( targetRel, this.start.words, this.start.chars );
 	var initialOffset = walker.currChars;
 	var initialRel = walker.currNode;
-	trace( null, 'initialOffset=' + initialOffset );
+	trace( 'WordRange.partition', 'initialOffset=' + initialOffset );
 	
 	var highlightRanges = new Array();
 	targetRel = this.end.resolveLines( );
-	trace( null, '-> partition to ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.end.words + ' ' + this.end.chars );
+	trace( 'WordRange.partition', '-> partition to ' + targetRel.tagName + ( targetRel.id ? '#' + targetRel.id : '' ) + ' ' + this.end.words + ' ' + this.end.chars );
 	walker.setTarget( targetRel, this.end.words, this.end.chars );
 	var rangeNum = 0;
 	var done = false;
@@ -528,8 +528,8 @@ WordRange.prototype.partition = function( fskip )
 					walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += t.substring( initialOffset, walker.currChars );
-			trace( null, 'Current node text: ' + t );
-			trace( null, 'Add text: ' + t.substring( initialOffset, walker.currChars ) + ' (' + initialOffset + ' + ' + walker.currChars + ')' );
+			trace( 'WordRange.partition', 'Current node text: ' + t );
+			trace( 'WordRange.partition', 'Add text: ' + t.substring( initialOffset, walker.currChars ) + ' (' + initialOffset + ' + ' + walker.currChars + ')' );
 		}
 		else
 		{
@@ -538,8 +538,8 @@ WordRange.prototype.partition = function( fskip )
 				walker.currNode, walker.currChars );
 			var t = walker.currNode.nodeValue;
 			actual += ( walker.breakBefore ? ' ' : '' ) + t.substring( 0, walker.currChars );
-			trace( null, 'Current node text: ' + t );
-			trace( null, 'Add text: ' + t.substring( 0, walker.currChars ) + ' (0+ ' + walker.currChars + ')' );
+			trace( 'WordRange.partition', 'Current node text: ' + t );
+			trace( 'WordRange.partition', 'Add text: ' + t.substring( 0, walker.currChars ) + ' (0+ ' + walker.currChars + ')' );
 		}
 		rangeNum += 1;
 	}
