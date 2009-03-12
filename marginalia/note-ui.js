@@ -620,34 +620,39 @@ YuiAutocompleteNoteEditor.prototype.show = function( )
 	// this.queryNode.style.display = 'none';
 	this.noteElement.appendChild( wrapperNode );
 
-	var keywords = marginalia.keywordService.keywords;
-	var keywordArray = [ ];
-	for ( var i = 0;  i < keywords.length;  ++i )
-		keywordArray[ keywordArray.length ] = keywords[ i ].name;
-
-	var datasource;
-	if ( YAHOO.util.LocalDataSource )
-		datasource = new YAHOO.util.LocalDataSource( keywordArray ); 
-	else
-		datasource = new YAHOO.widget.DS_JSArray( keywordArray );
-
-	// The autocomplete uses absolute positioning on the noteElement, resulting
-	// in an incorrect height and then an incorrect pushdown for following
-	// notes.  So grab the height here and reset it later.  repositionNotes is
-	// needed otherwise wrapperNode.style won't be set below (why I don't know).
-	var wrapperHeight = wrapperNode.offsetHeight;
-	postMicro.repositionNotes( marginalia, this.noteElement.nextSibling );
-
-	this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource, {
-		autoHighlight: false
-		//, typeAhead: true //  -- disabled as drop-down must be shown anyway
-	} ); 
-	this.autocomplete.doBeforeExpandContainer = function ( elTextbox , elContainer , sQuery , aResults ) {
-		elContainer.style.top = wrapperNode.style.height;
-		return true;
-	};
+	if ( YAHOO.widget && YAHOO.widget.AutoComplete
+		&& ( YAHOO.util && YAHOO.util.LocalDataSource || YAHOO.widget.DS_JSArray ) )
+	{
+		var keywords = marginalia.keywordService.keywords;
+		var keywordArray = [ ];
+		for ( var i = 0;  i < keywords.length;  ++i )
+			keywordArray[ keywordArray.length ] = keywords[ i ].name;
 	
-	wrapperNode.style.height = String( wrapperHeight ) + 'px';
+		var datasource;
+		if ( YAHOO.util.LocalDataSource )
+			datasource = new YAHOO.util.LocalDataSource( keywordArray ); 
+		else if ( YAHOO.widget.DS_JSArray )
+			datasource = new YAHOO.widget.DS_JSArray( keywordArray );
+	
+		// The autocomplete uses absolute positioning on the noteElement, resulting
+		// in an incorrect height and then an incorrect pushdown for following
+		// notes.  So grab the height here and reset it later.  repositionNotes is
+		// needed otherwise wrapperNode.style won't be set below (why I don't know).
+		var wrapperHeight = wrapperNode.offsetHeight;
+		postMicro.repositionNotes( marginalia, this.noteElement.nextSibling );
+	
+		this.autocomplete = new YAHOO.widget.AutoComplete( this.editNode, this.queryNode, datasource, {
+//			autoHighlight: false,
+			typeAhead: true //  -- disabled as drop-down must be shown anyway
+		} );
+		var autocomplete = this.autocomplete;
+		this.autocomplete.doBeforeExpandContainer = function ( elTextbox , elContainer , sQuery , aResults ) {
+//			elContainer.style.top = wrapperNode.style.height;
+			return false;
+		};
+	
+		wrapperNode.style.height = String( wrapperHeight ) + 'px';
+	}
 }
 
 
