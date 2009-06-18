@@ -157,7 +157,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	var markers = marginalia.selectors[ 'markers' ].nodes( this.getElement( ) );
+	var markers = marginalia.selectors[ 'mia_markers' ].node( this.getElement( ) );
 	if ( markers )
 	{
 		var countElement;
