@@ -24,13 +24,6 @@
  * $Id$
  */
 
-AN_USER_PREF = 'annotations.user';
-AN_SHOWANNOTATIONS_PREF = 'annotations.show';
-AN_NOTEEDITMODE_PREF = 'annotations.note-edit-mode';
-AN_SPLASH_PREF = 'annotations.splash';
-SMARTCOPY_PREF = 'smartcopy';
-
-
 /**
  * Preferences creation
  */

@@ -4,24 +4,24 @@
  * Use darker shades of yellow for overlapping highlights
  */
  
-.hentry .entry-content em.annotation {
+.hentry .entry-content em.mia_annotation {
 	background: #fdf377;
 	font-style: inherit;
 }
 
-.hentry .entry-content em.annotation em.annotation {
+.hentry .entry-content em.mia_annotation em.mia_annotation {
 	background: #f4e373;
 }
 
-.hentry .entry-content em.annotation em.annotation em.annotation {
+.hentry .entry-content em.mia_annotation em.mia_annotation em.mia_annotation {
 	background: #ecd470;
 }
 
-.hentry .entry-content em.annotation em.annotation em.annotation em.annotation {
+.hentry .entry-content em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation {
 	background: #e0ce6c;
 }
 
-.hentry .entry-content em.annotation em.annotation em.annotation em.annotation em.annotation {
+.hentry .entry-content em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation em.mia_annotation {
 	background: #d8c666;
 }
 
@@ -32,22 +32,22 @@
  * Strikethrough etc.
  */
 
-.hentry .entry-content em.annotation.action-edit {
+.hentry .entry-content em.mia_annotation.action-edit {
 	background: none;
 }
 
-.hentry .entry-content em.annotation del {
+.hentry .entry-content em.mia_annotation del {
 	color: darkred;
 	text-decoration: line-through;
 }
 
-.hentry .entry-content em.annotation ins {
+.hentry .entry-content em.mia_annotation ins {
 	color: darkblue;
 	text-decoration: none;
 }
 
-.hentry .entry-content em.annotation a,
-.hentry .entry-content a em.annotation {
+.hentry .entry-content em.mia_annotation a,
+.hentry .entry-content a em.mia_annotation {
 	text-decoration: underline;
 }
 
@@ -56,7 +56,7 @@
  * Inserted links
  */
 
-.hentry .entry-content em.annotation sup a {
+.hentry .entry-content em.mia_annotation sup a {
 	text-decoration: none;
 	background-color: inherit;
 	cursor: pointer;
@@ -87,7 +87,7 @@
 	cursor: pointer;
 }
 
-.hentry .notes li.dummy {
+.hentry .notes li.mia_dummy {
 	height: 1px;
 	min-height: 1px;
 	margin: 0 0 -1px 0;
@@ -95,15 +95,15 @@
 }
 
 /* notes by another user are in a lighter grey */
-.hentry .notes li.other-user {
+.hentry .notes li.mia_other-user {
 	color: #555;
 }
-.hentry .notes .username {
+.hentry .notes .mia_username {
 	font-style: italic;
 }
 
 
-.hentry .notes li.quote-error p:before {
+.hentry .notes li.mia_quote-error p:before {
 	content: '!';
 	padding: 0 .75ex;
 	margin-right: .2ex;
@@ -112,15 +112,15 @@
 	font-weight: bold;
 }
 
-.hentry .notes li.collapsed {
+.hentry .notes li.mia_collapsed {
 	overflow: hidden;
 }
 
-.hentry .notes li.collapsed p {
+.hentry .notes li.mia_collapsed p {
 	white-space: nowrap;
 }
 
-.hentry .notes li.dummyfirst {
+.hentry .notes li.mia_dummyfirst {
 	height: 1px;	/* force minimal display so later note margins will be correctly calculated */
 	cursor: default;
 	border: none;
@@ -178,7 +178,7 @@
 }
 
 .hentry .notes li .controls button:hover,
-.hentry .notes li button.expand-edit {
+.hentry .notes li button.mia_expand-edit {
 	font-weight: bold;
 }
 
@@ -191,51 +191,43 @@
 	width: 95%;
 }
 
-.hentry .notes li button.annotation-access {
+.hentry .notes li button.mia_annotation-access {
 	heigh: 1.2em;
 	width: 1em;
 }
 
 /*
-.hentry .notes li.hover,
-.hentry .entry-content em.annotation.hover,
-.hentry .entry-content em.annotation.hover ins,
-.hentry .entry-content em.annotation.hover del {
+.hentry .notes li.mia_hover,
+.hentry .entry-content em.mia_annotation.mia_hover,
+.hentry .entry-content em.mia_annotation.mia_hover ins,
+.hentry .entry-content em.mia_annotation.mia_hover del {
 	color: red;
 }
 */
 
-.hentry .notes li button.expand-edit {
+.hentry .notes li button.mia_expand-edit {
 	position: absolute;
 	top: 0;
 	right: 100%;
 }
 
-.hentry .notes .editing-link label {
+.hentry .notes .mia_editing-link label {
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 1em;
 }
 
-.hentry .notes .editing-link input {
+.hentry .notes .mia_editing-link input {
 	margin-left: 1.5em;
 	margin-right: 1.5em;
 	max-width: 80%;
 }
 
-.hentry .notes .editing-link button {
+.hentry .notes .mia_editing-link button {
 	position: absolute;
 	top: 0;
 	right: 0;
 	width: 1em;
-}
-
-
-/*
- * Hide smart copy additional info
- */
-.hentry .smart-copy {
-	display: none;
 }
 

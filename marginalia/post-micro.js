@@ -29,55 +29,44 @@
  * $Id$
  */
 
-// These class names will change once there's a microformat standard.
-PM_POST_CLASS = 'hentry';				// this is an addressable fragment for annotation
-PM_CONTENT_CLASS = 'entry-content';	// the content portion of a fragment
-PM_TITLE_CLASS = 'entry-title';		// the title of an annotated fragment
-PM_AUTHOR_CLASS = 'author';			// the author of the fragment
-PM_DATE_CLASS = 'published';			// the creation/modification date of the fragment
-PM_URL_REL = 'bookmark';				// the url of this fragment (uses rel rather than class attribute)
-
 /*
  * This class keeps track of PostMicro stuff on a page
  * Initially that information was integrated into individual DOM nodes (especially
  * as PostMicro objects), but because of memory leak problems I'm moving it here.
  */
-function PostPageInfo( doc )
+function PostPageInfo( doc, selectors )
 {
 	this.doc = doc;
 	this.posts = new Array( );
 	this.postsById = new Object( );
 	this.postsByUrl = new Object( );
+	this.selectors = selectors;
 	this.IndexPosts( doc.documentElement );
 }
+
 
 /**
  * In order to avoid creating multiple instances for a given document,
  * keep a cache in the window.  The linear search here shouldn't be a problem
  * as I don't expect more than one to exist - but just in case, it's there.
  */
-PostPageInfo.getPostPageInfo = function( doc )
+PostPageInfo.cachedPostPageInfos = [ ];
+PostPageInfo.getPostPageInfo = function( doc, selectors )
 {
 	var info;
-	if ( window.PostPageInfos )
+	for ( var i = 0;  i < PostPageInfo.cachedPostPageInfos.length; ++i )
 	{
-		for ( var i = 0;  i < window.PostPageInfos.length; ++i )
-		{
-			info = PostPageInfos[ i ];
-			if ( info.doc == doc )
-				return info;
-		}
+		if ( cachedPostPageInfos[ i ].doc == doc && cachedPostPageInfos[ i ].selectors == selectors)
+			return info;
 	}
-	else
-		window.PostPageInfos = [ ];
-	info = new PostPageInfo( doc );
-	window.PostPageInfos[ window.PostPageInfos.length ] = info;
+	info = new PostPageInfo( doc, selectors );
+	PostPageInfo.cachedPostPageInfos.push( info );
 	return info;
 }
 
 PostPageInfo.prototype.IndexPosts = function( root )
 {
-	var posts = domutil.childrenByTagClass( root, null, PM_POST_CLASS, null, PostMicro.skipPostContent );
+	var posts = this.selectors[ 'post' ].nodes( root );
 	for ( var i = 0;  i < posts.length;  ++i )
 	{
 		var postElement = posts[ i ];
@@ -87,7 +76,7 @@ PostPageInfo.prototype.IndexPosts = function( root )
 			this.postsById[ posts[ i ].id ] = post;
 		if ( null != post.getUrl( ) && '' != post.getUrl( ) )
 			this.postsByUrl[ post.getUrl( ) ] = post;
-		postElement.post = post;
+		postElement[ Marginalia.F_POST ] = post;
 	}
 }
 
@@ -96,6 +85,22 @@ PostPageInfo.prototype.getPostById = function( id )
 	return this.postsById[ id ];
 }
 
+/**
+ * Get a post that is the parent of a given element
+ */
+PostPageInfo.prototype.getPostByElement = function( element )
+{
+	// Inefficient.  Probably not an issue as it isn't called that often.
+	// Hard to fix when using selectors for everything (can't just walk up
+	// to parents and check for a given ID).  Alternative would be to set
+	// a field on posts when indexing, then look for that.
+	for ( var i = 0;  i < this.posts;  ++i )
+	{
+		if ( domutil.isElementDescendant( element, this.posts[ i ].getElement( ) ) )
+			return this.posts[ i ];
+	}
+}
+ 
 /*
  * Return a post with a matching URL or, if that does not exist, try stripping baseUrl off the passed Url
  */
@@ -115,33 +120,6 @@ PostPageInfo.prototype.getAllPosts = function( )
 	return this.posts;
 }
 
-PostPageInfo.prototype.getPostMicro = function( element )
-{
-	var post = null;
-	
-	if ( element.post )
-		post = element.post;
-	else
-	{
-		var postElement = null;
-		for ( var node = element;  node;  node = node.parentNode )
-		{
-			if ( ! postElement && ELEMENT_NODE == node.nodeType && domutil.hasClass( node, PM_POST_CLASS ) )
-				postElement = node;
-			else if ( PostMicro.skipPostContent( node ) )
-				postElement = null;
-		}
-		if ( postElement )
-		{
-			if ( ! postElement.post )
-				postElement.post = new PostMicro( this, postElement );
-			post = postElement.post;
-		}
-	}
-	return post;
-}
-
-
 /*
  * Post Class
  * This is attached to the root DOM node of a post (not the document node, rather the node
@@ -152,18 +130,9 @@ PostPageInfo.prototype.getPostMicro = function( element )
 function PostMicro( postInfo, element )
 {
 	// Point the post and DOM node to each other
+	this.postInfo = postInfo;
 	this._element = element;
 }
-
-/*
- * For ignoring post content when looking for specially tagged nodes, so that authors
- * of that content (i.e. users) can't mess things up.
- */
-PostMicro.skipPostContent = function( node )
-{
-	return ( ELEMENT_NODE == node.nodeType && domutil.hasClass( node, PM_CONTENT_CLASS ) );
-}
-
 
 /*
  * Accessor for related element
@@ -181,8 +150,7 @@ PostMicro.prototype.getTitle = function( )
 	if ( ! this._fetchedTitle )
 	{
 		// The title
-		var metadata = domutil.childByTagClass( this._element, null, PM_TITLE_CLASS, PostMicro.skipPostContent );
-		this._title = metadata == null ? '' : domutil.getNodeText( metadata );
+		this._title = this.postInfo.selectors[ 'post_title' ].value( this._element );
 		this._fetchedTitle = true;
 	}
 	return this._title;
@@ -193,8 +161,7 @@ PostMicro.prototype.getAuthorId = function( )
 	if ( ! this._fetchedAuthorId )
 	{
 		// The author
-		metadata = domutil.childByTagClass( this._element, null, PM_AUTHOR_CLASS, PostMicro.skipPostContent );
-		this._authorId = metadata == null ? '' : metadata.getAttribute( 'title' );
+		this._authorId = this.postInfo.selectors[ 'post_authorid' ].value( this._element );
 		this._fetchedAuthorId = true;
 	}
 	return this._authorId;
@@ -205,8 +172,7 @@ PostMicro.prototype.getAuthorName = function( )
 	if ( ! this._fetchedAuthorName )
 	{
 		// The author
-		metadata = domutil.childByTagClass( this._element, null, PM_AUTHOR_CLASS, PostMicro.skipPostContent );
-		this._authorName = metadata == null ? '' : domutil.getNodeText( metadata );
+		this._authorName = this.postInfo.selectors[ 'post_author' ].value( this._element );
 		this._fetchedAuthorName = true;
 	}
 	return this._authorName;
@@ -216,24 +182,18 @@ PostMicro.prototype.getDate = function( )
 {
 	if ( ! this._fetchedDate )
 	{
-		metadata = domutil.childByTagClass( this._element, 'abbr', PM_DATE_CLASS, PostMicro.skipPostContent );
-		if ( null == metadata )
+		var s = this.postInfo.selectors[ 'post_date' ].get( this._element, true );
+		if ( null == s )
 			this._date = null;
 		else
 		{
-			var s = metadata.getAttribute( 'title' );
-			if ( null == s )
+			var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
+			if ( null == matches )
 				this._date = null;
 			else
-			{
-				var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
-				if ( null == matches )
-					this._date = null;
-				else
-					// I haven't figured out how to deal with the time zone, so it assumes that server
-					// time and local time are the same - which is rather bad.
-					this._date = new Date( matches[1], matches[2]-1, matches[3], matches[4], matches[5] );
-			}
+				// I haven't figured out how to deal with the time zone, so it assumes that server
+				// time and local time are the same - which is rather bad.
+				this._date = new Date( matches[1], matches[2]-1, matches[3], matches[4], matches[5] );
 		}
 		this._fetchedDate = true;
 	}
@@ -246,11 +206,10 @@ PostMicro.prototype.getUrl = function( baseUrl )
 	if ( ! this._fetchedUrl )
 	{
 		// The node containing the url
-		metadata = domutil.childAnchor( this._element, PM_URL_REL, PostMicro.skipPostContent );
-		this._url = metadata.getAttribute( 'href' );
+		this._url = this.postInfo.selectors[ 'post_url' ].value( this._element );
 		this._fetchedUrl = true;
 	}
-	return ( baseUrl && this._url.substring( 0, baseUrl.length ) == baseUrl )
+	return ( baseUrl && this._url && this._url.substring( 0, baseUrl.length ) == baseUrl )
 		? this._url.substring( baseUrl.length )
 		: this._url;
 }
@@ -266,7 +225,7 @@ PostMicro.prototype.getContentElement = function( )
 	{
 		// The node containing the content
 		// Any offsets (e.g. as used by annotations) are from the start of this node's children
-		this._contentElement = domutil.childByTagClass( this._element, null, PM_CONTENT_CLASS );
+		this._contentElement = this.postInfo.selectors[ 'post_content' ].node( this._element );
 	}
 	return this._contentElement;
 }

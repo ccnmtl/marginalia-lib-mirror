@@ -31,16 +31,6 @@ NS_PTR = 'http://www.geof.net/code/annotation/';
 NS_ATOM = 'http://www.w3.org/2005/Atom';
 NS_XHTML = 'http://www.w3.org/1999/xhtml';
 
-// values for annotation.access
-AN_PUBLIC_ACCESS = 'public';
-AN_PRIVATE_ACCESS = 'private';
-
-// values for annotation.editing (field is deleted when not editing)
-AN_EDIT_NOTE_FREEFORM = 'note freeform';
-AN_EDIT_NOTE_KEYWORDS = 'note keywords';
-AN_EDIT_LINK = 'link';
-
-
 /* ************************ Annotation Class ************************ */
 /*
  * This is a data-only class with (almost) no methods.  This is because all annotation
@@ -64,7 +54,7 @@ function Annotation( params )
 	this.id = params.id || 0;
 	this.quote = params.quote || '';
 	this.note = params.note || '';
-	this.access = params.access || ANNOTATION_ACCESS_DEFAULT;
+	this.access = params.access || Marginalia.ACCESS_PUBLIC;
 	this.action = params.action || '';
 	this.quote = params.quote || '';
 	this.quoteAuthorId = params.quoteAuthorId || '';
@@ -348,6 +338,7 @@ function annotationFromTextRange( marginalia, post, textRange )
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation ( {
+		access: marginalia.defaultAccess,
 		url:  post.getUrl( ),
 		sequenceRange:  textRange.toSequenceRange( ),
 		xpathRange:  textRange.toXPathRange( ),
@@ -385,15 +376,15 @@ Annotation.prototype.toString = function( )
 Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService )
 {
 	if ( ! keywordService )
-		return AN_EDIT_NOTE_FREEFORM;
+		return Marginalia.EDIT_NOTE_FREEFORM;
 	else if ( '' == this.note )
 	{
-		var pref = preferences.getPreference( PREF_NOTEEDIT_MODE );
-		return pref ? pref : AN_EDIT_NOTE_KEYWORDS;
+		var pref = preferences.getPreference( Marginalia.P_NOTEEDITMODE );
+		return pref ? pref : Marginalia.EDIT_NOTE_KEYWORDS;
 	}
 	else
 		return keywordService.isKeyword( this.note )
-			? AN_EDIT_NOTE_KEYWORDS : AN_EDIT_NOTE_FREEFORM;
+			? Marginalia.EDIT_NOTE_KEYWORDS : Marginalia.EDIT_NOTE_FREEFORM;
 }
 
 

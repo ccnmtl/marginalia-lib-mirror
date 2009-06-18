@@ -382,6 +382,26 @@ getLocalName: function( element )
  * Marginalia already has performance problems).  Better to update cssQuery.
  */
 
+ 
+/**
+ * Apply a CSS selector using an implementation from an available library
+ */
+select: function( selector, root, first )
+{
+	if ( window.YAHOO && YAHOO.util && YAHOO.util.Selector )
+		return YAHOO.util.selector.query( selector, root, first );
+	else if ( cssQuery )
+	{
+		var results = cssQuery( selector, root );
+		if ( first )
+			return results && results.length ? results[ 0 ] : null;
+		else
+			return results;
+	}
+	else
+		throw "Need CSS select implementation (YUI or cssQuery)";
+},
+
 /**
  * Fetch the first child with a given class attribute value
  */
@@ -1336,6 +1356,101 @@ isString: function( s )
 		return false;
 }
 };
+
+
+/**
+ * include: CSS selector determining which nodes to include
+ * exclude: CSS selector determining which nodes to exclude
+ * text: when extracting a value, take this attribute or node text
+ */
+function Selector( include, exclude, text )
+{
+	this.include = include;
+	this.exclude = exclude;
+	this.text = text;
+}
+
+Selector.prototype.nodes = function( root )
+{
+	if ( this.exclude )
+	{
+		var result0 = domutil.select( this.include, root );
+		if ( ! result0 )
+			return [ ];
+		else
+		{
+			var subtract = domutil.select( this.exclude, root );
+			if ( subtract )
+			{
+				// This is god-awful inefficient.  I'd like to use a hash,
+				// but don't think I can use an object as an array index.
+				// Though it isn't as horribly bad as it might be because though
+				// it is O(n*m), m is expected to be very small.
+				var result = [ ];
+				for ( var i = 0;  i < result0.length;  ++i )
+				{
+					var b = true;
+					for ( var j = 0;  j < subtract.length;  ++j )
+					{
+						if ( subtract[ j ] == result[ i ] )
+						{
+							b = false;
+							break;
+						}
+					}
+					if ( b )
+						result.push( result0[ i ] );
+				}
+				return result;
+			}
+			else
+				return result0;
+		}
+	}
+	else
+		return domutil.select( this.include, root );
+}
+
+Selector.prototype.node = function( root )
+{
+	var v = this.nodes( root );
+	return ( v && v.length ) ? v[ 0 ] : null;
+}
+
+Selector.prototype.values = function( root )
+{
+	var nodes = this.nodes( root );
+	
+	if ( ! nodes || ! nodes.length )
+		return [ ];
+	
+	var results = [ ];
+	var resolved = false;
+	if ( this.text )
+	{
+		if ( '@' == this.text.charAt( 0 ) && nodes )
+		{
+			var attribute = this.text.substring( 1 );
+			for ( var i = 0;  i < nodes.length;  ++i )
+				results[ i ] = nodes[ i ].getAttribute( attribute );
+			resolved = true;
+		}
+	}
+	if ( ! resolved ) // default, or if ( 'text()' == this.text )
+	{
+		for ( var i = 0;  i < nodes.length;  ++i )
+			results[ i ] = domutil.getNodeText( nodes[ i ] );
+	}
+	
+	return results;
+}
+
+Selector.prototype.value = function( root )
+{
+	var v = this.values( root );
+	return ( v && v.length ) ? v[ 0 ]: null;
+}
+
 
 /**
  * Walk through nodes in document order

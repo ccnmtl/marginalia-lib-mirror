@@ -35,6 +35,7 @@ function ErrorLogger( on, popup )
 	this.on = on;
 	this.popup = popup;
 	this.traceSettings = new Object( );
+	this.indentLevel = 0;
 	return this;
 }
 
@@ -106,8 +107,27 @@ ErrorLogger.prototype.setTrace = function( topic, b )
 	return oldSetting;
 }
 
+ErrorLogger.prototype.getTrace = function( topic )
+{
+	return this.traceSettings[ topic ];
+}
+
+ErrorLogger.prototype.indent = function( )
+{
+	this.indentLevel++;
+}
+
+ErrorLogger.prototype.outdent = function( )
+{
+	this.indentLevel--;
+}
+
 ErrorLogger.prototype.trace = function( topic, s )
 {
+	if ( ! this.on )
+		alert( 'logging not on' );
+	for ( var i = 0;  i < this.indentLevel;  ++i )
+		s = '  ' + s;
 	if ( this.on && ( !topic || this.traceSettings[ topic ] ) )
 	{
 		if ( window.console && window.console.log )
@@ -125,6 +145,25 @@ ErrorLogger.prototype.trace = function( topic, s )
 			}
 		}
 	}
+}
+
+ErrorLogger.prototype.traceNode = function( topic, node )
+{
+	var s;
+	if ( ELEMENT_NODE == node.nodeType )
+	{
+		s = node.tagName;
+		if ( node.id )
+			s += '#' + node.id;
+		if ( node.className )
+		{
+			var c = node.className.split( ' ' );
+			s += '.' + c.join( '.' );
+		}
+	}
+	if ( TEXT_NODE == node.nodeType )
+		s = 'Text: "' + node.nodeValue.substr( 0, 20 ) + '"';
+	this.trace( topic, s );
 }
 
 function logError( s )

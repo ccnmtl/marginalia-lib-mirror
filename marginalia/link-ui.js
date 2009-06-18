@@ -26,10 +26,10 @@
  * $Id$
  */
 
-AN_LINK_CLASS = 'annotation-link';	// class given to a nodes for link annotations
-AN_LINKEDIT_ID = 'editing-link';	// ID assigned to note element whose link is being edited
-AN_LINKDELETEBUTTON_CLASS = 'delete-link';
-MAX_LINK_LENGTH = 255;
+Marginalia.C_LINK = Marginalia.PREFIX + 'annotation-link';	// class given to a nodes for link annotations
+Marginalia.ID_LINKEDIT = Marginalia.PREFIX + 'editing-link';	// ID assigned to note element whose link is being edited
+Marginalia.C_LINKDELETEBUTTON = Marginalia.PREFIX + 'delete-link';
+Marginalia.MAX_LINK_LENGTH = 255;
 
 
 /**
@@ -43,10 +43,10 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 	
 	if ( null != annotation.link && '' != annotation.link )
 	{
-		var highlights = domutil.childrenByTagClass( this.getContentElement( ), 'em', AN_ID_PREFIX + annotation.getId(), null, null );
+		var highlights = domutil.childrenByTagClass( this.getContentElement( ), 'em', Marginalia.ID_PREFIX + annotation.getId(), null, null );
 		for ( var i = 0;  i < highlights.length;  ++i )
 		{
-			if ( domutil.hasClass( highlights[ i ], AN_LASTHIGHLIGHT_CLASS ) )
+			if ( domutil.hasClass( highlights[ i ], Marginalia.C_LASTHIGHLIGHT ) )
 			{
 				// TODO: should check whether a link is valid in this location;  if not,
 				// either refuse to show or insert a clickable Javascript object instead
@@ -63,18 +63,18 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
 					}
 					if ( ! linkTitle )
 					{
-						linkTitle = annotation.getNote().length > MAX_NOTEHOVER_LENGTH
-							? annotation.getNote().substr( 0, MAX_NOTEHOVER_LENGTH ) + '...'
+						linkTitle = annotation.getNote().length > marginalia.maxNoteHoverLength
+							? annotation.getNote().substr( 0, marginalia.maxNoteHoverLength ) + '...'
 							: annotation.getNote();
 					}
 				}
 				
 				lastHighlight.appendChild( domutil.element( 'sup', {
 					content:  domutil.element( 'a', {
-						className:  AN_LINK_CLASS + ' ' + AN_ID_PREFIX + annotation.getId(),
+						className:  Marginalia.C_LINK + ' ' + Marginalia.ID_PREFIX + annotation.getId(),
 						title:  linkTitle,
 						href:  annotation.getLink(),
-						content:  AN_LINK_ICON } )
+						content:  marginalia.icons[ 'link' ] } )
 					} ) );
 			}
 		}
@@ -87,7 +87,7 @@ PostMicro.prototype.showLink = function( marginalia, annotation )
  */
 PostMicro.prototype.hideLink = function( marginalia, annotation )
 {
-	var existingLink = domutil.childByTagClass( this.getContentElement( ), 'a', AN_ID_PREFIX + annotation.getId(), null );
+	var existingLink = domutil.childByTagClass( this.getContentElement( ), 'a', Marginalia.ID_PREFIX + annotation.getId(), null );
 	if ( existingLink )
 		existingLink.parentNode.removeChild( existingLink );	
 }
@@ -119,15 +119,15 @@ PostMicro.prototype.editAnnotationLink = function( marginalia, annotation )
 	{
 		var event = marginalia;
 		var target = domutil.getEventTarget( event );
-		annotation = domutil.nestedFieldValue( target, AN_ANNOTATION_FIELD );
-		post = domutil.nestedFieldValue( target, AN_POST_FIELD );
+		annotation = domutil.nestedFieldValue( target, Marginalia.F_ANNOTATION );
+		post = domutil.nestedFieldValue( target, Marginalia.F_POST );
 		marginalia = window.marginalia;
 	}
 	
 	annotation.editing = AN_EDIT_LINK;
 	marginalia.editing = annotation;
-	var noteElement = annotation.getNoteElement( );
-	domutil.addClass( noteElement, AN_EDITINGLINK_CLASS );
+	var noteElement = annotation.getNoteElement( marginalia );
+	domutil.addClass( noteElement, Marginalia.C_EDITINGLINK );
 	marginalia.linkUi.showLinkEdit( marginalia, post, annotation, noteElement );
 }
 
@@ -144,9 +144,9 @@ PostMicro.prototype.saveAnnotationLink = function( marginalia, annotation, noteE
 	// Update edit status
 	delete annotation.editing;
 	marginalia.editing = null;
-	domutil.removeClass( noteElement, AN_EDITINGLINK_CLASS );
+	domutil.removeClass( noteElement, Marginalia.C_EDITINGLINK );
 
-	this.flagAnnotation( marginalia, annotation, AN_HOVER_CLASS, false );
+	this.flagAnnotation( marginalia, annotation, Marginalia.C_HOVER, false );
 	marginalia.updateAnnotation( annotation, null );
 
 	// Update the link display
@@ -176,8 +176,8 @@ PostMicro.prototype.deleteLink = function( marginalia, annotation )
 	// Update edit status
 	delete annotation.editing;
 	marginalia.editing = null;
-	var noteElement = annotation.getNoteElement( );
-	domutil.removeClass( noteElement, AN_EDITINGLINK_CLASS );
+	var noteElement = annotation.getNoteElement( marginalia );
+	domutil.removeClass( noteElement, Marginalia.C_EDITINGLINK );
 }
 
 
@@ -187,7 +187,7 @@ PostMicro.prototype.deleteLink = function( marginalia, annotation )
  */
 function _skipAnnotationLinks( node )
 {
-	return ELEMENT_NODE == node.nodeType && domutil.hasClass( node, AN_LINK_CLASS );
+	return ELEMENT_NODE == node.nodeType && domutil.hasClass( node, Marginalia.C_LINK );
 //		&& node.parentNode
 //		&& 'a' == domutil.getLocalName( node )
 //		&& domutil.hasClass( node.parentNode, AN_HIGHLIGHT_CLASS );

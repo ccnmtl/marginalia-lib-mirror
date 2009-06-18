@@ -27,11 +27,6 @@
  * $Id$
  */
 
-// If this is true, uses paths like annotate/nnn
-// if false, use paths like annotation/annotate.php?id=nnn
-ANNOTATION_NICE_URLS = false;
-
-
 /**
  * Oops.  This didn't conform to the URI spec - all those nice juice characters are
  * reserved.  So now all it does is replace %20 with + to make URIs easier to read.
@@ -69,7 +64,7 @@ function RestAnnotationService( serviceUrl, features )
 	{
 		for ( feature in features )
 		{
-			value = features[ feature ];
+			var value = features[ feature ];
 			switch ( feature )
 			{
 				// Name of cookie to use for preventing cross-site request forgery
@@ -105,12 +100,54 @@ function RestAnnotationService( serviceUrl, features )
 }
 
 
+RestAnnotationService.prototype.buildServiceUrl = function( params )
+{
+	var baseUrl = this.serviceUrl;
+	var parray = [ ];
+
+	for ( var param in params )
+	{
+		switch ( param )
+		{
+			case 'id':
+				if ( this.niceUrls )
+					baseUrl += '/' + encodeURIParameter( params[ 'id' ] );
+				else
+					parray.push( 'id=' + encodeURIParameter( params[ 'id' ] ) );
+				break;
+			
+			case 'url':
+				if ( ! this.niceUrls )
+					parray.push( 'url=' + encodeURIParameter( params[ 'url' ] ) );
+				break;
+				
+			case 'user':
+				if ( this.niceUrls )
+					baseUrl += '/' + encodeURIParameter( params[ 'user' ] );
+				else
+					parray.push( 'user=' + encodeURIParameter( params[ 'user' ] ) );
+				break;
+			
+			default:
+				parray.push( encodeURIParameter( param ) + '=' + encodeURIParameter( params[ param ] ) );
+		}
+	}
+	
+	if ( parray.length > 0 )
+		return baseUrl + '?' + parray.join( '&' );
+	else
+		return baseUrl;
+}
+
 /**
  * Fetch a list of annotated blocks
  */
 RestAnnotationService.prototype.listBlocks = function( url, f )
 {
-	var serviceUrl = this.serviceUrl + '?format=blocks&url=' + encodeURIParameter( url );
+	var serviceUrl = this.buildServiceUrl( {
+			format: 'blocks',
+			url: url
+	} );
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
@@ -147,17 +184,18 @@ RestAnnotationService.prototype.listBlocks = function( url, f )
 RestAnnotationService.prototype.listAnnotations = function( url, userid, block, f )
 {
 	// exclude content to lighten the size across the wire
-	var serviceUrl = this.serviceUrl;
-	serviceUrl += '?format=atom';
+	var serviceParams = {
+		format: 'atom',
+		url: url };
 	if ( block )
-		serviceUrl += '&block=' + encodeURIParameter( block );
+		serviceParams[ 'block' ] = block;
 	if ( userid )
-		serviceUrl += '&user=' + encodeURIParameter( userid );
-	serviceUrl += '&url=' + encodeURIParameter( url );
-	
+		serviceParams[ 'user' ] = userid;
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '&curuser=' + encodeURIParameter( window.marginalia.loginUserId );
+		serviceParams[ 'curuser' ] = window.marginalia.loginUserId;
+
+	var serviceUrl = this.buildServiceUrl( serviceParams );
 
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
@@ -188,15 +226,20 @@ RestAnnotationService.prototype.listAnnotations = function( url, userid, block, 
  */
 RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 {
-	var serviceUrl = this.serviceUrl;
+	var serviceParams = { };
 		
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += '?curuser=' + encodeURIParameter( window.marginalia.loginUserId );
+		serviceParams[ 'curuser' ] = encodeURIParameter( window.marginalia.loginUserId );
+
+	// May need to pass method name instead of using PUT or DELETE
+	if ( this.noPutDelete )
+		serviceParams[ 'method' ] = 'POST';
+	
+	var serviceUrl = this.buildServiceUrl( serviceParams );
 
 	var body
-		= 'url=' + encodeURIParameter( annotation.getUrl() )
-		+ '&note=' + encodeURIParameter( annotation.getNote() )
+		= 'note=' + encodeURIParameter( annotation.getNote() )
 		+ '&access=' + encodeURIParameter( annotation.getAccess() )
 		+ '&quote=' + encodeURIParameter( annotation.getQuote() )
 		+ '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() )
@@ -206,6 +249,10 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 		+ '&userid=' + encodeURIParameter( annotation.getUserId() );
 	// userid shouldn't be trusted by the server of course, except for demo applications for
 	// which it can be useful.
+	
+	trace( null, 'niceUrls: ' + this.niceUrls );
+	if ( ! this.niceUrls )
+		body += '&url=' + encodeURIParameter( annotation.getUrl() );
 		
 	if ( annotation.getAction() )
 		body += '&action=' + encodeURIParameter (annotation.getAction() );
@@ -220,10 +267,6 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 		
-	// May need to pass method name instead of using PUT or DELETE
-	if ( this.noPutDelete )
-		serviceUrl += '&method=POST';
-	
 	var xmlhttp = domutil.createAjaxRequest( );
 	
 	xmlhttp.open( 'POST', serviceUrl, true );
@@ -257,13 +300,25 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
  */
 RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 {
-	var serviceUrl = this.serviceUrl;
-	serviceUrl += this.niceUrls ? ( '/' + annotation.getId() ) : ( '?id=' + annotation.getId() );
+	var serviceParams = {
+		id: annotation.getId( )
+	};
 	
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-		serviceUrl += ( this.niceUrls ? '?' : '&' )
-			+ 'curuser=' + encodeURIParameter( window.marginalia.loginUserId );
+		serviceParams[ 'curuser' ] = window.marginalia.loginUserId;
+
+	serviceParams[ 'url' ] = annotation.getUrl( );
+	
+	// May need to pass method name instead of using PUT or DELETE
+	var method = 'PUT';
+	if ( this.noPutDelete )
+	{
+		serviceParams[ 'method' ] = 'PUT';
+		method = 'POST';
+	}
+	
+	var serviceUrl = this.buildServiceUrl( serviceParams );
 
 	var body = '';
 	if ( annotation.hasChanged( 'note' )  )
@@ -283,14 +338,6 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIParameter( readCookie( this.csrfCookie ) );
 
-	// May need to pass method name instead of using PUT or DELETE
-	var method = 'PUT';
-	if ( this.noPutDelete )
-	{
-		serviceUrl += '&method=PUT';
-		method = 'POST';
-	}
-	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( method, serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8' );
@@ -323,8 +370,19 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, f )
  */
 RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 {
-	var serviceUrl = this.serviceUrl;
-	serviceUrl += '?note=' + encodeURIComponent( oldNote );
+	var serviceParams = {
+		note: oldNote
+	};
+	
+	// May need to pass method name instead of using PUT or DELETE
+	var method = 'PUT';
+	if ( this.noPutDelete )
+	{
+		serviceParams[ 'method' ] = 'PUT';
+		method = 'POST';
+	}
+	
+	var serviceUrl = this.buildServiceUrl( serviceParams );
 		
 	var body = 'note=' + encodeURIComponent( newNote );
 		
@@ -332,14 +390,6 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
 	if ( this.csrfCookie )
 		body += '&' + encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
 
-	// May need to pass method name instead of using PUT or DELETE
-	var method = 'PUT';
-	if ( this.noPutDelete )
-	{
-		serviceUrl += '&method=PUT';
-		method = 'POST';
-	}
-	
 	var xmlhttp = domutil.createAjaxRequest( );
 	
 	// This use of PUT is suspect, as it does not send a full representation of the resource -
@@ -376,40 +426,27 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, f )
  */
 RestAnnotationService.prototype.deleteAnnotation = function( annotationId, f )
 {
-	var serviceUrl = this.serviceUrl;
-	var hasParams = false;
-	
-	if ( this.niceUrls )
-		serviceUrl += '/' + annotationId;
-	else
-	{
-		serviceUrl += '?id=' + annotationId;
-		hasParams = true;
-	}
-	
+	var serviceParams = {
+		id: annotationId
+	};
+
 	// Cross-site request forgery protection (if present)
 	if ( this.csrfCookie )
-	{
-		serviceUrl += ( hasParams ? '&' : '?' )
-			+ encodeURIComponent( this.csrfCookie ) + '=' + encodeURIComponent( readCookie( this.csrfCookie ) );
-		hasParams = true;
-	}
+		serviceParams[ this.csrfCookie ] = readCookie( this.csrfCookie );
 
 	// For demo debugging only
 	if ( window.marginalia && window.marginalia.userInRequest )
-	{
-		serviceUrl += ( hasParams ? '&' : '?' )
-			+ 'curuser=' + encodeURIParameter( window.marginalia.loginUserId );
-		hasParams = true;
-	}
+		serviceParams[ 'curuser' ] = window.marginalia.loginUserId;
 	
 	// May need to pass method name instead of using PUT or DELETE
 	var method = 'DELETE';
 	if ( this.noPutDelete )
 	{
-		serviceUrl += ( hasParams ? '&' : '?' ) + 'method=DELETE';
+		serviceParams[ 'method' ] = 'DELETE';
 		method = 'POST';
 	}
+	
+	var serviceUrl = this.buildServiceUrl( serviceParams );
 	
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( method, serviceUrl, true );

@@ -26,10 +26,9 @@
  * $Id$
  */
 
-AN_MARKERS_CLASS = 'markers';		// markers column (usually on the left)
-AN_MARKER_CLASS = 'marker';		// individual block marker
-AN_USERCOUNT_CLASS = 'annotation-user-count';		// contains user count in block marker
-AN_ANNOTATIONSFETCHED_CLASS = 'fetched';	// indicates a block's annotations have been fetched
+Marginalia.C_MARKER = Marginalia.PREFIX + 'marker';		// individual block marker
+Marginalia.C_USERCOUNT = Marginalia.PREFIX + 'annotation-user-count';		// contains user count in block marker
+Marginalia.C_ANNOTATIONSFETCHED = Marginalia.PREFIX + 'fetched';	// indicates a block's annotations have been fetched
 
 
 /**
@@ -99,14 +98,14 @@ PostMicro.prototype.getBlockMarkerClickFcn = function( marginalia, markerElement
 {
 	var postMicro = this;
 	return function() {
-		if ( domutil.hasClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS ) )
+		if ( domutil.hasClass( markerElement, Marginalia.C_ANNOTATIONSFETCHED ) )
 		{
-			domutil.removeClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+			domutil.removeClass( markerElement, Marginalia.C_ANNOTATIONSFETCHED );
 			postMicro.hideBlockAnnotations( marginalia, pointStr );
 		}
 		else
 		{
-			domutil.addClass( markerElement, AN_ANNOTATIONSFETCHED_CLASS );
+			domutil.addClass( markerElement, Marginalia.C_ANNOTATIONSFETCHED );
 			marginalia.showBlockAnnotations( url, pointStr );
 		}
 	};
@@ -158,7 +157,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 
 PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 {
-	var markers = domutil.childByTagClass( this.getElement( ), null, AN_MARKERS_CLASS, marginalia.skipContent );
+	var markers = marginalia.selectors[ 'markers' ].nodes( this.getElement( ) );
 	if ( markers )
 	{
 		var countElement;
@@ -170,11 +169,11 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 			block.blockMarkerUsers = [ ];
 
 			markerElement = domutil.element( 'div', {
-				className: AN_MARKER_CLASS,
+				className: Marginalia.C_MARKER,
 				blockElement: block
 			} );
 			countElement = domutil.element( 'span', {
-				className: AN_USERCOUNT_CLASS,
+				className: Marginalia.C_USERCOUNT,
 				onclick: this.getBlockMarkerClickFcn( window.marginalia, markerElement, info.url, point.toString() )
 			} );
 			markerElement.appendChild( countElement );
@@ -252,10 +251,10 @@ PostMicro.prototype.positionBlockMarker = function( marginalia, markers, markerE
  */
 PostMicro.prototype.repositionBlockMarkers = function( marginalia )
 {
-	var markers = domutil.childByTagClass( this.getElement( ), null, AN_MARKERS_CLASS, marginalia.skipContent );
+	var markers = marginalia.selectors[ 'mia_markers' ].nodes( this.getElement( ) );
 	if ( markers )
 	{
-		var markerElements = domutil.childrenByTagClass( this.getElement( ), null, AN_MARKER_CLASS, null );
+		var markerElements = domutil.childrenByTagClass( this.getElement( ), null, Marginalia.C_MARKER, null );
 		for ( var i = 0;  i < markerElements.length;  ++i )
 			this.positionBlockMarker( marginalia, markers, markerElements[ i ] );
 	}
