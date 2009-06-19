@@ -150,7 +150,10 @@ PostMicro.prototype.getTitle = function( )
 	if ( ! this._fetchedTitle )
 	{
 		// The title
-		this._title = this.postInfo.selectors[ 'post_title' ].value( this._element );
+		if ( this.postInfo.selectors[ 'post_title' ] )
+			this._title = this.postInfo.selectors[ 'post_title' ].value( this._element );
+		else
+			this._title = null;
 		this._fetchedTitle = true;
 	}
 	return this._title;
@@ -161,7 +164,10 @@ PostMicro.prototype.getAuthorId = function( )
 	if ( ! this._fetchedAuthorId )
 	{
 		// The author
-		this._authorId = this.postInfo.selectors[ 'post_authorid' ].value( this._element );
+		if ( this.postInfo.selectors[ 'post_authorid' ] )
+			this._authorId = this.postInfo.selectors[ 'post_authorid' ].value( this._element );
+		else
+			this._authorId = null;
 		this._fetchedAuthorId = true;
 	}
 	return this._authorId;
@@ -172,7 +178,10 @@ PostMicro.prototype.getAuthorName = function( )
 	if ( ! this._fetchedAuthorName )
 	{
 		// The author
-		this._authorName = this.postInfo.selectors[ 'post_author' ].value( this._element );
+		if ( this.postInfo.selectors[ 'post_author' ] )
+			this._authorName = this.postInfo.selectors[ 'post_author' ].value( this._element );
+		else
+			this._authorName = null;
 		this._fetchedAuthorName = true;
 	}
 	return this._authorName;
@@ -182,19 +191,24 @@ PostMicro.prototype.getDate = function( )
 {
 	if ( ! this._fetchedDate )
 	{
-		var s = this.postInfo.selectors[ 'post_date' ].get( this._element, true );
-		if ( null == s )
-			this._date = null;
-		else
+		if ( this.postInfo.selectors[ 'post_date' ] )
 		{
-			var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
-			if ( null == matches )
+			var s = this.postInfo.selectors[ 'post_date' ].value( this._element, true );
+			if ( null == s )
 				this._date = null;
 			else
-				// I haven't figured out how to deal with the time zone, so it assumes that server
-				// time and local time are the same - which is rather bad.
-				this._date = new Date( matches[1], matches[2]-1, matches[3], matches[4], matches[5] );
+			{
+				var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
+				if ( null == matches )
+					this._date = null;
+				else
+					// I haven't figured out how to deal with the time zone, so it assumes that server
+					// time and local time are the same - which is rather bad.
+					this._date = new Date( matches[1], matches[2]-1, matches[3], matches[4], matches[5] );
+			}
 		}
+		else
+			this._date = null;
 		this._fetchedDate = true;
 	}
 
@@ -206,7 +220,10 @@ PostMicro.prototype.getUrl = function( baseUrl )
 	if ( ! this._fetchedUrl )
 	{
 		// The node containing the url
-		this._url = this.postInfo.selectors[ 'post_url' ].value( this._element );
+		if ( this.postInfo.selectors[ 'post_url' ] )
+			this._url = this.postInfo.selectors[ 'post_url' ].value( this._element );
+		else
+			this._url = String( window.location );
 		this._fetchedUrl = true;
 	}
 	return ( baseUrl && this._url && this._url.substring( 0, baseUrl.length ) == baseUrl )

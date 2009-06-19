@@ -186,7 +186,7 @@ function Marginalia( service, loginUserId, displayUserId, features )
 			// Default selectors can be overriden individually
 			case 'selectors':
 				for ( var selector in value )
-					this.selectors[ selector ] = value;
+					this.selectors[ selector ] = value[ selector ];
 				break;
 			
 			// Show a caret where the user clicks the mouse.  Do not use.
@@ -508,9 +508,9 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					// are dealt with here at once, the speed hit shouldn't be too bad)
 					while ( nextNode )
 					{
-						if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+						if ( ELEMENT_NODE == nextNode.nodeType && nextNode[ Marginalia.F_ANNOTATION ] )
 						{
-							if ( annotation.compareRange( nextNode.annotation ) < 0 )
+							if ( annotation.compareRange( nextNode[ Marginalia.F_ANNOTATION ] ) < 0 )
 								break;
 						}
 						nextNode = nextNode.nextSibling;
@@ -696,8 +696,8 @@ PostMicro.prototype.listAnnotations = function( marginalia )
 	var annotations = new Array( );
 	while ( null != child )
 	{
-		if ( child.annotation )
-			annotations[ annotations.length ] = child.annotation;
+		if ( child[ Marginalia.F_ANNOTATION ] )
+			annotations[ annotations.length ] = child[ Marginalia.F_ANNOTATION ];
 		child = child.nextSibling;
 	}
 	return annotations;
@@ -717,10 +717,10 @@ PostMicro.prototype.removeAnnotations = function( marginalia )
 	var annotations = new Array( );
 	while ( null != child )
 	{
-		if ( child.annotation )
+		if ( child[ Marginalia.F_ANNOTATION ] )
 		{
-			annotations[ annotations.length ] = child.annotation;
-			child.annotation = null;
+			annotations[ annotations.length ] = child[ Marginalia.F_ANNOTATION ];
+			child[ Marginalia.F_ANNOTATION ] = null;
 		}
 		notesElement.removeChild( child );
 		child = notesElement.firstChild;
@@ -745,7 +745,7 @@ PostMicro.prototype.removeAnnotation = function( marginalia, annotation )
 	if ( 'edit' == annotation.action )
 		this.repositionBlockMarkers( marginalia );
 	
-	return null == next ? null : next.annotation;
+	return null == next ? null : next[ Marginalia.F_ANNOTATION ];
 }
 
 /* ************************ Display Actions ************************ */
@@ -930,7 +930,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		annotation.setUrl( this.getUrl( ) );
 		
 		// IE may have made a relative URL absolute, which could cause problems
-		if ( null != marginalia.baseUrl
+		if ( null != marginalia.baseUrl && annotation.url
 			&& annotation.url.substring( 0, marginalia.baseUrl.length ) == marginalia.baseUrl )
 		{
 			annotation.setUrl( annotation.getUrl().substring( marginalia.baseUrl.length ) );

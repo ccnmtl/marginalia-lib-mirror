@@ -69,12 +69,13 @@ PostMicro.prototype.getAnnotationNextNote = function( marginalia, annotation )
 	for ( var prevNode = notesElement.lastChild;  null != prevNode;  prevNode = prevNode.previousSibling )
 	{
 		// In case it's a dummy list item or other
-		if ( ELEMENT_NODE == prevNode.nodeType && prevNode.annotation )
+		if ( ELEMENT_NODE == prevNode.nodeType && prevNode[ Marginalia.F_ANNOTATION ] )
 		{
+			var prevAnnotation = prevNode[ Marginalia.F_ANNOTATION ];
 			// Why on earth would this happen??
-			if ( prevNode.annotation.getId() == annotation.getId() )
+			if ( prevAnnotation.getId() == annotation.getId() )
 				break;
-			else if ( annotation.compareRange( prevNode.annotation ) >= 0 )
+			else if ( annotation.compareRange( prevAnnotation ) >= 0 )
 				break;
 		}
 	}
@@ -87,7 +88,7 @@ PostMicro.prototype.getAnnotationNextNote = function( marginalia, annotation )
 		var nextNode;
 		for ( nextNode = notesElement.firstChild;  nextNode;  nextNode = nextNode.nextSibling )
 		{
-			if ( ELEMENT_NODE == nextNode.nodeType && nextNode.annotation )
+			if ( ELEMENT_NODE == nextNode.nodeType && nextNode[ Marginalia.F_ANNOTATION ] )
 				break;
 		}
 		return nextNode;	// will be null if no annotations in the list
@@ -713,21 +714,24 @@ PostMicro.prototype.repositionNotes = function( marginalia, element )
 
 PostMicro.prototype.repositionNote = function( marginalia, element )
 {
-	var annotation = element.annotation;
+	var annotation = element[ Marginalia.F_ANNOTATION ];
 	if ( annotation )
 	{
 		var alignElement = this.getNoteAlignElement( marginalia, annotation );
 		if ( alignElement )
 		{
 			var goback = false;
-			var previous = element.previousSibling;
+			
+			for ( var previous = element.previousSibling; previous;  previous = previous.previousSibling )
+				if ( ELEMENT_NODE == previous.nodeType )
+					break;
 			var pushdown = this.calculateNotePushdown( marginalia, previous, alignElement );
 
 		/* uncomment this to automatically collapse some notes: *
 			// If there's negative pushdown, check whether the preceding note also has pushdown
 			if ( pushdown < 0
 				&& previous 
-				&& previous.annotation 
+				&& previous[ Marginalia.F_ANNOTATION ] 
 				&& ! hasClass( previous, AN_NOTECOLLAPSED_CLASS )
 				&& previous.pushdown
 				&& previous.pushdown < 0 )
@@ -736,7 +740,7 @@ PostMicro.prototype.repositionNote = function( marginalia, element )
 				// Go back two elements and collapse, then restart pushdown 
 				// calculations at the previous element.
 				var collapseElement = previous.previousSibling;
-				if ( collapseElement && collapseElement.annotation )
+				if ( collapseElement && collapseElement[ Marginalia.F_ANNOTATION ] )
 				{
 					addClass( collapseElement, AN_NOTECOLLAPSED_CLASS );
 					element = previous;
@@ -765,9 +769,9 @@ PostMicro.prototype.repositionSubsequentNotes = function( marginalia, firstNote 
 {
 	for ( var note = firstNote;  note;  note = note.nextSibling )
 	{
-		if ( ELEMENT_NODE == note.nodeType && note.annotation )
+		if ( ELEMENT_NODE == note.nodeType && note[ Marginalia.F_ANNOTATION ] )
 		{
-			var alignElement = this.getNoteAlignElement( note.annotation );
+			var alignElement = this.getNoteAlignElement( marginalia, note[ Marginalia.F_ANNOTATION ] );
 			if ( alignElement )
 			{
 				var pushdown = this.calculateNotePushdown( marginalia, note.previousSibling, alignElement );
@@ -790,8 +794,10 @@ PostMicro.prototype.removeNote = function( marginalia, annotation )
 	var listItem = annotation.getNoteElement( marginalia );
 	var next = domutil.nextByTagClass( listItem, 'li' );
 	listItem.parentNode.removeChild( listItem );
-	listItem.annotation = null; // dummy item won't have this field
+	listItem[ Marginalia.F_ANNOTATION ] = null; // dummy item won't have this field
 	domutil.clearEventHandlers( listItem, true );	
+//	if ( next )
+//		this.repositionNotes( marginalia, next );
 	return next;
 }
 

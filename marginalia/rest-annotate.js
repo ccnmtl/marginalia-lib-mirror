@@ -121,13 +121,6 @@ RestAnnotationService.prototype.buildServiceUrl = function( params )
 					parray.push( 'url=' + encodeURIParameter( params[ 'url' ] ) );
 				break;
 				
-			case 'user':
-				if ( this.niceUrls )
-					baseUrl += '/' + encodeURIParameter( params[ 'user' ] );
-				else
-					parray.push( 'user=' + encodeURIParameter( params[ 'user' ] ) );
-				break;
-			
 			default:
 				parray.push( encodeURIParameter( param ) + '=' + encodeURIParameter( params[ param ] ) );
 		}
@@ -241,16 +234,22 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	var body
 		= 'note=' + encodeURIParameter( annotation.getNote() )
 		+ '&access=' + encodeURIParameter( annotation.getAccess() )
-		+ '&quote=' + encodeURIParameter( annotation.getQuote() )
-		+ '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() )
-		+ '&quote_author_id=' + encodeURIParameter( annotation.getQuoteAuthorId() )
-		+ '&quote_author_name=' + encodeURIParameter( annotation.getQuoteAuthorName() )
+		+ '&quote=' + encodeURIParameter( annotation.getQuote() );
+
+	if ( annotation.getQuoteTitle( ) )
+		body += '&quote_title=' + encodeURIParameter( annotation.getQuoteTitle() );
+	
+	if ( annotation.getQuoteAuthorId( ) )
+		body += '&quote_author_id=' + encodeURIParameter( annotation.getQuoteAuthorId() );
+	
+	if ( annotation.getQuoteAuthorName( ) )
+		body += '&quote_author_name=' + encodeURIParameter( annotation.getQuoteAuthorName() );
+	
 		+ '&link=' + encodeURIParameter( annotation.getLink() )
 		+ '&userid=' + encodeURIParameter( annotation.getUserId() );
 	// userid shouldn't be trusted by the server of course, except for demo applications for
 	// which it can be useful.
 	
-	trace( null, 'niceUrls: ' + this.niceUrls );
 	if ( ! this.niceUrls )
 		body += '&url=' + encodeURIParameter( annotation.getUrl() );
 		
@@ -276,7 +275,8 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, f )
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 ) {
 			// No need for Safari hack, since Safari can't create annotations anyway.
-			if ( xmlhttp.status == 201 ) {
+			// Status could should ideally be 201, but some services don't support that (django 1.0)
+			if ( xmlhttp.status == 201 || xmlhttp.status == 200 ) {
 				var url = xmlhttp.getResponseHeader( 'Location' );
 				if ( null != f )
 				{
