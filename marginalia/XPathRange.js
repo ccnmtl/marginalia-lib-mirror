@@ -227,7 +227,8 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// expression is expensive and complex.  I'm doing some of this on the
 	// server, so unless someone can hijack the returned xpath expressions
 	// this should never happen anyway.
-	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
+	if ( ! this.isXPathSafe( xpath ) )
+//	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
 		return null;
 	else if ( xpath == '' )
 		return root;
@@ -269,4 +270,52 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	return rel;
 }
 
+// This is not a generic xpath checker.  It whitelists just enough to handle
+// the auto-generated paths used by XPathPoint
+XPathPoint.prototype.isXPathSafe = function( xpath )
+{
+	// Path could be blank
+	if ( '' == xpath )
+		return true;
+	// Path may start with .//
+	if ( './/' == xpath.substr(0,3) )
+		xpath = xpath.substr(3);
+	var parts = xpath.split( '/' );
+	for ( var i = 0;  i < parts.length;  ++i )
+	{
+		var part = parts[ i ];
+		// should perhaps trim it, but won't bother
+		var matches = xpath.match( '^[a-zA-Z0-9_:\*-]+\s*(.*)$' );
+		if ( matches )
+		{
+			var tail = matches[ 1 ];
+			// Simple tag name witho or without axis or namespace
+			if ( '' == tail )
+				;
+			// Qualification in [brackets]
+			else if ( matches = tail.match( /^\[([^\]]+)\]\s*$/ ) )
+			{
+				var test = matches[ 1 ];
+				// Simple number index
+				if ( test.match( /^\d+$/ ) )
+					;
+				// Comparison of an attribute with a quoted value
+				else if ( matches = test.match( /^@[a-zA-Z0-9_-]+\s*=\s*([\'"])[a-zA-Z0-9:._-]+([\'"])$/ ) )
+				{
+					if ( matches[ 1 ] == matches[ 1 ] )
+						;
+					else
+						return false;
+				}
+				else
+					return false;
+			}
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	return true;
+}
 
