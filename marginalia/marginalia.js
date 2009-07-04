@@ -369,7 +369,7 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 	}
 }
 
-Marginalia.prototype.deleteAnnotation = function( annotationId )
+Marginalia.prototype.deleteAnnotation = function( annotation )
 {
 	var f = null;
 	if ( this.keywordService )
@@ -379,7 +379,7 @@ Marginalia.prototype.deleteAnnotation = function( annotationId )
 			keywordService.refresh( );
 		};
 	}
-	this.annotationService.deleteAnnotation( annotationId, f );
+	this.annotationService.deleteAnnotation( annotation, f );
 }
 
 
@@ -1014,7 +1014,7 @@ PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
 	
 	// Delete it on the server
 	if ( ! annotation.isLocal )
-		marginalia.deleteAnnotation( annotation.getId(), null );
+		marginalia.deleteAnnotation( annotation, null );
 	
 	// Find the annotation
 	var next = this.removeAnnotation( marginalia, annotation );

@@ -51,6 +51,8 @@ XPathRange.canResolve = function( root )
 
 XPathRange.fromString = function( path )
 {
+	if ( ! path )
+		return null;
 	var parts = path.split( ';' );
 	if ( null == parts || 2 != parts.length )
 		throw "XPathRange parse error";

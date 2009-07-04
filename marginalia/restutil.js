@@ -116,20 +116,23 @@ UrlTemplate: function( template )
 {
 	this.template = template;
 	this.params = null;
-	
+	this.paramMatcher = /\{([a-zA-Z0-9_]+)\}/g;
+	this.manySlashMatcher = /(\/+)/g;
+
 	this.match = function( args )
 	{
+//		trace( null, 'test template ' + this.template );
 		var url = this.template;
 		
 		// Fill this.params with a hash of named template parameters
 		if ( null == this.params )
 		{
 			this.params = [ ];
-			var match = template.match( /\{([a-zA-Z0-9_]+)\}/g );
-			if ( match )
+			var matches = template.match( this.paramMatcher );
+			if ( matches )
 			{
-				for ( var i = 1;  i < match.length;  ++i )
-					this.params.push( match[ i ] );
+				for ( var i = 0;  i < matches.length;  ++i )
+					this.params.push( matches[ i ].substr( 1, matches[ i ].length - 2 ) );
 			}
 		}
 		
@@ -151,7 +154,11 @@ UrlTemplate: function( template )
 				{
 					// Flag it as found and do the substitution
 					found = true;
-					url.replace( '{' + domutil.encodeURIParameter( this.params[ i ] ) + '}', args[ j ][ 1 ] );
+					var search = '{' + this.params[ i ] + '}';
+					var index = url.indexOf( search );
+//					trace( null, 'replace {' + this.params[ i ] + '} with ' + args[ j ][ 1 ] );
+					url = url.substring( 0, index ) + args[ j ][ 1 ] + url.substring( index + search.length );
+//					trace( null, '=> ' + url );
 					break;
 				}
 			}
@@ -162,17 +169,20 @@ UrlTemplate: function( template )
 		}
 		
 		// Reduce multiple slashes to a single slash
-//		url = url.replace( /[^:](\/+)/g, '/' );
+		var index = url.indexOf ( '://' );
+		if ( -1 == index )
+			url = url.replace( this.manySlashMatcher, '/' );
+		else
+			url = url.substring( 0, index ) + '://' + url.substring( index + 3 ).replace( this.manySlashMatcher, '/' );
 
 		// Now add arguments that were not substituted in as query params
 		var queryParams = [ ];
 		for ( i = 0;  i < args.length;  ++i )
 		{
-			trace( null, 'Look for ' + args[ i ][ 0 ] );
 			var found = false;
 			for ( j = 0;  j < this.params.length;  ++j )
 			{
-				if ( params[ j ] == args[ i ][ 0 ] )
+				if ( this.params[ j ] == args[ i ][ 0 ] )
 				{
 					found = true;
 					break;
@@ -180,8 +190,6 @@ UrlTemplate: function( template )
 			}
 			if ( ! found )
 				queryParams.push( restutil.encodeURIParameter( args[ i ][ 0 ] ) + '=' + restutil.encodeURIParameter( args[ i ][ 1 ] ) );
-			else
-				trace( null, 'found' );
 		}
 		
 		if ( queryParams.length > 0 )
@@ -190,6 +198,8 @@ UrlTemplate: function( template )
 			url += queryParams.join( '&' );
 		}
 		
+//		trace( null, 'Use template ' + this.template );
+//		trace( null, '=> ' + url );
 		return url;
 	}
 },
@@ -198,9 +208,9 @@ UrlTemplateSet: function( templates )
 {
 	this.templates = [ ];
 	for ( var i = 0;  i < templates.length;  ++i )
-		this.templates[ i ] = new domutil.UrlTemplate( templates[ i ] );
+		this.templates[ i ] = new restutil.UrlTemplate( templates[ i ] );
 	
-	this.match( args )
+	this.match = function( args )
 	{
 		for ( var i = 0;  i < this.templates.length;  ++i )
 		{
@@ -216,7 +226,7 @@ UrlTemplateDictionary: function( templates )
 {
 	this.dictionary = new domutil.Hash( );
 	for ( operation in templates )
-		this.dictionary.setItem( operation, new domutil.UrlTemplateSet( templates[ operation ] ) );
+		this.dictionary.setItem( operation, new restutil.UrlTemplateSet( templates[ operation ] ) );
 	
 	this.match = function( args, operation )
 	{

@@ -66,6 +66,12 @@ function RestAnnotationService( serviceUrl, features )
 					this.noPutDelete = value;
 					break;
 					
+				// include curuser as get parameter to requests
+				// cheap way to do simple logging
+				case sendCurUser:
+					this.sendCurUser = value;
+					break;
+					
 				default:
 					if ( typeof( this[ feature ] ) != 'undefined' )
 						throw 'Attempt to override feature: ' + feature;
@@ -87,7 +93,7 @@ RestAnnotationService.prototype.listBlocks = function( url, ok, fail )
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'url', url, true ],
 		[ 'format', 'blocks' ],
-		[ 'curuser', window.marginalia.loginUserId ]
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'listAnnotations' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for listBlocks.";	
@@ -112,7 +118,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, userid, block, 
 		[ 'url', url ],
 		[ 'userid', userid ],
 		[ 'format', 'atom' ],
-		[ 'curuser', window.marginalia.loginUserId ]
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'listAnnotations' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for listAnnotations.";	
@@ -139,7 +145,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'url', annotation.getUrl( ), true ],
 		[ 'method', 'POST', this.noPutDelete ],
-		[ 'curuser', window.marginalia.loginUserId ]
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'createAnnotation' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for createAnnotation.";
@@ -178,10 +184,11 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 RestAnnotationService.prototype.updateAnnotation = function( annotation, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
+		[ 'url', annotation.getUrl( ), true ],
 		[ 'id', annotation.getId( ), true ],
 		[ 'method', 'PUT', this.noPutDelete ],
-		[ 'curuser', window.marginalia.loginUserId ]
-	], 'updateAnnotation' );
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
+	], 'updateAnnotations' );
 	if ( ! serviceUrl )
 		throw "No matching service URL for updateAnnotation.";	
 
@@ -220,7 +227,7 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, ok, fai
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'note', oldNote, true ],
 		[ 'method', 'PUT', this.noPutDelete ],
-		[ 'curuser', window.marginalia.loginUserId ]
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'updateAnnotation' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for bulkUpdate.";	
@@ -245,14 +252,15 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, ok, fai
 /**
  * Delete an annotation on the server
  */
-RestAnnotationService.prototype.deleteAnnotation = function( annotationId, ok, fail )
+RestAnnotationService.prototype.deleteAnnotation = function( annotation, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
-		[ 'id', annotationId, true ],
+		[ 'url', annotation.getUrl( ), true ],
+		[ 'id', annotation.id, true ],
 		[ 'method', 'DELETE', this.noPutDelete ],
 		[ this.csrfCookie, readCookie( this.csrfCookie ) ],
-		[ 'curuser', window.marginalia.loginUserId ]
-	], 'updateAnnotation' );
+		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
+	], 'updateAnnotations' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for deleteAnnotation.";
 

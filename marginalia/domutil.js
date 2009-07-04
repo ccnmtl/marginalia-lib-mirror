@@ -961,10 +961,13 @@ scrollWindowToNode: function( node )
  */
 createAjaxRequest: function( )
 {
+	var request;
 	if ( window.XMLHttpRequest )
-		return new XMLHttpRequest( );  // Gecko / XHTML / WebKit
+		request = new XMLHttpRequest( );  // Gecko / XHTML / WebKit
 	else
-		return new ActiveXObject( "Microsoft.XMLHTTP" );  // MS IE
+		request = new ActiveXObject( "Microsoft.XMLHTTP" );  // MS IE
+//	request.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
+	return request;
 },
 
 /*

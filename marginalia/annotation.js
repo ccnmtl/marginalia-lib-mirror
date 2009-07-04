@@ -394,57 +394,65 @@ Annotation.prototype.fromAtom = function( entry )
 	var rangeStr = null;
 	for ( var field = entry.firstChild;  field != null;  field = field.nextSibling )
 	{
-		if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
+		if ( ELEMENT_NODE == field.nodeType )
 		{
-			if ( 'xhtml' == field.getAttribute( 'type' ) )
+			if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'content' )
 			{
-				// Find the enclosed div
-				var child;
-				for ( child = field.firstChild;  child;  child = child.nextSibling )
-					if ( child.namespaceURI == NS_XHTML && child.nodeName == 'div' && domutil.hasClass( child, 'annotation' ) )
-						break;
-				if ( child )
-					this.fromAtomContent( child );	
+				if ( 'xhtml' == field.getAttribute( 'type' ) )
+				{
+					// Find the enclosed div
+					var child;
+					for ( child = field.firstChild;  child;  child = child.nextSibling )
+						if ( child.namespaceURI == NS_XHTML && child.nodeName == 'div' && domutil.hasClass( child, 'annotation' ) )
+							break;
+					if ( child )
+						this.fromAtomContent( child );	
+				}
 			}
-		}
-		else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'link' )
-		{
-			var rel = field.getAttribute( 'rel' );
-			var href = field.getAttribute( 'href' );
-			// What is the role of this link element?  (there are several links in each entry)
-			if ( 'self' == rel )
-				this.id = href.substring( href.lastIndexOf( '/' ) + 1 );
-			else if ( 'related' == rel )
-				this.link = href;
-			else if ( 'alternate' == rel )
-				this.url = href;
-		}
-		else if ( NS_ATOM == field.namespaceURI && 'author' == domutil.getLocalName( field ) )
-		{
-			for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
+			else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'link' )
 			{
-				if ( NS_ATOM == nameElement.namespaceURI && 'name' == domutil.getLocalName( nameElement ) )
-					this.userName = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
-				else if ( NS_PTR == nameElement.namespaceURI && 'userid' == domutil.getLocalName( nameElement ) )
-					this.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+				var rel = field.getAttribute( 'rel' );
+				var href = field.getAttribute( 'href' );
+				// What is the role of this link element?  (there are several links in each entry)
+				if ( 'self' == rel )
+				{
+					if ( matches = href.match( /\/(\w+)[^\/]*$/ ) )
+						this.id = matches[ 1 ];
+					else if ( matches = href.match( /\/(\w+)\/[^\/]*$/ ) )
+						this.id = matches[ 1 ];
+				}
+				else if ( 'related' == rel )
+					this.link = href;
+				else if ( 'alternate' == rel )
+					this.url = href;
 			}
+			else if ( NS_ATOM == field.namespaceURI && 'author' == domutil.getLocalName( field ) )
+			{
+				for ( var nameElement = field.firstChild;  null != nameElement;  nameElement = nameElement.nextSibling )
+				{
+					if ( NS_ATOM == nameElement.namespaceURI && 'name' == domutil.getLocalName( nameElement ) )
+						this.userName = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+					else if ( NS_PTR == nameElement.namespaceURI && 'userid' == domutil.getLocalName( nameElement ) )
+						this.userid = nameElement.firstChild ? nameElement.firstChild.nodeValue : null;
+				}
+			}
+			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'range' )
+			{
+				var format = field.getAttribute( 'format' );
+				// These ranges may throw parse errors
+				if ( 'sequence' == format )
+					this.setSequenceRange( SequenceRange.fromString( domutil.getNodeText( field ) ) );
+				else if ( 'xpath' == format )
+					this.setXPathRange( XPathRange.fromString( domutil.getNodeText( field ) ) );
+				// ignore unknown formats
+			}
+			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )
+				this.access = null == field.firstChild ? 'private' : domutil.getNodeText( field );
+			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'action' )
+				this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
+			else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
+				this.updated = domutil.parseIsoDate( domutil.getNodeText( field ) );
 		}
-		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'range' )
-		{
-			var format = field.getAttribute( 'format' );
-			// These ranges may throw parse errors
-			if ( 'sequence' == format )
-				this.setSequenceRange( SequenceRange.fromString( domutil.getNodeText( field ) ) );
-			else if ( 'xpath' == format )
-				this.setXPathRange( XPathRange.fromString( domutil.getNodeText( field ) ) );
-			// ignore unknown formats
-		}
-		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )
-			this.access = null == field.firstChild ? 'private' : domutil.getNodeText( field );
-		else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'action' )
-			this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
-		else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
-			this.updated = domutil.parseIsoDate( domutil.getNodeText( field ) );
 	}
 	// This is here because annotations are only parsed from XML when being initialized.
 	// In future who knows, this might not be the case - and the reset would have to
