@@ -353,7 +353,7 @@ WordPoint.prototype.resolveLines = function( )
 			{
 				if ( count == 1 )
 					break;
-				else if ( ELEMENT_NODE == walker.node.nodeType && 'br' == walker.node.tagName.toLowerCase( ) )
+				else if ( ELEMENT_NODE == walker.node.nodeType && walker.startTag && 'br' == walker.node.tagName.toLowerCase( ) )
 					count -= 1;
 			}
 			while ( walker.walk( true ) );
