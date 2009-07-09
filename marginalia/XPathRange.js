@@ -221,21 +221,11 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	var xpath = this.path;
 	var myroot = root;
 
-	trace( null, 'there' );
 	var startTime = new Date( );
 	trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + xpath );
 
-	// Screen out document(), as it is a security risk
-	// I would prefer to use a whitelist, but full processing of the xpath
-	// expression is expensive and complex.  I'm doing some of this on the
-	// server, so unless someone can hijack the returned xpath expressions
-	// this should never happen anyway.
 	if ( ! this.isXPathSafe( xpath ) )
-	{
-		trace( null, 'NOT SAFE' );
-//	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
 		return null;
-	}
 	else if ( xpath == '' )
 		return root;
 	
@@ -250,7 +240,6 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
-		console.log( 'Resolve xpath: ' + xpath );
 		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 		rel = rel.iterateNext( );
 	}

@@ -293,7 +293,6 @@ postResource: function( serviceUrl, body, ok, fail, args )
 			xmlhttp = null;
 		}
 	}
-	trace( 'annotation-service', "AnnotationService.createAnnotation " + decodeURI( serviceUrl ) + "\n" + body );
 	xmlhttp.send( body );
 },
 

@@ -388,6 +388,14 @@ Annotation.prototype.defaultNoteEditMode = function( preferences, keywordService
 }
 
 
+Annotation.idFromUrl = function( url )
+{
+	if ( matches = url.match( /\/(\w+)[^\/]*$/ ) )
+		return matches[ 1 ];
+	else if ( matches = url.match( /\/(\w+)\/[^\/]*$/ ) )
+		return matches[ 1 ];
+}
+
 Annotation.prototype.fromAtom = function( entry )
 {
 	var hOffset, hLength, text, url, id;
@@ -415,12 +423,7 @@ Annotation.prototype.fromAtom = function( entry )
 				var href = field.getAttribute( 'href' );
 				// What is the role of this link element?  (there are several links in each entry)
 				if ( 'self' == rel )
-				{
-					if ( matches = href.match( /\/(\w+)[^\/]*$/ ) )
-						this.id = matches[ 1 ];
-					else if ( matches = href.match( /\/(\w+)\/[^\/]*$/ ) )
-						this.id = matches[ 1 ];
-				}
+					this.id = Annotation.idFromUrl( href );
 				else if ( 'related' == rel )
 					this.link = href;
 				else if ( 'alternate' == rel )

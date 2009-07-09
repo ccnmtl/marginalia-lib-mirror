@@ -81,8 +81,8 @@ function Marginalia( service, loginUserId, displayUserId, features )
 	this.editors = {
 		'default': Marginalia.newDefaultEditor,
 		freeform: Marginalia.newEditorFunc( FreeformNoteEditor ),
-		keyword: Marginalia.newEditorFunc( KeywordNoteEditor ),
-		link: Marginalia.newEditorFunc( SimpleLinkUi )
+		keyword: Marginalia.newEditorFunc( KeywordNoteEditor )
+//		link: Marginalia.newEditorFunc( SimpleLinkUi )
 	};
 
 	this.icons = {
@@ -398,9 +398,9 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	// Must set the class here so that annotations margins will expand so that,
 	// in turn, any calculations done by the caller (e.g. to resize margin
 	// buttons) will take the correct size into account.
-	domutil.addClass( document.body, this.prefix + Marginalia.C_ANNOTATED );
+	domutil.addClass( document.body, Marginalia.C_ANNOTATED );
 	if ( this.loginUserId == this.displayUserId || '' == this.displayUserId )
-		domutil.addClass( document.body, this.prefix + Marginalia.C_SELFANNOTATED );
+		domutil.addClass( document.body, Marginalia.C_SELFANNOTATED );
 	// marginalia.hideAnnotations( );
 	var marginalia = this;
 	this.annotationService.listAnnotations( url, this.displayUserId, block,
@@ -621,8 +621,8 @@ Marginalia.prototype.patchAnnotation = function( annotation, post )
  */
 Marginalia.prototype.hideAnnotations = function( )
 {
-	domutil.removeClass( document.body, this.prefix + Marginalia.C_ANNOTATED );
-	domutil.removeClass( document.body, this.prefix + Marginalia.C_SELFANNOTATED );
+	domutil.removeClass( document.body, Marginalia.C_ANNOTATED );
+	domutil.removeClass( document.body, Marginalia.C_SELFANNOTATED );
 	
 	var posts = this.listPosts( ).getAllPosts( );
 	for ( var i = 0;  i < posts.length;  ++i )
@@ -914,8 +914,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		var postMicro = this;
 		var f = function( url ) {
 			// update the annotation with the created ID
-			var id = url.substring( url.lastIndexOf( '/' ) + 1 );
-			annotation.setId( id );
+			annotation.setId( Annotation.idFromUrl( url ) );
 			annotation.resetChanges( );
 			annotation.isLocal = false;
 			var noteElement = document.getElementById( Marginalia.ID_PREFIX + '0' );
