@@ -220,7 +220,8 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	var rel;	// will be the result	
 	var xpath = this.path;
 	var myroot = root;
-	
+
+	trace( null, 'there' );
 	var startTime = new Date( );
 	trace( 'xpath-range', 'XPathPoint.getReferenceElement for path ' + xpath );
 
@@ -230,8 +231,11 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// server, so unless someone can hijack the returned xpath expressions
 	// this should never happen anyway.
 	if ( ! this.isXPathSafe( xpath ) )
+	{
+		trace( null, 'NOT SAFE' );
 //	if ( xpath.match( /[^a-zA-Z_]document\s*\(/ ) )
 		return null;
+	}
 	else if ( xpath == '' )
 		return root;
 	
@@ -246,6 +250,7 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
+		console.log( 'Resolve xpath: ' + xpath );
 		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
 		rel = rel.iterateNext( );
 	}
@@ -287,7 +292,7 @@ XPathPoint.prototype.isXPathSafe = function( xpath )
 	{
 		var part = parts[ i ];
 		// should perhaps trim it, but won't bother
-		var matches = xpath.match( '^[a-zA-Z0-9_:\*-]+\s*(.*)$' );
+		var matches = part.match( '^[a-zA-Z0-9_:\*-]+\s*(.*)$' );
 		if ( matches )
 		{
 			var tail = matches[ 1 ];
@@ -307,16 +312,28 @@ XPathPoint.prototype.isXPathSafe = function( xpath )
 					if ( matches[ 1 ] == matches[ 1 ] )
 						;
 					else
+					{
+						trace( 'isXPathSafe', 'XPath test failed: @attribute="value"' );
 						return false;
+					}
 				}
 				else
+				{
+					trace( 'isXPathSafe', 'XPath test failed: unknown subscript' );
 					return false;
+				}
 			}
 			else
+			{
+				trace ('isXPathSafe', 'XPath test failed: improper text after tag name: ' + tail );
 				return false;
+			}
 		}
 		else
+		{
+			trace( 'isXPathSafe', 'XPath test failed: bad tag name' );
 			return false;
+		}
 	}
 	return true;
 }

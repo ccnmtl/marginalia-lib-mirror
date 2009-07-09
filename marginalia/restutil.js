@@ -110,6 +110,9 @@ queryArgsToString: function( args )
 	var serviceurl = bindUrlTemplate( this.serviceUrls, 'deleteAnnotation', [
 		[ 'id', annotation.id, true ]
 	] );
+	// Fourth array item is optional.  If present, it indicates whether the
+	// argument is necessary.  If absent or True, it indicates that the url should
+	// be added to the GET parameters if not substituted into the path.
 	*/
 
 UrlTemplate: function( template )
@@ -179,17 +182,22 @@ UrlTemplate: function( template )
 		var queryParams = [ ];
 		for ( i = 0;  i < args.length;  ++i )
 		{
-			var found = false;
-			for ( j = 0;  j < this.params.length;  ++j )
+			// Check fourth array item to see whether argument is required in
+			// path or GET params.
+			if ( args[ i ].length < 4 || args[ i ][ 3 ] )
 			{
-				if ( this.params[ j ] == args[ i ][ 0 ] )
+				var found = false;
+				for ( j = 0;  j < this.params.length;  ++j )
 				{
-					found = true;
-					break;
+					if ( this.params[ j ] == args[ i ][ 0 ] )
+					{
+						found = true;
+						break;
+					}
 				}
+				if ( ! found )
+					queryParams.push( restutil.encodeURIParameter( args[ i ][ 0 ] ) + '=' + restutil.encodeURIParameter( args[ i ][ 1 ] ) );
 			}
-			if ( ! found )
-				queryParams.push( restutil.encodeURIParameter( args[ i ][ 0 ] ) + '=' + restutil.encodeURIParameter( args[ i ][ 1 ] ) );
 		}
 		
 		if ( queryParams.length > 0 )

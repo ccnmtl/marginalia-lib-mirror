@@ -139,7 +139,7 @@ RestAnnotationService.prototype.listAnnotations = function( url, userid, block, 
 RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fail )
 {
 	// Small flaw here:  the url gets sent both in the query string *and* in the
-	// body when niceurls are not in use.  When the URLs are nice, it's part of
+	// body when niceurls are not in use.  When the URLs are nice, it can be part of
 	// the URL path.  Though that limits to annotations only of the current site.
 	// Hmmm.
 	var serviceUrl = this.urlTemplate.match( [
@@ -151,7 +151,6 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 		throw "No matching service URL template for createAnnotation.";
 
 	var params = [
-		[ 'url', annotation.getUrl( ), true ],
 		[ 'note', annotation.getNote( ), true ],
 		[ 'access', annotation.getAccess( ), true ],
 		[ 'quote', annotation.getQuote( ), true ],
@@ -184,7 +183,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 RestAnnotationService.prototype.updateAnnotation = function( annotation, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
-		[ 'url', annotation.getUrl( ), true ],
+		[ 'url', annotation.getUrl( ), true, false ],
 		[ 'id', annotation.getId( ), true ],
 		[ 'method', 'PUT', this.noPutDelete ],
 		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
@@ -255,7 +254,7 @@ RestAnnotationService.prototype.bulkUpdate = function( oldNote, newNote, ok, fai
 RestAnnotationService.prototype.deleteAnnotation = function( annotation, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
-		[ 'url', annotation.getUrl( ), true ],
+		[ 'url', annotation.getUrl( ), true, false ],
 		[ 'id', annotation.id, true ],
 		[ 'method', 'DELETE', this.noPutDelete ],
 		[ this.csrfCookie, readCookie( this.csrfCookie ) ],
