@@ -30,11 +30,11 @@ Marginalia.C_HIGHLIGHT = Marginalia.PREFIX + 'annotation';// class given to em n
 
 PostMicro.prototype.wordRangeFromAnnotation = function( marginalia, annotation )
 {
-	var wordRange;
+	var wordRange = null;
 	// XPath range is faster, but we can only use it if the browser supports it
 	if ( annotation.getXPathRange( ) && this.getContentElement( ).ownerDocument.evaluate )
 		wordRange = WordRange.fromXPathRange( annotation.getXPathRange( ), this.getContentElement( ), marginalia.skipContent );
-	else if ( annotation.getSequenceRange( ) )
+	if ( ! wordRange && annotation.getSequenceRange( ) )
 		wordRange = WordRange.fromSequenceRange( annotation.getSequenceRange( ), this.getContentElement( ), marginalia.skipContent );
 	return wordRange;
 }

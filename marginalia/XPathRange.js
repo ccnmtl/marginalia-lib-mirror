@@ -240,8 +240,21 @@ XPathPoint.prototype.getReferenceElement = function( root )
 	// Use XPath support if available (as non-Javascript it should run faster)
 	if ( root.ownerDocument.evaluate )
 	{
-		rel = root.ownerDocument.evaluate( xpath, myroot, domutil.nsPrefixResolver, XPathResult.ANY_TYPE, null );
-		rel = rel.iterateNext( );
+		// Current Safari 4 implementation can't handle something like
+		// div[1]/div[1]/p[1] - don't know why, but it claims it's an invalid
+		// expression.  Even though it can calculate count() of that.  So:
+		// catch the error and return null, then the caller can try the sequenc
+		// range instead.  Bleargh.  I can't find any proper WebKit documentation
+		// of this behavior.
+		try
+		{
+			result = root.ownerDocument.evaluate( xpath, root, null /*domutil.nsPrefixResolver*/, XPathResult.ANY_TYPE, null );
+			rel = result.iterateNext( );
+		}
+		catch( e )
+		{
+			return null;
+		}
 	}
 	else
 		return null;

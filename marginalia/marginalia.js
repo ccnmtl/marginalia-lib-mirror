@@ -337,7 +337,11 @@ Marginalia.saveEditPrefs = function( marginalia, annotation, editor )
 Marginalia.prototype.listPosts = function( )
 {
 	if ( ! this.posts )
+	{
 		this.posts = PostPageInfo.getPostPageInfo( document, this.selectors );
+		for ( var i = 0;  i < this.posts.posts.length;  ++i )
+			this.posts.posts[ i ].initMargin( this );
+	}
 	return this.posts;
 }
 
@@ -537,6 +541,19 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 			delete marginalia.annotationCache;
 			if ( doBlockMarkers && marginalia.showBlockMarkers )
 				marginalia.showPerBlockUserCounts( callbackUrl );
+			
+			// Now that annotation display is complete, check whether there is
+			// a fragment identifier in the URL telling us to scroll to a
+			// particular annotation.
+			var url = '' + window.location;
+			var match = url.match( /#annotation@(\w+)$/ );
+			if ( match )
+			{
+				var id = Marginalia.ID_PREFIX + match[ 1 ];
+				var node = document.getElementById( id );
+				if ( node )
+					domutil.scrollWindowToNode( node, domutil.SCROLL_POS_CENTER );
+			}
 		}
 		else
 			setTimeout( function() { _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers ) }, Marginalia.COOP_TIMEOUT );
@@ -1212,6 +1229,38 @@ function clickCreateAnnotation( event, id, editor )
 }
 
 
+Marginalia.prototype.getSelection = function( warn )
+{
+	// Can't create an annotation while one is being edited
+	if ( marginalia.noteEditor )
+		return false;
+	
+	// Test for selection support (W3C or IE)
+	if ( ( ! window.getSelection || null == window.getSelection().rangeCount )
+		&& null == document.selection )
+	{
+		if ( warn )
+			alert( getLocalized( 'browser support of W3C range required for annotation creation' ) );
+		return false;
+	}
+		
+	var textRange0 = getPortableSelectionRange();
+	if ( ! textRange0 )
+		return null;
+	
+	// Strip off leading and trailing whitespace and preprocess so that
+	// conversion to WordRange will go smoothly.
+	var textRange = TextRange.fromW3C( textRange0 );
+	textRange = textRange.shrinkwrap( marginalia.skipContent );
+	if ( ! textRange )
+		// this happens if the shrinkwrapped range has no non-whitespace text in it
+		return false;
+
+	return textRange;
+}
+
+
+
 /**
  * Create a highlight range based on user selection.
  *
@@ -1229,32 +1278,14 @@ function createAnnotation( postId, warn, editor )
 	if ( marginalia.noteEditor )
 		return false;
 	
-	// Test for selection support (W3C or IE)
-	if ( ( ! window.getSelection || null == window.getSelection().rangeCount )
-		&& null == document.selection )
-	{
-		if ( warn )
-			alert( getLocalized( 'browser support of W3C range required for annotation creation' ) );
-		return false;
-	}
-		
-	var textRange0 = getPortableSelectionRange();
-	if ( null == textRange0 )
+	textRange = marginalia.cachedSelection;
+	if ( ! textRange )
+		var textRange = marginalia.getSelection( warn );
+	
+	if ( ! textRange )
 	{
 		if ( warn )
 			alert( getLocalized( 'select text to annotate' ) );
-		return false;
-	}
-	
-	// Strip off leading and trailing whitespace and preprocess so that
-	// conversion to WordRange will go smoothly.
-	var textRange = TextRange.fromW3C( textRange0 );
-	textRange = textRange.shrinkwrap( marginalia.skipContent );
-	if ( ! textRange )
-	{
-		// this happens if the shrinkwrapped range has no non-whitespace text in it
-		if ( warn )
-			alert( getLocalized( 'x select text to annotate' ) );
 		return false;
 	}
 	
@@ -1279,7 +1310,7 @@ function createAnnotation( postId, warn, editor )
 	
 	// Confirm that the selection is within the post
 	var contentElement = post.getContentElement( );
-	if ( ! ( ( domutil.isElementDescendant( textRange.startContainer,contentElement )
+	if ( ! ( ( domutil.isElementDescendant( textRange.startContainer, contentElement )
 		|| textRange.startContainer == contentElement )
 		&& ( domutil.isElementDescendant( textRange.endContainer, contentElement )
 		|| textRange.endContainer == contentElement ) ) )
@@ -1310,7 +1341,6 @@ function createAnnotation( postId, warn, editor )
 		annotation.destruct( );
 		if ( warn )
 			alert( getLocalized( 'zero length quote' ) );
-		trace( null, "zero length quote '" + annotation.getQuote() + "'" );
 		return false;
 	}
 	

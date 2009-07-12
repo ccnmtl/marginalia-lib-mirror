@@ -945,12 +945,16 @@ getWindowXScroll: function( )
 		return document.body.scrollLeft;
 },
 
-scrollWindowToNode: function( node )
+SCROLL_POS_TOP: 0,
+SCROLL_POS_CENTER: 1,
+scrollWindowToNode: function( node, position )
 {
 	if ( null != node )
 	{
 		var xoffset = domutil.getWindowXScroll( );
 		var yoffset = domutil.getElementYOffset( node, node.ownerDocument.documentElement );
+		if ( domutil.SCROLL_POS_CENTER == position )
+			yoffset -= document.documentElement.clientHeight / 2;
 		window.scrollTo( xoffset, yoffset );
 	}
 },
@@ -1418,9 +1422,7 @@ Hash: function( )
 
 		this.length = 0;
 	}
-},
-
-
+}
 }
 
 

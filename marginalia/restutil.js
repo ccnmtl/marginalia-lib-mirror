@@ -278,7 +278,7 @@ postResource: function( serviceUrl, body, ok, fail, args )
 		for ( header in args.headers )
 			xmlhttp.setRequestHeader( header, args[headers] );
 	}
-	xmlhttp.setRequestHeader( 'Content-length', body.length );
+	//xmlhttp.setRequestHeader( 'Content-length', body.length );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 ) {
 			// No need for Safari hack, since Safari can't create annotations anyway.
@@ -307,7 +307,7 @@ putResource: function( serviceUrl, body, ok, fail, args )
 		for ( header in args.headers )
 			xmlhttp.setRequestHeader( header, args[headers] );
 	}
-	xmlhttp.setRequestHeader( 'Content-length', body.length );
+	//xmlhttp.setRequestHeader( 'Content-length', body.length );
 	xmlhttp.onreadystatechange = function( ) {
 		if ( xmlhttp.readyState == 4 ) {
 			// Safari is braindead here:  any status code other than 200 is converted to undefined

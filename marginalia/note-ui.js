@@ -30,6 +30,7 @@ Marginalia.C_DUMMY = Marginalia.PREFIX + 'dummy';				// used for dummy item in n
 Marginalia.C_QUOTENOTFOUND = Marginalia.PREFIX + 'quote-error';	// note's corresponding highlight region not found
 Marginalia.C_NOTECOLLAPSED = Marginalia.PREFIX + 'collapsed';	// only the first line of the note shows
 Marginalia.C_EDITCHANGED = Marginalia.PREFIX + 'changed';		// indicates content of a text edit changed
+Marginalia.C_OTHERUSER = Marginalia.PREFIX + 'other-user';
 
 // Classes to identify specific controls
 Marginalia.C_LINKBUTTON = Marginalia.PREFIX + 'annotation-link';
@@ -56,7 +57,29 @@ PostMicro.prototype.getNotesElement = function( marginalia )
 }
 
 
- /**
+PostMicro.prototype.initMargin = function( marginalia )
+{
+	var postId = this.getElement().id;
+	var margin = this.getNotesElement( marginalia );
+	margin.onmousedown = function( ) {
+		marginalia.cachedSelection = marginalia.getSelection( );
+//		trace( null, 'cache selection: ' + marginalia.cachedSelection );
+	};
+	margin.onclick = function( event ) {
+		event = domutil.getEvent( event );
+		if ( ! marginalia.noteEditor )
+		{
+//			trace( null, 'clicked' );
+			createAnnotation( postId );
+			domutil.stopPropagation( event );
+		}
+//		trace( null, 'clear selection cache' );
+		marginalia.cachedSelection = null;
+	};
+}
+
+
+/**
  * Get the node that will follow this one once it is inserted in the node list
  * Slow, but necessary when the annotation has not yet been inserted in the node list
  * A return value of null indicates the annotation would be at the end of the list
@@ -315,9 +338,56 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	}
 	
 	// add the text content
+	// Substitutes urls with actual hyperlinks if possible
+	// You may wonder why I do this with the DOM, rather using a regex to
+	// insert <a> tags in the string.  I do this because the DOM is safer - I
+	// *know* I can't possibly create any elements or entities other than those
+	// I explicitly code here.  Escaping may be easy, but with the DOM it can't
+	// be forgotten.  I only see two potential security risks here:  1) allowing
+	// bad url schemes (so I limit to http and https), 2) linking to dangerous
+	// sites.  The latter is unavoidable, and is presumably already a risk on
+	// any site that allows user content.  At  least displaying the domain name
+	// gives some indication of safety.
 	var noteText = domutil.element( 'p', {
-		content: annotation.getNote() ? annotation.getNote() : '\xa0'
-	} );
+		title: params.isCurrentUser ? getLocalized( 'edit annotation click' ) : '' } );
+	var tail = annotation.getNote() ? annotation.getNote() : '\u203b';
+	while ( tail.length > 0 )
+	{
+		var match = tail.match( /https?:\/\/([a-zA-Z0-9\.-]+)(?:\/(?:[^ ]*[a-zA-Z0-9\/#])?)?/ );
+		var url = null;
+		if ( match )
+			url = match[ 0 ];
+		else
+		{
+			match = tail.match( /(www\.[a-zA-Z0-9\.-]+\.[a-zA-Z]{2,4})/ );
+			if ( match )
+				url = 'http://' + match[ 1 ] + '/';
+		}
+		if ( url )
+		{
+			var head = tail.substr( 0, match.index );
+			if ( head.length )
+				noteText.appendChild( document.createTextNode( head ) );
+			domain = match[ 1 ];
+			//if ( 'www.' == domain.substr( 0, 4 ) )
+			//	domain = domain.substr( 4 );
+			noteText.appendChild( domutil.element( 'a', {
+				href: url,
+				title: getLocalized( 'visit annotation link' ),
+				onclick: domutil.stopPropagation,
+				content: domain }));
+			tail = tail.substr( head.length + url.length );
+		}
+		else
+		{
+			noteText.appendChild( document.createTextNode( tail ) );
+			break;
+		}
+	}
+	
+//	var noteText = domutil.element( 'p', {
+//		content: annotation.getNote() ? annotation.getNote() : '\u203b'
+//	} );
 	var titleText = null;
 
 	if ( ! params.quoteFound || ! annotation.getSequenceRange( ) )
@@ -331,14 +401,17 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	// This doesn't belong to the current user, add the name of the owning user
 	if ( ! params.isCurrentUser )
 	{
-		domutil.addClass( noteElement, 'other-user' );
-		// If multiple users' notes are being displayed, show the owner's name
-//		if ( annotation.getUserId( ) != marginalia.displayUserId )
-//		{
-			noteText.insertBefore( domutil.element( 'span', {
-				className:  'username',
-				content:  annotation.getUserName( ) + ': ' } ), noteText.firstChild );
-//		}
+		domutil.addClass( noteElement, Marginalia.C_OTHERUSER );
+		var username = annotation.getUserName( );
+		var parts = username.match( /^\s*(\S)[^,]*,\s*(\S)/ );
+		if ( parts && parts.length > 2 )
+			var initials = parts[ 2 ][ 0 ] + parts[ 1 ][ 0 ];
+		else
+			var initials = username.substr( 0, 2 );
+		noteText.insertBefore( domutil.element( 'span', {
+			className:  'mia_username',
+			title:  annotation.getUserName( ),
+			content:  initials + ': ' } ), noteText.firstChild );
 	}
 	noteElement.appendChild( noteText );
 	
@@ -408,15 +481,44 @@ PostMicro.prototype.showNoteEditor = function( marginalia, annotation, editor, n
 	// Beware serious flaws in IE's model (see addAnonBubbleEventListener code for details),
 	// so this only works because I can figure out which element was clicked by looking for
 	// AN_EDITINGNOTE_CLASS.
+	
+	/*
+	 * FIXED:  Turns out a <script/></script> combination caused this!  Wow.
+	 * Removed closing slash on first tag and problem went away.
+	 *
+	// Another problem:  Safari 4 scrolls the page down 240px between the
+	// firing of textInput and keyup.  There appears to be no way to stop this.  So
+	// this event handler checks for the scroll, and undoes it if necessary.
+	// Bleargh.  Thanks Safari.
+	var yscroll = domutil.getWindowYScroll( );
+	var fixSafariScroll = function( event )
+	{
+		if ( domutil.getWindowYScroll() != yscroll )
+		{
+			var xscroll = domutil.getWindowXScroll();
+			window.scrollTo( xscroll, yscroll );
+			window.status = 'Apparently a Safari bug scrolls the window when you type.  Marginalia is trying to undo the damage.';
+		}
+	}
+	*/
+	
 	if ( setEvents )
 	{
 		addEvent( document.documentElement, 'click', _saveAnnotation );
 		addEvent( noteElement, 'click', domutil.stopPropagation );
+		addEvent( noteElement, 'keypress', domutil.stopPropagation );
+	//	addEvent( noteElement, 'keyup', fixSafariScroll );
 	}
 
 	return noteElement;
 }
 
+
+function debugSafariScroll( event )
+{
+	trace( null, 'Key event ' + event.type + ', vertical position ' + domutil.getWindowYScroll() );
+	domutil.stopPropagation( event );
+}
 
 /**
  * Freeform margin note editor

@@ -222,8 +222,15 @@ PostMicro.prototype.getUrl = function( baseUrl )
 		// The node containing the url
 		if ( this.postInfo.selectors[ 'post_url' ] )
 			this._url = this.postInfo.selectors[ 'post_url' ].value( this._element );
+		// Otherwise grab the request url, but strip it of any fragment identifier
 		else
+		{
 			this._url = String( window.location );
+			var parts = this._url.split( '#' );
+			if ( parts.length > 1 )
+				this._url = parts[ 0 ];
+			console.log( 'post url: ' + this._url );
+		}
 		this._fetchedUrl = true;
 	}
 	return ( baseUrl && this._url && this._url.substring( 0, baseUrl.length ) == baseUrl )
