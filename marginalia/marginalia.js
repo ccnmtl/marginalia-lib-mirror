@@ -65,6 +65,10 @@ function Marginalia( service, loginUserId, displayUserId, features )
 	this.displayNote = Marginalia.defaultDisplayNote;
 	this.allowAnyUserPatch = false;
 	this.onMarginHeight = null;
+	// Default recent threshold is 25h ago (why 25? so that if someone visits at
+	// the same time every day but is off by a few minutes, they won't miss
+	// anything.
+	this.recentThreshold = o2s.dateAdd( 'h', -25, new Date( ) );
 	
 	this.selectors = {
 		post: new Selector( '.hentry', '.hentry .hentry' ),
@@ -173,6 +177,11 @@ function Marginalia( service, loginUserId, displayUserId, features )
 				this.preferences = value;
 				break;
 				
+			// Annotations newer than this should be flagged as recent
+			case 'recentThreshold':
+				this.recentThreshold = value;
+				break;
+			
 			// Toggle: Display the private/public access button for each margin note
 			case 'showAccess':
 				this.showAccess = value;

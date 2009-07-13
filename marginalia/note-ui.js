@@ -31,6 +31,8 @@ Marginalia.C_QUOTENOTFOUND = Marginalia.PREFIX + 'quote-error';	// note's corres
 Marginalia.C_NOTECOLLAPSED = Marginalia.PREFIX + 'collapsed';	// only the first line of the note shows
 Marginalia.C_EDITCHANGED = Marginalia.PREFIX + 'changed';		// indicates content of a text edit changed
 Marginalia.C_OTHERUSER = Marginalia.PREFIX + 'other-user';
+Marginalia.C_USERNAME = Marginalia.PREFIX + 'username';	// name (initials) of user who created annotation
+Marginalia.C_RECENT = Marginalia.PREFIX + 'recent';	// this annotation is recent
 
 // Classes to identify specific controls
 Marginalia.C_LINKBUTTON = Marginalia.PREFIX + 'annotation-link';
@@ -153,9 +155,15 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 	else
 	{
 		trace( 'showNote', ' Create new note' );
+
+		// Is this a recent post?
+		var isRecent = o2s.dateDiff( 'h', annotation.updated, marginalia.recentThreshold );
+		var className = ( quoteFound ? '' : Marginalia_C_QUOTENOTFOUND ) + ' '
+			+ ( isRecent <= 0 ? Marginalia.C_RECENT : '' );
+
 		var noteElement = domutil.element( 'li', {
 			id:  Marginalia.ID_PREFIX + annotation.getId(),
-			className:  quoteFound ? '' : Marginalia.C_QUOTENOTFOUND } );
+			className:  className } );
 		noteElement[ Marginalia.F_ANNOTATION ] = annotation;
 
 		// Align the note (takes no account of subsequent notes, which is OK because this note
@@ -409,7 +417,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 		else
 			var initials = username.substr( 0, 2 );
 		noteText.insertBefore( domutil.element( 'span', {
-			className:  'mia_username',
+			className:  Marginalia.C_USERNAME,
 			title:  annotation.getUserName( ),
 			content:  initials + ': ' } ), noteText.firstChild );
 	}
