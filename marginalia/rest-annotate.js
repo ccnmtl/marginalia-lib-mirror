@@ -168,7 +168,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 	var body = restutil.queryArgsToString( params );
 		
 	fail2 = function( status, text ) {
-			logError( "AnnotationService.createAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
+		logError( "AnnotationService.createAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
 		if ( fail )
 			fail( status, text );
 	};
@@ -264,7 +264,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotation, ok, fai
 		throw "No matching service URL template for deleteAnnotation.";
 
 	fail2 = function( status, text ) {
-			logError( "AnnotationService.deleteAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
+		logError( "AnnotationService.deleteAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
 		if ( fail )
 			fail( status, text );
 	};

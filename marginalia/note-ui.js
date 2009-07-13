@@ -1019,7 +1019,7 @@ function _deleteAnnotation( event )
 	event.stopPropagation( );
 	var post = domutil.nestedFieldValue( this, Marginalia.F_POST );
 	var annotation = domutil.nestedFieldValue( this, Marginalia.F_ANNOTATION );
-	post.deleteAnnotation( window.marginalia, annotation );
+	post.deleteAnnotation( window.marginalia, annotation, marginalia.warnDelete );
 }
 
 /**

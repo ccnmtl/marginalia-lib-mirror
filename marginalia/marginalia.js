@@ -69,6 +69,7 @@ function Marginalia( service, loginUserId, displayUserId, features )
 	// the same time every day but is off by a few minutes, they won't miss
 	// anything.
 	this.recentThreshold = o2s.dateAdd( 'h', -25, new Date( ) );
+	this.serviceErrorCallback = Marginalia.defaultErrorCallback;
 	
 	this.selectors = {
 		post: new Selector( '.hentry', '.hentry .hentry' ),
@@ -182,6 +183,19 @@ function Marginalia( service, loginUserId, displayUserId, features )
 				this.recentThreshold = value;
 				break;
 			
+			// Callback for displaying an error when a service call to the server
+			// fails
+			case 'serviceErrorCallback':
+					this.serviceErrorCallback = value;
+					break;
+					
+			// Selectors for finding parts of the document (posts, urls, titles, etc.)
+			// Default selectors can be overriden individually
+			case 'selectors':
+				for ( var selector in value )
+					this.selectors[ selector ] = value[ selector ];
+				break;
+			
 			// Toggle: Display the private/public access button for each margin note
 			case 'showAccess':
 				this.showAccess = value;
@@ -191,13 +205,6 @@ function Marginalia( service, loginUserId, displayUserId, features )
 				this.showActions = value;
 				break;
 				
-			// Selectors for finding parts of the document (posts, urls, titles, etc.)
-			// Default selectors can be overriden individually
-			case 'selectors':
-				for ( var selector in value )
-					this.selectors[ selector ] = value[ selector ];
-				break;
-			
 			// Show a caret where the user clicks the mouse.  Do not use.
 			case 'showCaret':
 				if ( value )
@@ -272,6 +279,7 @@ Marginalia.C_EDITINGNOTE = Marginalia.PREFIX + 'editing-note';	// (on body) indi
 Marginalia.C_EDITINGLINK = Marginalia.PREFIX + 'editing-link';
 Marginalia.C_LASTHIGHLIGHT = Marginalia.PREFIX + 'last';		// used to flag the last highlighted regin for a single annotation
 Marginalia.C_ACTIONPREFIX = Marginalia.PREFIX + 'action-';		// prefix for class names for actions (e.g. action-delete)
+Marginalia.C_ERRORBOX = Marginalia.PREFIX + 'errorbox';	// used for displaying pop-up errors
 Marginalia.ID_RANGECARET = Marginalia.PREFIX + 'range-caret';	// identifies caret used to show zero-length ranges
 
 // Preferences
@@ -329,6 +337,24 @@ Marginalia.newDefaultEditor = function( marginalia, annotation )
 		return new FreeformNoteEditor( );
 }
 
+Marginalia.defaultErrorCallback = function( object, operation, status, text )
+{
+	var msgKey = object + '.' + operation;
+	var node = domutil.element( 'div', {
+		className: Marginalia.C_ERRORBOX }, [
+		domutil.element( 'h3', { },
+			getLocalized( 'service error title ' + msgKey ) ),
+		domutil.element( 'p', { },
+			getLocalized( 'service error ' + msgKey ) + ' ' ),
+		domutil.element( 'p', { },
+			getLocalized( 'service error ' + status ) ) ] );
+	document.body.appendChild( node );
+	setTimeout( function( ) {
+		jQuery( node ).fadeOut( 'def ', function( ) {
+		document.body.removeChild( node ); } ) },
+		7000 );
+}
+	
 Marginalia.saveEditPrefs = function( marginalia, annotation, editor )
 {
 	if ( editor.constructor == KeywordNoteEditor )
@@ -354,18 +380,19 @@ Marginalia.prototype.listPosts = function( )
 	return this.posts;
 }
 
-Marginalia.prototype.createAnnotation = function( annotation, f )
+Marginalia.prototype.createAnnotation = function( annotation, ok, fail )
 {
-	var f2 = null;
+	var ok2 = null;
 	if ( this.keywordService )
 	{
 		var keywordService = this.keywordService;
-		f2 = function( url ) {
-			f( url );
+		ok2 = function( url ) {
+			ok( url );
 			keywordService.refresh( );
 		};
 	}
-	this.annotationService.createAnnotation( annotation, f2 ? f2 : f );
+
+	this.annotationService.createAnnotation( annotation, ok2 ? ok2 : ok, fail );
 }
 
 Marginalia.prototype.updateAnnotation = function( annotation )
@@ -373,26 +400,34 @@ Marginalia.prototype.updateAnnotation = function( annotation )
 	if ( annotation.hasChanged() )
 	{
 		var marginalia = this;
-		var f = function( xml )	{
+		var ok = function( xml )	{
 			annotation.resetChanges();
 			if ( marginalia.keywordService )
 				marginalia.keywordService.refresh( );
 		};
-		this.annotationService.updateAnnotation( annotation, f );
+		fail = function( status, text ) {
+			if ( marginalia.serviceErrorCallback )
+				marginalia.serviceErrorCallback( 'annotation', 'update', status, text );
+		};
+		this.annotationService.updateAnnotation( annotation, ok, fail );
 	}
 }
 
-Marginalia.prototype.deleteAnnotation = function( annotation )
+Marginalia.prototype.deleteAnnotation = function( annotation, ok )
 {
-	var f = null;
+	var ok = null;
 	if ( this.keywordService )
 	{
 		var keywordService = this.keywordService;
-		f = function( xml ) {
+		ok = function( xml ) {
 			keywordService.refresh( );
 		};
 	}
-	this.annotationService.deleteAnnotation( annotation, f );
+	fail = function( status, text ) {
+		if ( marginalia.serviceErrorCallback )
+			marginalia.serviceErrorCallback( 'annotation', 'delete', status, text );
+	};
+	this.annotationService.deleteAnnotation( annotation, ok, fail );
 }
 
 
@@ -938,7 +973,8 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 	if ( annotation.isLocal )
 	{
 		var postMicro = this;
-		var f = function( url ) {
+		// Callback for successful creation
+		var ok = function( url ) {
 			// update the annotation with the created ID
 			annotation.setId( Annotation.idFromUrl( url ) );
 			annotation.resetChanges( );
@@ -952,8 +988,14 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 				domutil.addClass( highlightElements[ i ], Marginalia.ID_PREFIX + annotation.getId() );
 			}
 		};
-		annotation.setUrl( this.getUrl( ) );
 		
+		var fail = function( status, text ) {
+			if ( marginalia.serviceErrorCallback )
+				marginalia.serviceErrorCallback( 'annotation', 'create', status, text );
+			postMicro.deleteAnnotation( marginalia, annotation, false );
+		};
+		
+		annotation.setUrl( this.getUrl( ) );
 		// IE may have made a relative URL absolute, which could cause problems
 		if ( null != marginalia.baseUrl && annotation.url
 			&& annotation.url.substring( 0, marginalia.baseUrl.length ) == marginalia.baseUrl )
@@ -966,7 +1008,7 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		annotation.setQuoteAuthorName( this.getAuthorName( ) );
 		// ^ author name is usually ignored, as the server will know from the ID
 		//   but conceivably there might be systems where this is not so
-		marginalia.createAnnotation( annotation, f );
+		marginalia.createAnnotation( annotation, ok, fail );
 	}
 	// The annotation already exists and needs to be updated
 	else
@@ -1020,10 +1062,10 @@ PostMicro.prototype.stopEditing = function( marginalia, annotation )
 /**
  * Delete an annotation
  */
-PostMicro.prototype.deleteAnnotation = function( marginalia, annotation )
+PostMicro.prototype.deleteAnnotation = function( marginalia, annotation, warnDelete )
 {
 	// Pop up a warning (if configured)
-	if ( marginalia.warnDelete )
+	if ( warnDelete )
 	{
 		if ( ! confirm( getLocalized( 'warn delete' ) ) )
 			return;

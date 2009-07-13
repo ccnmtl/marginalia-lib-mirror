@@ -97,11 +97,17 @@
 /* notes by another user are in a lighter grey */
 .hentry .notes li.mia_other-user {
 	color: #555;
-}
-.hentry .notes .mia_username {
-	font-style: italic;
+	cursor: inherit;
 }
 
+.hentry .notes .mia_username {
+	font-variant: small-caps;
+	font-size: smaller;
+}
+
+.article .notes li.mia_recent .mia_username {
+	color: red;
+}
 
 .hentry .notes li.mia_quote-error p:before {
 	content: '!';
@@ -231,3 +237,25 @@
 	width: 1em;
 }
 
+/** Default service error display */
+.mia_errorbox {
+	position: fixed;
+	width: 50%;
+	top: 30%;
+	left: 25%;
+	background: white;
+	border:  3px #ddd outset;
+	font-size: large;
+}
+
+.mia_errorbox h3 {
+	margin: 0;
+	padding: .5ex;
+	background: yellow;
+	font-size: x-large;
+	text-align: center;
+}
+
+.mia_errorbox p {
+	margin: 1ex 1em 1em 1em;
+}
