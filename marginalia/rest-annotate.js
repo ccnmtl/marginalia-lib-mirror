@@ -112,11 +112,13 @@ RestAnnotationService.prototype.listBlocks = function( url, ok, fail )
 /**
  * Fetch a list of annotations from the server
  */
-RestAnnotationService.prototype.listAnnotations = function( url, userid, block, ok, fail )
+// Recent change (2009-09-29):  userid replaced by access.  This filters which
+// annotations are fetched.
+RestAnnotationService.prototype.listAnnotations = function( url, access, block, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'url', url ],
-		[ 'userid', userid ],
+		[ 'access', access, true ],
 		[ 'format', 'atom' ],
 		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'listAnnotations' );

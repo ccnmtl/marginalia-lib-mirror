@@ -32,18 +32,18 @@
  * Must be called before any other annotation functions
  * service - used to connect to the server side
  * loginUserId - the current user
- * displayUserId - the user whose annotations are to be shown (may differ from username)
+ * displayAccess - the access value for filtering annotations fetched from server
  * urlBase - if null, annotation URLs are used as normal.  Otherwise, they are searched for this
  * string and anything preceeding it is chopped off.  This is necessary because IE lies about
  * hrefs:  it provides an absolute URL for that attribute, rather than the actual text.  In some
  * cases, absolute URLs aren't desirable (e.g. because the annotated resources might be moved
  * to another host, in which case the URLs would all break).
  */
-function Marginalia( service, loginUserId, displayUserId, features )
+function Marginalia( service, loginUserId, access, features )
 {
 	this.annotationService = service;
 	this.loginUserId = loginUserId;
-	this.displayUserId = displayUserId;
+	this.displayAccess = access;
 	this.editing = null;	// annotation currently being edited (if any)
 	this.noteEditor = null;	// state for note currently being edited (if any) - should replace editing, above
 	
@@ -447,11 +447,8 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	// in turn, any calculations done by the caller (e.g. to resize margin
 	// buttons) will take the correct size into account.
 	domutil.addClass( document.body, Marginalia.C_ANNOTATED );
-	if ( this.loginUserId == this.displayUserId || '' == this.displayUserId )
-		domutil.addClass( document.body, Marginalia.C_SELFANNOTATED );
-	// marginalia.hideAnnotations( );
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, this.displayUserId, block,
+	this.annotationService.listAnnotations( url, this.displayAccess, block,
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }
 
@@ -471,8 +468,6 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 function _showAnnotationsCallback( marginalia, url, xmldoc, doBlockMarkers )
 {
 	domutil.addClass( document.body, Marginalia.C_ANNOTATED );
-	if ( marginalia.loginUserId == marginalia.displayUserId || '' == marginalia.displayUserId )
-		domutil.addClass( document.body, Marginalia.C_SELFANNOTATED );
 	marginalia.annotationXmlCache = xmldoc;
 	_annotationDisplayCallback( marginalia, url, doBlockMarkers );
 }
@@ -1131,7 +1126,7 @@ function _unhoverAnnotation( event )
 function _keyupCreateAnnotation( event )
 {
 	var marginalia = window.marginalia;
-	if ( null != marginalia.loginUserId && ( marginalia.loginUserId == marginalia.displayUserId || '' == marginalia.displayUserId ) )
+	if ( null != marginalia.loginUserId )
 	{
 		// Enter to create a regular note
 		if ( 13 == event.keyCode )
@@ -1375,7 +1370,8 @@ function createAnnotation( postId, warn, editor )
 		url: post.getUrl( ),
 		'userid': marginalia.loginUserId,	// don't know why I need the quotes.  suspicious.
 		quoteAuthorId: post.getAuthorId( ),
-		quoteAuthorName: post.getAuthorName( )
+		quoteAuthorName: post.getAuthorName( ),
+		access: marginalia.displayAccess
 	} );
 	
 	var wordRange = WordRange.fromTextRange( textRange, contentElement, marginalia.skipContent );

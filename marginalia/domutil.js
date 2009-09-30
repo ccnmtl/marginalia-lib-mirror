@@ -814,6 +814,7 @@ ELEMENT_ATTRIBUTES:  {
 	name: 1,
 	rows: 1,
 	selected: 1,
+	style: 1,
 	title: 1,
 	type: 1,
 	value: 1

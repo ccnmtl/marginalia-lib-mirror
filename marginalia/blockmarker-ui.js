@@ -53,7 +53,7 @@ function _showPerBlockUserCountsCallback( xmldoc )
 			for ( var j = 0;  j < info.users.length;  ++j )
 			{
 				var user = info.users[ j ];
-				if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
+				if ( user.noteCount > 0 )
 				{
 					var post = marginalia.listPosts( ).getPostByUrl( info.url, marginalia.baseUrl );
 					post.showPerBlockUserCount( marginalia, info );
@@ -129,8 +129,10 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 		var range = annotation.getSequenceRange( );
 		if ( range )
 		{
-			if ( annotation.getUserId( ) != marginalia.displayUserId )
-			{
+			// displayUserId replaced by displayAccess, too tired to figure
+			// out exactly what this test was for so commenting instead of deleting
+			//if ( annotation.getUserId( ) != marginalia.displayUserId )
+			//{
 				// if we've run past the last relevant annotation, don't bother with the rest
 				if ( range.start.comparePath( point ) > 0 )
 					break;
@@ -148,7 +150,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 							repositionNote = nextNote;
 					}
 				}
-			}
+			//}
 		}
 	}
 	if ( repositionNote )
@@ -195,7 +197,7 @@ PostMicro.prototype.showBlockMarker = function( marginalia, info, block, point )
 		{
 			var user = info.users[ i ];
 			// Don't include the currently-displayed user
-			if ( user.noteCount > 0 && user.userid != marginalia.displayUserId )
+			if ( user.noteCount > 0 ) //&& user.userid != marginalia.displayUserId )
 				block.blockMarkerUsers[ block.blockMarkerUsers.length ] = user;
 		}
 		

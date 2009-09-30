@@ -54,7 +54,7 @@ function Annotation( params )
 	this.id = params.id || 0;
 	this.quote = params.quote || '';
 	this.note = params.note || '';
-	this.access = params.access || Marginalia.ACCESS_PUBLIC;
+	this.access = params.access || '';
 	this.action = params.action || '';
 	this.quote = params.quote || '';
 	this.quoteAuthorId = params.quoteAuthorId || '';

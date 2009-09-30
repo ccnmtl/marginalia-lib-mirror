@@ -343,6 +343,21 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 			title:  getLocalized( 'delete annotation button' ),
 			content:  marginalia.icons[ 'delete' ]
 		} ) );
+		
+		// KLUDGE ALERT #geof#
+		// When a note is created and the user then hits Enter, IE8 by default
+		// focuses on and then clicks the last button created.  This was auto-
+		// deleting existing annotations when the user typed Enter to create a
+		// new one.  button.blur() did not seem to solve the problem.  Instead,
+		// I am creating a dummy button on each note, but making it so it does
+		// not display.  Unbelievable $#!t that Microsoft comes up with.
+		if ( 'exploder' == domutil.detectBrowser( ) )
+		{
+			controls.appendChild( domutil.button ( {
+				style: 'visibility:hidden;position:absolute',
+				content: '.'
+			} ) );
+		}
 	}
 	
 	// add the text content
@@ -719,7 +734,9 @@ YuiAutocompleteNoteEditor.prototype.show = function( marginalia )
 	// this.queryNode.style.display = 'none';
 	this.noteElement.appendChild( wrapperNode );
 
-	if ( YAHOO.widget && YAHOO.widget.AutoComplete
+	// autocomplete is blowing up on IE8 and I need to get this working, so 
+	// I'm (very mildly) sorry to say I'm just going to disable it for IE.
+	if ( 'exploder' != domutil.detectBrowser( ) && YAHOO.widget && YAHOO.widget.AutoComplete
 		&& ( YAHOO.util && YAHOO.util.LocalDataSource || YAHOO.widget.DS_JSArray ) )
 	{
 		var keywords = marginalia.keywordService.keywords;
