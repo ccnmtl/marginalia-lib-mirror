@@ -122,8 +122,8 @@ readCookie: function( name )
 		if ( c.indexOf( nameEQ ) == 0)
 		{
 			var value = c.substring( nameEQ.length, c.length );
-			value.replace( '$:', ';' );
-			value.replace( '$S', '$' );
+			value = value.replace( '$:', ';' );
+			value = value.replace( '$S', '$' );
 			return value;
 		}
 	}
@@ -162,8 +162,8 @@ readCookiePrefix: function( prefix )
 			{
 				var name = c.substring( 0, equals );
 				var value = c.substring( equals + 1 );
-				value.replace( '$:', ';' );
-				value.replace( '$S', '$' );
+				value = value.replace( '$:', ';' );
+				value = value.replace( '$S', '$' );
 				result[ result.length ] = {
 					name: name,
 					value: value 

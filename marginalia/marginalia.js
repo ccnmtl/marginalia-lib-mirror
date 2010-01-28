@@ -1,4 +1,4 @@
-/*
+/* 
  * marginalia.js
  *
  * Marginalia has been developed with funding and support from
