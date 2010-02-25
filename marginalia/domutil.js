@@ -374,32 +374,26 @@ getLocalName: function( element )
 },
 
 /*
- * I considered cssQuery instead of getChildByTagClass etc., but it has several weaknesses:
+ * I considered jQuery instead of getChildByTagClass etc., but it has several weaknesses:
  * - in many cases I need to exclude subtrees using fskip
  * - CSS queries only look down the tree, not up or at siblings
  * CSS (or XPath) could be used by filtering out elements that are ancestors of a filtered
  * node.  But then why waste the time scanning what could be a long document?  (Especially when
- * Marginalia already has performance problems).  Better to update cssQuery.
+ * Marginalia already has performance problems).
  */
 
  
 /**
- * Apply a CSS selector using an implementation from an available library
+ * Apply a CSS selector using an implementation from jQuery
+ * here because originally domutil was not dependent on jQuery
  */
 select: function( selector, root, first )
 {
-	if ( window.YAHOO && YAHOO.util && YAHOO.util.Selector )
-		return YAHOO.util.selector.query( selector, root, first );
-	else if ( cssQuery )
-	{
-		var results = cssQuery( selector, root );
-		if ( first )
-			return results && results.length ? results[ 0 ] : null;
-		else
-			return results;
-	}
+	var results = jQuery( selector, root );
+	if ( first )
+		return results && results.length ? results[ 0 ] : null;
 	else
-		throw "Need CSS select implementation (YUI or cssQuery)";
+		return results;
 },
 
 /**
@@ -407,8 +401,8 @@ select: function( selector, root, first )
  */
 childByTagClass: function( node, tagName, className, fskip )
 {
-	if ( node == null )
-		alert( "node not found tag=" + tagName + ", class=" + className );
+//	if ( node == null )
+//		alert( "node not found tag=" + tagName + ", class=" + className );
 	if ( node.nodeType == ELEMENT_NODE && ( ! fskip || ! fskip( node ) ) )
 	{
 		if ( null == tagName || tagName.toUpperCase( ) == node.tagName.toUpperCase( ) )

@@ -131,6 +131,7 @@ PostMicro.prototype.hideBlockAnnotations = function( marginalia, pointStr )
 		{
 			// displayUserId replaced by displayAccess, too tired to figure
 			// out exactly what this test was for so commenting instead of deleting
+			// 20100221: access is obsolete anyway, now relpaced by sheet
 			//if ( annotation.getUserId( ) != marginalia.displayUserId )
 			//{
 				// if we've run past the last relevant annotation, don't bother with the rest

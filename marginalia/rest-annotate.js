@@ -112,13 +112,13 @@ RestAnnotationService.prototype.listBlocks = function( url, ok, fail )
 /**
  * Fetch a list of annotations from the server
  */
-// Recent change (2009-09-29):  userid replaced by access.  This filters which
+// Recent change (2009-09-29):  userid replaced by sheet.  This filters which
 // annotations are fetched.
-RestAnnotationService.prototype.listAnnotations = function( url, access, block, ok, fail )
+RestAnnotationService.prototype.listAnnotations = function( url, sheet, block, ok, fail )
 {
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'url', url ],
-		[ 'access', access, true ],
+		[ 'sheet', sheet, true ],
 		[ 'format', 'atom' ],
 		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'listAnnotations' );
@@ -145,7 +145,7 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 	// the URL path.  Though that limits to annotations only of the current site.
 	// Hmmm.
 	var serviceUrl = this.urlTemplate.match( [
-		[ 'url', annotation.getUrl( ), true ],
+		[ 'url', annotation.getUrl( ) ],
 		[ 'method', 'POST', this.noPutDelete ],
 		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
 	], 'createAnnotation' );
@@ -153,8 +153,9 @@ RestAnnotationService.prototype.createAnnotation = function( annotation, ok, fai
 		throw "No matching service URL template for createAnnotation.";
 
 	var params = [
+		[ 'url', annotation.getUrl( ), true ],
 		[ 'note', annotation.getNote( ), true ],
-		[ 'access', annotation.getAccess( ), true ],
+		[ 'sheet', annotation.getSheet( ), true ],
 		[ 'quote', annotation.getQuote( ), true ],
 		[ 'quote_title', annotation.getQuoteTitle( ) ],
 		[ 'quote_author_id', annotation.getQuoteAuthorId( ) ],
@@ -198,7 +199,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, ok, fai
 
 	var params = [
 		[ 'note', annotation.getNote( ), annotation.hasChanged( 'note' ) ],
-		[ 'access', annotation.getAccess( ), annotation.hasChanged( 'access' ) ],
+		[ 'sheet', annotation.getSheet( ), annotation.hasChanged( 'sheet' ) ],
 		[ 'link', annotation.getLink( ), annotation.hasChanged( 'link' ) ],
 		[ 'link_title', annotation.getLinkTitle( ), annotation.hasChanged( 'linkTitle' ) ],
 		[ 'sequence-range', annotation.getSequenceRange( ) ? annotation.getSequenceRange( ).toString( ) : '', annotation.hasChanged( 'range/sequence' ) ],
@@ -208,7 +209,7 @@ RestAnnotationService.prototype.updateAnnotation = function( annotation, ok, fai
 	var body = restutil.queryArgsToString( params );
 	
 	fail2 = function( status, text ) {
-			logError( "AnnotationService.updateAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
+		logError( "AnnotationService.updateAnnotation failed with code " + status + ":\n" + serviceUrl + "\n" + text );
 		if ( fail )
 			fail( status, text );
 	};

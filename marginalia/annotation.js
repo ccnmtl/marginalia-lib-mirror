@@ -54,7 +54,7 @@ function Annotation( params )
 	this.id = params.id || 0;
 	this.quote = params.quote || '';
 	this.note = params.note || '';
-	this.access = params.access || '';
+	this.sheet = params.sheet || '';
 	this.action = params.action || '';
 	this.quote = params.quote || '';
 	this.quoteAuthorId = params.quoteAuthorId || '';
@@ -207,15 +207,15 @@ Annotation.prototype.setQuote = function( quote )
 	}
 }
 
-Annotation.prototype.getAccess = function( )
-{ return this.access ? this.access : ''; }
+Annotation.prototype.getSheet = function( )
+{ return this.sheet ? this.sheet : ''; }
 
-Annotation.prototype.setAccess = function( access )
+Annotation.prototype.setSheet = function( sheet )
 {
-	if ( this.access != access )
+	if ( this.sheet != sheet )
 	{
-		this.access = access;
-		this.changes[ 'access' ] = true;
+		this.sheet = sheet;
+		this.changes[ 'sheet' ] = true;
 	}
 }
 
@@ -338,7 +338,7 @@ function annotationFromTextRange( marginalia, post, textRange )
 	if ( null == range )
 		return null;  // The range is probably invalid (e.g. whitespace only)
 	var annotation = new Annotation ( {
-		access: marginalia.defaultAccess,
+		sheet: marginalia.defaultSheet,
 		url:  post.getUrl( ),
 		sequenceRange:  textRange.toSequenceRange( ),
 		xpathRange:  textRange.toXPathRange( ),
@@ -449,8 +449,8 @@ Annotation.prototype.fromAtom = function( entry )
 					this.setXPathRange( XPathRange.fromString( domutil.getNodeText( field ) ) );
 				// ignore unknown formats
 			}
-			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'access' )
-				this.access = null == field.firstChild ? 'private' : domutil.getNodeText( field );
+			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'sheet' )
+				this.sheet = null == field.firstChild ? 'private' : domutil.getNodeText( field );
 			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'action' )
 				this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
 			else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
@@ -517,7 +517,7 @@ Annotation.prototype.fromAtomContent = function( parent, mode )
 
 Annotation.prototype.atomContentText = function( parent, css )
 {
-	var node = cssQuery( css, parent );
+	var node = jQuery( css, parent );
 	if ( node && node.length > 0 )
 	{
 		var s = domutil.getNodeText( node[0] );
@@ -529,7 +529,7 @@ Annotation.prototype.atomContentText = function( parent, css )
 
 Annotation.prototype.atomContentAttrib = function( parent, css, attrib )
 {
-	var node = cssQuery( css, parent );
+	var node = jQuery( css, parent );
 	if ( node && node.length > 0 )
 		return node[0].getAttribute( attrib );
 	trace( null, 'CSS (' + css + ') did not resolve for "' + attrib + '" in ' + parent.innerHtml );

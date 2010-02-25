@@ -36,7 +36,6 @@ Marginalia.C_RECENT = Marginalia.PREFIX + 'recent';	// this annotation is recent
 
 // Classes to identify specific controls
 Marginalia.C_LINKBUTTON = Marginalia.PREFIX + 'annotation-link';
-Marginalia.C_ACCESSBUTTON = Marginalia.PREFIX + 'annotation-access';
 Marginalia.C_DELETEBUTTON = Marginalia.PREFIX + 'annotation-delete';
 Marginalia.C_EXPANDBUTTON = Marginalia.PREFIX + 'expand-edit';
 Marginalia.C_KEYWORDSCONTROL = Marginalia.PREFIX + 'keywords';
@@ -61,16 +60,22 @@ PostMicro.prototype.getNotesElement = function( marginalia )
 
 PostMicro.prototype.initMargin = function( marginalia )
 {
+	var margin = marginalia.selectors[ 'mia_notes' ].node( this.getElement( ) );
+
 	var postId = this.getElement().id;
-	var margin = this.getNotesElement( marginalia );
+//	var margin = this.getNotesElement( marginalia );
+	trace( null, 'initMargin ' + margin );
 	margin.onmousedown = function( ) {
 		marginalia.cachedSelection = marginalia.getSelection( );
+		trace( null, 'mouse down' );
 //		trace( null, 'cache selection: ' + marginalia.cachedSelection );
 	};
 	margin.onclick = function( event ) {
+		trace( null, 'click' );
 		event = domutil.getEvent( event );
 		if ( ! marginalia.noteEditor )
 		{
+			trace( 'create annotation' );
 //			trace( null, 'clicked' );
 			createAnnotation( postId );
 			domutil.stopPropagation( event );
@@ -208,7 +213,7 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 
 /**
  * Show a note in the margin
- * Regular annotation display with control buttons (delete, access, link)
+ * Regular annotation display with control buttons (delete, link)
  * Call showEdit if you want to show an editor instead
  */
 PostMicro.prototype.showNote = function( marginalia, annotation, nextNode )
@@ -245,7 +250,7 @@ Marginalia.prototype.bindNoteBehaviors = function( annotation, parentElement, be
 	// These are separated out to insulate display implementations from changes to internal APIs
 	for ( var i = 0;  i < behaviors.length;  ++i )
 	{
-		var nodes = cssQuery( behaviors[ i ][ 0 ], parentElement );
+		var nodes = jQuery( behaviors[ i ][ 0 ], parentElement );
 		if ( nodes.length == 1 )
 		{
 			var node = nodes[ 0 ];
@@ -265,7 +270,6 @@ Marginalia.prototype.bindNoteBehavior = function( node, property, value )
 {
 	// Functions to associate with events (click etc.)
 	var eventMappings = { 
-		access: _toggleAnnotationAccess,
 		'delete': _deleteAnnotation,
 //		edit: _editAnnotation,
 		save: _saveAnnotation };
@@ -327,16 +331,6 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 			} ) );
 		}
 
-		// add the access button
-		if ( marginalia.showAccess )
-		{
-			controls.appendChild( domutil.button( {
-				className:  Marginalia.C_ACCESSBUTTON,
-				title:  getLocalized( annotation.getAccess() == Marginalia.ACCESS_PUBLIC ? 'public annotation' : 'private annotation' ),
-				content:  annotation.getAccess() == Marginalia.ACCESS_PUBLIC ? marginalia.icons[ 'public' ] : marginalia.icons[ 'private' ]
-			} ) );
-		}
-		
 		// add the delete button
 		controls.appendChild( domutil.button( {
 			className:  Marginalia.C_DELETEBUTTON,
@@ -370,7 +364,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	// bad url schemes (so I limit to http and https), 2) linking to dangerous
 	// sites.  The latter is unavoidable, and is presumably already a risk on
 	// any site that allows user content.  At  least displaying the domain name
-	// gives some indication of safety.
+	// (a la Slashdot) gives some indication of safety.
 	var noteText = domutil.element( 'p', {
 		title: params.isCurrentUser ? getLocalized( 'edit annotation click' ) : '' } );
 	var tail = annotation.getNote() ? annotation.getNote() : '\u203b';
@@ -426,15 +420,19 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	{
 		domutil.addClass( noteElement, Marginalia.C_OTHERUSER );
 		var username = annotation.getUserName( );
+		/* Users told me they prefer seeing full names to initials.
+		 * Among other things, it helps them learn the names of their
+		 * classmates.
 		var parts = username.match( /^\s*(\S)[^,]*,\s*(\S)/ );
 		if ( parts && parts.length > 2 )
 			var initials = parts[ 2 ][ 0 ] + parts[ 1 ][ 0 ];
 		else
 			var initials = username.substr( 0, 2 );
+		*/
 		noteText.insertBefore( domutil.element( 'span', {
 			className:  Marginalia.C_USERNAME,
 			title:  annotation.getUserName( ),
-			content:  initials + ': ' } ), noteText.firstChild );
+			content:  username + ': ' } ), noteText.firstChild );
 	}
 	noteElement.appendChild( noteText );
 	
@@ -443,7 +441,6 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	{
 		marginalia.bindNoteBehaviors( annotation, noteElement, [
 			[ 'button.' + Marginalia.C_LINKBUTTON, { click: 'edit link' } ],
-			[ 'button.' + Marginalia.C_ACCESSBUTTON, { click: 'access' } ],
 			[ 'button.' + Marginalia.C_DELETEBUTTON, { click: 'delete' } ],
 			[ 'p', { click: 'edit' } ]
 		] );
@@ -1065,24 +1062,3 @@ function _expandEdit( event )
 		post.showNoteEditor( marginalia, annotation, new KeywordNoteEditor( ) );
 	}
 }
-
-/**
- * Click annotation access button
- */
-function _toggleAnnotationAccess( event )
-{
-	event.stopPropagation( );
-	var target = domutil.getEventTarget( event );
-	
-	var annotation = domutil.nestedFieldValue( this, Marginalia.F_ANNOTATION );
-	var accessButton = target;
-
-	annotation.setAccess( annotation.getAccess() == 'public' ? 'private' : 'public' );
-	window.marginalia.updateAnnotation( annotation, null );
-	while ( accessButton.firstChild )
-		accessButton.removeChild( accessButton.firstChild );
-	accessButton.appendChild( document.createTextNode( annotation.getAccess() == 'public' ? marginalia.icons[ 'public' ] : marginalia.icons[ 'private' ] ) );
-	accessButton.setAttribute( 'title', annotation.getAccess() == 'public' ?
-		getLocalized( 'public annotation' ) : getLocalized( 'private annotation' ) );
-}
-

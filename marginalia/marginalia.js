@@ -32,31 +32,27 @@
  * Must be called before any other annotation functions
  * service - used to connect to the server side
  * loginUserId - the current user
- * displayAccess - the access value for filtering annotations fetched from server
- * urlBase - if null, annotation URLs are used as normal.  Otherwise, they are searched for this
  * string and anything preceeding it is chopped off.  This is necessary because IE lies about
  * hrefs:  it provides an absolute URL for that attribute, rather than the actual text.  In some
  * cases, absolute URLs aren't desirable (e.g. because the annotated resources might be moved
  * to another host, in which case the URLs would all break).
  */
-function Marginalia( service, loginUserId, access, features )
+function Marginalia( service, loginUserId, sheet, features )
 {
 	this.annotationService = service;
 	this.loginUserId = loginUserId;
-	this.displayAccess = access;
+	this.sheet = sheet;
 	this.editing = null;	// annotation currently being edited (if any)
 	this.noteEditor = null;	// state for note currently being edited (if any) - should replace editing, above
 	
 	this.maxNoteLength = 250;
 	this.maxQuoteLength = 1000;
 	this.maxNoteHoverLength = 24;
-	this.defaultAccess = Marginalia.ACCESS_PUBLIC;
 	this.userInRequest = false;
 	this.preferences = null;
 	this.keywordService = null;
 	this.urlBase = null;
 	this.blockMarkers = false;
-	this.access = false;
 	this.actions = false;
 	this.defaultAction = null;
 	this.skipContent = function(node) {
@@ -105,9 +101,9 @@ function Marginalia( service, loginUserId, access, features )
 		var value = features[ feature ];
 		switch ( feature )
 		{
-			// The default access (public or private)
-			case 'accessDefault':
-				this.defaultAccess = value;
+			// The default sheet (e.g. public or private)
+			case 'sheetDefault':
+				this.defaultSheet = value;
 				break;
 				
 			// Set the default action for a new annotation ("edit" for track changes)
@@ -196,11 +192,6 @@ function Marginalia( service, loginUserId, access, features )
 					this.selectors[ selector ] = value[ selector ];
 				break;
 			
-			// Toggle: Display the private/public access button for each margin note
-			case 'showAccess':
-				this.showAccess = value;
-				break;
-				
 			case 'showActions':
 				this.showActions = value;
 				break;
@@ -283,14 +274,14 @@ Marginalia.C_ERRORBOX = Marginalia.PREFIX + 'errorbox';	// used for displaying p
 Marginalia.ID_RANGECARET = Marginalia.PREFIX + 'range-caret';	// identifies caret used to show zero-length ranges
 
 // Preferences
-Marginalia.P_USER = 'annotations.user';
+Marginalia.P_SHEET = 'annotations.sheet';
 Marginalia.P_SHOWANNOTATIONS = 'annotations.show';
 Marginalia.P_NOTEEDITMODE = 'annotations.note-edit-mode';
 Marginalia.P_SPLASH = 'annotations.splash';
 
-// values for annotation.access
-Marginalia.ACCESS_PUBLIC = 'public';
-Marginalia.ACCESS_PRIVATE = 'private';
+// Default values for annotation.sheet (other sheets are possible)
+Marginalia.SHEET_PUBLIC = 'public';
+Marginalia.SHEET_PRIVATE = 'private';
 
 // values for annotation.editing (field is deleted when not editing)
 Marginalia.EDIT_NOTE_FREEFORM = 'note freeform';
@@ -448,7 +439,7 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	// buttons) will take the correct size into account.
 	domutil.addClass( document.body, Marginalia.C_ANNOTATED );
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, this.displayAccess, block,
+	this.annotationService.listAnnotations( url, this.sheet, block,
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }
 
@@ -1371,7 +1362,7 @@ function createAnnotation( postId, warn, editor )
 		'userid': marginalia.loginUserId,	// don't know why I need the quotes.  suspicious.
 		quoteAuthorId: post.getAuthorId( ),
 		quoteAuthorName: post.getAuthorName( ),
-		access: marginalia.displayAccess
+		sheet: marginalia.sheet
 	} );
 	
 	var wordRange = WordRange.fromTextRange( textRange, contentElement, marginalia.skipContent );
