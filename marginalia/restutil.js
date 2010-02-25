@@ -313,7 +313,8 @@ putResource: function( serviceUrl, body, ok, fail, args )
 			// Safari is braindead here:  any status code other than 200 is converted to undefined
 			// IE invents its own 1223 status code
 			// See http://www.trachtenberg.com/blog/?p=74
-			if ( 200 == xmlhttp.status || 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 ) {
+			if ( 200 == xmlhttp.status || 204 == xmlhttp.status || xmlhttp.status == null || xmlhttp.status == 1223 )
+			{
 				if ( ok )
 					ok( args && args.okXml ? xmlhttp.responseXML : xmlhttp.responseText );
 			}
