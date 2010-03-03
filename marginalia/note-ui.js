@@ -37,8 +37,6 @@ Marginalia.C_RECENT = Marginalia.PREFIX + 'recent';	// this annotation is recent
 // Classes to identify specific controls
 Marginalia.C_LINKBUTTON = Marginalia.PREFIX + 'annotation-link';
 Marginalia.C_DELETEBUTTON = Marginalia.PREFIX + 'annotation-delete';
-Marginalia.C_EXPANDBUTTON = Marginalia.PREFIX + 'expand-edit';
-Marginalia.C_KEYWORDSCONTROL = Marginalia.PREFIX + 'keywords';
 
 
 /**
@@ -64,18 +62,14 @@ PostMicro.prototype.initMargin = function( marginalia )
 
 	var postId = this.getElement().id;
 //	var margin = this.getNotesElement( marginalia );
-	trace( null, 'initMargin ' + margin );
 	margin.onmousedown = function( ) {
 		marginalia.cachedSelection = marginalia.getSelection( );
-		trace( null, 'mouse down' );
 //		trace( null, 'cache selection: ' + marginalia.cachedSelection );
 	};
 	margin.onclick = function( event ) {
-		trace( null, 'click' );
 		event = domutil.getEvent( event );
 		if ( ! marginalia.noteEditor )
 		{
-			trace( 'create annotation' );
 //			trace( null, 'clicked' );
 			createAnnotation( postId );
 			domutil.stopPropagation( event );
@@ -83,6 +77,46 @@ PostMicro.prototype.initMargin = function( marginalia )
 //		trace( null, 'clear selection cache' );
 		marginalia.cachedSelection = null;
 	};
+}
+
+
+PostMicro.prototype.showTip = function( marginalia, tip, onclose )
+{
+	var notesElement = this.getNotesElement( marginalia );
+	var tipNode = domutil.element( 'li', {
+		className: Marginalia.PREFIX + 'tip'
+	}, tip );
+
+	var postMicro = this;
+	var f = function( ) {
+		postMicro.hideTip( marginalia, tipNode );
+		if ( onclose )
+			onclose( );
+	};
+	
+	var controls = domutil.element( 'div', { className: 'controls' } );
+	// delete button
+	controls.appendChild( domutil.button( {
+		className:  Marginalia.C_DELETEBUTTON,
+		title:  getLocalized( 'delete tip button' ),
+		content:  marginalia.icons[ 'delete' ],
+		onclick: f
+	} ) );
+	tipNode.appendChild( controls );
+		
+	for ( var node = notesElement.firstChild; node && ! node[ Marginalia.F_ANNOTATION ];  node = node.nextSibling )
+		;
+	notesElement.insertBefore( tipNode, node );
+	this.repositionSubsequentNotes( tipNode );
+	return tipNode;
+}
+
+PostMicro.prototype.hideTip = function( marginalia, tipNode )
+{
+	var notesElement = this.getNotesElement( marginalia );
+	var next = tipNode.nextSibling;
+	notesElement.removeChild( tipNode );
+	this.repositionNotes( marginalia, next );
 }
 
 
@@ -162,9 +196,17 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 		trace( 'showNote', ' Create new note' );
 
 		// Is this a recent post?
-		var isRecent = o2s.dateDiff( 'h', annotation.updated, marginalia.recentThreshold );
+		// Don't flag this for one's own notes - that would be cluttered and confusing.
+		// Currently, moodle does not seem to be storing anything in the forum_read table, so this doesn't work
+		var isRecent = false;
+		if ( annotation.getLastRead( ) )
+		{
+			isRecent = Date.compare( annotation.getUpdated( ) > annotation.getLastRead( ) );
+			isRecent = isRecent > 0 && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
+			// console.log( 'updated: ' + annotation.getUpdated( ) + ', read: ' + annotation.getLastRead( ) );
+		}
 		var className = ( quoteFound ? '' : Marginalia_C_QUOTENOTFOUND ) + ' '
-			+ ( isRecent <= 0 ? Marginalia.C_RECENT : '' );
+			+ ( isRecent ? Marginalia.C_RECENT : '' );
 
 		var noteElement = domutil.element( 'li', {
 			id:  Marginalia.ID_PREFIX + annotation.getId(),
@@ -366,9 +408,11 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	// any site that allows user content.  At  least displaying the domain name
 	// (a la Slashdot) gives some indication of safety.
 	var noteText = domutil.element( 'p', {
-		title: params.isCurrentUser ? getLocalized( 'edit annotation click' ) : '' } );
-	var tail = annotation.getNote() ? annotation.getNote() : '\u203b';
-	while ( tail.length > 0 )
+		title: params.isCurrentUser ? getLocalized( 'edit annotation click' ) : '',
+		content: annotation.getNote() ? annotation.getNote() : '\u203b' } );
+	domutil.urlize( noteText );
+	
+/*	while ( tail.length > 0 )
 	{
 		var match = tail.match( /https?:\/\/([a-zA-Z0-9\.-]+)(?:\/(?:[^ ]*[a-zA-Z0-9\/#])?)?/ );
 		var url = null;
@@ -401,6 +445,7 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 			break;
 		}
 	}
+	*/
 	
 //	var noteText = domutil.element( 'p', {
 //		content: annotation.getNote() ? annotation.getNote() : '\u203b'
@@ -429,9 +474,10 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 		else
 			var initials = username.substr( 0, 2 );
 		*/
+		titleText = annotation.getUpdated( ).toString( 'yyyy-M-d H:mm tt' );
 		noteText.insertBefore( domutil.element( 'span', {
 			className:  Marginalia.C_USERNAME,
-			title:  annotation.getUserName( ),
+			title:  titleText,
 			content:  username + ': ' } ), noteText.firstChild );
 	}
 	noteElement.appendChild( noteText );
@@ -566,35 +612,37 @@ FreeformNoteEditor.prototype.save = function( marginalia )
 	this.annotation.setNote( this.editNode.value );
 }
 
+FreeformNoteEditor.REMAINING_THRESHOLD = 50;
 FreeformNoteEditor.prototype.show = function( marginalia )
 {
 	var postMicro = this.postMicro;
 	var marginalia = this.marginalia;
 	var annotation = this.annotation;
 	var noteElement = this.noteElement;
+	var noteText = annotation.getNote( );
 	
-	// If keywords are enabled, show the expand/collapse control
-	if ( this.marginalia.keywordService )
-	{
-		var f = function( event ) {
-			postMicro.showNoteEditor( marginalia, annotation, new KeywordNoteEditor( ) );
-		};
-		this.noteElement.appendChild( domutil.button( {
-			className:	Marginalia.C_EXPANDBUTTON,
-			title: getLocalized( 'annotation expand edit button' ),
-			content: marginalia.icons[ 'expanded' ],
-			onclick: f } ) );
-	}
-
 	// Create the edit box
 	this.editNode = document.createElement( "textarea" );
 	this.editNode.rows = 3;
-	this.editNode.appendChild( document.createTextNode( annotation.getNote() ) );
+	this.editNode.appendChild( document.createTextNode( noteText ) );
+	
+	// Create the place for showing how many characters remain
+	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
+	var remainingNode = domutil.element( 'p', {
+		className: Marginalia.PREFIX + 'charsremaining',
+		style: noteText.length > threshold ? 'display:none' : '' } );
+	noteElement.appendChild( remainingNode, null );
 
 	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
+	var editNode = this.editNode;
+	trace( null, 'editNode=' + editNode );
+	var onkey = function( e ) {
+		FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode, e );
+		_editChangedKeyup( e );
+	};
 	this.editNode.annotationId = this.annotation.getId();
 	addEvent( this.editNode, 'keypress', _editNoteKeypress );
-	addEvent( this.editNode, 'keyup', _editChangedKeyup );
+	addEvent( this.editNode, 'keyup', onkey );
 	
 	this.noteElement.appendChild( this.editNode );
 }
@@ -608,83 +656,15 @@ FreeformNoteEditor.prototype.focus = function( marginalia )
 		this.editNode.focus( );
 }
 		
-
-/**
- * Keyword margin note editor
- */
-function KeywordNoteEditor( )
+FreeformNoteEditor.showCharsRemaining = function( marginalia, threshold, editNode, remainingNode, event )
 {
-	this.selectNode = null;
-}
-
-KeywordNoteEditor.prototype.bind = FreeformNoteEditor.prototype.bind;
-
-KeywordNoteEditor.prototype.clear = function( marginalia )
-{
-	this.selectNode = null;
-}
-
-KeywordNoteEditor.prototype.save = function( marginalia )
-{
-	if ( -1 != this.selectNode.selectedIndex )
-		this.annotation.setNote( this.selectNode.options[ this.selectNode.selectedIndex ].value );
-}
-
-KeywordNoteEditor.prototype.show = function( marginalia )
-{
-	var postMicro = this.postMicro;
-	var marginalia = this.marginalia;
-	var annotation = this.annotation;
-	var noteElement = this.noteElement;
-
-	// Show the expand/collapse control
-	this.noteElement.appendChild( domutil.button( {
-		className:	Marginalia.C_EXPANDBUTTON,
-		title: getLocalized( 'annotation collapse edit button' ),
-		content: marginalia.icons[ 'collapsed' ] } ) );
-	
-	this.selectNode = document.createElement( 'select' );
-	
-	this.selectNode.className = Marginalia.C_KEYWORDSCONTROL;
-	var keywords = marginalia.keywordService.keywords;
-	addEvent( this.selectNode, 'keypress', _editNoteKeypress );
-	
-	// See if the current value of the note is a keyword
-	if ( ! marginalia.keywordService.isKeyword( annotation.getNote() ) && annotation.getNote() )
+	if ( editNode.value.length > threshold )
 	{
-		// First option is the freeform edit value for the note
-		var opt = document.createElement( 'option' );
-		opt.appendChild( document.createTextNode(
-			annotation.getNote().length > 12 ? annotation.getNote().substring( 0, 12 ) : annotation.getNote() ) );
-		opt.setAttribute( 'value', annotation.getNote() );
-		this.selectNode.appendChild( opt );
+		var remaining = marginalia.maxNoteLength - editNode.value.length;
+		jQuery( remainingNode ).text( remaining + ' ' + getLocalized( 'chars remaining' ) ).css( 'display', '' );
 	}
-	
-	var value = annotation.getNote();
-	for ( var i = 0;  i < keywords.length;  ++i )
-	{
-		var keyword = keywords[ i ];
-		opt = document.createElement( 'option' );
-		if ( value == keyword.name )
-			opt.setAttribute( 'selected', 'selected' );
-		opt.appendChild( document.createTextNode( keyword.name ) );
-		opt.setAttribute( 'value', keyword.name );
-		opt.setAttribute( 'title', keyword.description );
-		this.selectNode.appendChild( opt );
-	}
-	
-	this.noteElement.appendChild( this.selectNode );
-	
-	marginalia.bindNoteBehaviors( annotation, noteElement, [
-		[ '.' + Marginalia.C_EXPANDBUTTON, { click: 'edit freeform' } ]
-	] );
-}
-
-KeywordNoteEditor.prototype.focus = function( marginalia )
-{
-	this.selectNode.focus( );
-	if ( 'exploder' == domutil.detectBrowser( ) )
-		this.selectNode.focus( );
+	else
+		jQuery( remainingNode ).css( 'display', 'none' );
 }
 
 
@@ -711,20 +691,16 @@ YuiAutocompleteNoteEditor.prototype.show = function( marginalia )
 	var marginalia = this.marginalia;
 	var annotation = this.annotation;
 	var noteElement = this.noteElement;
+	var noteText = annotation.getNote( );
 	
 	// Create the edit box
 	this.editNode = document.createElement( "textarea" );
 	this.editNode.rows = 3;
-	this.editNode.appendChild( document.createTextNode( annotation.getNote() ) );
+	this.editNode.appendChild( document.createTextNode( noteText ) );
 	
 	// Create the query results box
 	this.queryNode = domutil.element( 'div' );
 
-	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
-	this.editNode.annotationId = this.annotation.getId();
-	addEvent( this.editNode, 'keypress', _editNoteKeypress );
-	addEvent( this.editNode, 'keyup', _editChangedKeyup );
-	
 	var wrapperNode = domutil.element( 'div', { className: 'yui-skin-sam' } );
 	wrapperNode.appendChild( this.editNode );
 	wrapperNode.appendChild( this.queryNode );
@@ -766,6 +742,27 @@ YuiAutocompleteNoteEditor.prototype.show = function( marginalia )
 	
 		wrapperNode.style.height = String( wrapperHeight ) + 'px';
 	}
+	
+	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
+	// Create the place for showing how many characters remain
+	var editNode = this.editNode;
+	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
+	var remainingNode = domutil.element( 'p', {
+		className: Marginalia.PREFIX + 'charsremaining' } );
+	FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode );
+//	if ( noteText.length < threshold )
+//		jQuery( remainingNode ).css( 'display', 'none' );
+	noteElement.appendChild( remainingNode );
+
+	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
+	var onkey = function( e ) {
+		FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode, e );
+		_editChangedKeyup( e );
+	};
+
+	this.editNode.annotationId = this.annotation.getId();
+	addEvent( this.editNode, 'keypress', _editNoteKeypress );
+	addEvent( this.editNode, 'keyup', onkey );
 }
 
 
@@ -1036,29 +1033,3 @@ function _deleteAnnotation( event )
 	post.deleteAnnotation( window.marginalia, annotation, marginalia.warnDelete );
 }
 
-/**
- * Click the expand/collapse edit button
- */
-function _expandEdit( event )
-{
-	var marginalia = window.marginalia;
-	event.stopPropagation( );
-	var target = domutil.getEventTarget( event );
-	var annotation = domutil.nestedFieldValue( this, Marginalia.F_ANNOTATION );
-	var post = domutil.nestedFieldValue( this, Marginalia.F_POST );
-	var noteElement = domutil.parentByTagClass( target, 'li', null, false, null );
-	var expandControl = domutil.childByTagClass( noteElement, 'button', Marginalia.C_EXPANDBUTTON, null );
-	while ( expandControl.firstChild )
-		expandControl.removeChild( expandControl.firstChild );
-	
-	if ( AN_EDIT_NOTE_KEYWORDS == annotation.editing )
-	{
-		expandControl.appendChild( document.createTextNode( marginalia.icons[ 'expanded' ] ) );
-		post.showNoteEditor( marginalia, annotation, new FreeformNoteEditor( ) );
-	}
-	else
-	{
-		expandControl.appendChild( document.createTextNode( marginalia.icons[ 'collapsed' ] ) );
-		post.showNoteEditor( marginalia, annotation, new KeywordNoteEditor( ) );
-	}
-}

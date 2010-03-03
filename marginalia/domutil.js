@@ -62,7 +62,7 @@ instanceOf: function( obj, type )
 
 parseIsoDate: function( s )
 {
-	var matches = s.match( /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})([+-]\d{4})/ );
+	var matches = s.match( /(\d{4})-?(\d{2})-?(\d{2})T(\d{2}):?(\d{2}):?(\d{2})([+-]\d{2}:?\d{2})/ );
 	if ( null == matches )
 		return null;
 	else
@@ -879,6 +879,64 @@ element: function( name, spec, content )
 button: function( spec )
 {
 	return domutil.element( 'button', spec );
+},
+
+/**
+ * Given a plain text string, build text nodes and <a> nodes for any contained URLs
+ * Appends constructed nodes to the passed node
+ */
+urlize: function( node )
+{
+	var child = node.firstChild;
+	while ( child )
+	{
+		if ( TEXT_NODE == child.nodeType || CDATA_SECTION_NODE == child.nodeType )
+		{
+			var tail = child.nodeValue;
+			var next = child.nextSibling;
+			
+			// Rebuild node content with text and links
+			while ( tail.length > 0 )
+			{
+				var match = tail.match( /https?:\/\/([a-zA-Z0-9\.-]+)(?:\/(?:[^ ]*[a-zA-Z0-9\/#])?)?/ );
+				var url = null;
+				if ( match )
+					url = match[ 0 ];
+				else
+				{
+					match = tail.match( /(www\.[a-zA-Z0-9\.-]+\.[a-zA-Z]{2,4})/ );
+					if ( match )
+						url = 'http://' + match[ 1 ] + '/';
+				}
+				if ( url )
+				{
+					var head = tail.substr( 0, match.index );
+					if ( head.length )
+						node.appendChild( document.createTextNode( head ) );
+					domain = match[ 1 ];
+					//if ( 'www.' == domain.substr( 0, 4 ) )
+					//	domain = domain.substr( 4 );
+					node.insertBefore( domutil.element( 'a', {
+						href: url,
+						title: url,
+						onclick: domutil.stopPropagation,
+						content: domain }), child);
+					tail = tail.substr( head.length + url.length );
+				}
+				else
+				{
+					node.insertBefore( document.createTextNode( tail ), child );
+					break;
+				}
+			}
+			
+			// now remove the old text node
+			node.removeChild( child );
+			child = next;
+		}
+		else
+			child = child.nextSibling;
+	}
 },
 
 

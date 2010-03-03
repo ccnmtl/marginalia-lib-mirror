@@ -87,7 +87,7 @@ em.mia_annotation sup a {
 	cursor: pointer;
 }
 
-.mia_margin li.mia_dummy {
+.mia_margin li.mia_dummyfirst {
 	height: 1px;
 	min-height: 1px;
 	margin: 0 0 -1px 0;
@@ -211,6 +211,13 @@ em.mia_annotation sup a {
 }
 */
 
+.mia_margin li.mia_hover,
+em.mia_annotation.mia_hover {
+	color: red;
+	outline: red 1px solid;
+}
+
+
 .mia_margin li button.mia_expand-edit {
 	position: absolute;
 	top: 0;
@@ -235,6 +242,12 @@ em.mia_annotation sup a {
 	top: 0;
 	right: 0;
 	width: 1em;
+}
+
+p.mia_charsremaining {
+	margin: 0;
+	text-align: right;
+	color: #aaa;
 }
 
 /** Default service error display */

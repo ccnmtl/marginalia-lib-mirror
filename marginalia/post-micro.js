@@ -56,7 +56,7 @@ PostPageInfo.getPostPageInfo = function( doc, selectors )
 	var info;
 	for ( var i = 0;  i < PostPageInfo.cachedPostPageInfos.length; ++i )
 	{
-		if ( cachedPostPageInfos[ i ].doc == doc && cachedPostPageInfos[ i ].selectors == selectors)
+		if ( PostPageInfo.cachedPostPageInfos[ i ].doc == doc && PostPageInfo.cachedPostPageInfos[ i ].selectors == selectors)
 			return info;
 	}
 	info = new PostPageInfo( doc, selectors );
@@ -94,11 +94,12 @@ PostPageInfo.prototype.getPostByElement = function( element )
 	// Hard to fix when using selectors for everything (can't just walk up
 	// to parents and check for a given ID).  Alternative would be to set
 	// a field on posts when indexing, then look for that.
-	for ( var i = 0;  i < this.posts;  ++i )
+	for ( var i = 0;  i < this.posts.length;  ++i )
 	{
 		if ( domutil.isElementDescendant( element, this.posts[ i ].getElement( ) ) )
 			return this.posts[ i ];
 	}
+	return null;
 }
  
 /*
@@ -229,7 +230,6 @@ PostMicro.prototype.getUrl = function( baseUrl )
 			var parts = this._url.split( '#' );
 			if ( parts.length > 1 )
 				this._url = parts[ 0 ];
-			console.log( 'post url: ' + this._url );
 		}
 		this._fetchedUrl = true;
 	}

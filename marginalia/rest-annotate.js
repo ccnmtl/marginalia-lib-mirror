@@ -262,7 +262,7 @@ RestAnnotationService.prototype.deleteAnnotation = function( annotation, ok, fai
 		[ 'id', annotation.id, true ],
 		[ 'method', 'DELETE', this.noPutDelete ],
 		[ this.csrfCookie, readCookie( this.csrfCookie ) ],
-		[ 'curuser', window.marginalia.loginUserId, this.sendCurUser ]
+		[ 'curuser', this.sendCurUser, this.sendCurUser ]
 	], 'updateAnnotations' );
 	if ( ! serviceUrl )
 		throw "No matching service URL template for deleteAnnotation.";

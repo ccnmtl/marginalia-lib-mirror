@@ -69,6 +69,7 @@ function Annotation( params )
 	// removed (which would affect both blocks) unless it is hidden for both.
 	this.fetchCount = 0;
 	this.updated = new Date( );
+	this.lastRead = null;
 }
 
 /**
@@ -291,6 +292,20 @@ Annotation.prototype.setQuoteTitle = function( title )
 	}
 }
 
+Annotation.prototype.getUpdated = function( )
+{  return this.updated;  }
+
+Annotation.prototype.getLastRead = function( )
+{ return this.lastRead; }
+
+Annotation.prototype.setLastRead = function( lastRead )
+{
+	if ( this.lastRead != lastRead )
+	{
+		this.lastRead = lastRead;
+		this.changes[ 'lastRead' ] = true;
+	}
+}
 
 Annotation.prototype.fieldsFromPost = function( post )
 {
@@ -455,6 +470,8 @@ Annotation.prototype.fromAtom = function( entry )
 				this.action = null == field.firstChild ? '' : domutil.getNodeText( field );
 			else if ( field.namespaceURI == NS_ATOM && domutil.getLocalName( field ) == 'updated' )
 				this.updated = domutil.parseIsoDate( domutil.getNodeText( field ) );
+			else if ( field.namespaceURI == NS_PTR && domutil.getLocalName( field ) == 'lastread' )
+				this.lastRead = domutil.parseIsoDate( domutil.getNodeText( field ) );
 		}
 	}
 	// This is here because annotations are only parsed from XML when being initialized.

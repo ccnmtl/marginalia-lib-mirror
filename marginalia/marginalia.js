@@ -57,14 +57,9 @@ function Marginalia( service, loginUserId, sheet, features )
 	this.defaultAction = null;
 	this.skipContent = function(node) {
 		return _skipAnnotationLinks(node) || _skipAnnotationActions(node) || _skipCaret(node); };
-	this.saveEditPrefs = Marginalia.saveEditPrefs;
 	this.displayNote = Marginalia.defaultDisplayNote;
 	this.allowAnyUserPatch = false;
 	this.onMarginHeight = null;
-	// Default recent threshold is 25h ago (why 25? so that if someone visits at
-	// the same time every day but is off by a few minutes, they won't miss
-	// anything.
-	this.recentThreshold = o2s.dateAdd( 'h', -25, new Date( ) );
 	this.serviceErrorCallback = Marginalia.defaultErrorCallback;
 	
 	this.selectors = {
@@ -81,8 +76,7 @@ function Marginalia( service, loginUserId, sheet, features )
 		
 	this.editors = {
 		'default': Marginalia.newDefaultEditor,
-		freeform: Marginalia.newEditorFunc( FreeformNoteEditor ),
-		keyword: Marginalia.newEditorFunc( KeywordNoteEditor )
+		freeform: Marginalia.newEditorFunc( FreeformNoteEditor )
 //		link: Marginalia.newEditorFunc( SimpleLinkUi )
 	};
 
@@ -227,10 +221,6 @@ function Marginalia( service, loginUserId, sheet, features )
 				this.warnDelete = value;
 				break;
 			
-			case 'saveEditPrefs':
-				this.saveEditPrefs = value;
-				break;
-			
 			default:
 				if ( typeof( this[ feature ] ) != 'undefined' )
 					throw 'Attempt to override feature: ' + feature;
@@ -346,15 +336,6 @@ Marginalia.defaultErrorCallback = function( object, operation, status, text )
 		7000 );
 }
 	
-Marginalia.saveEditPrefs = function( marginalia, annotation, editor )
-{
-	if ( editor.constructor == KeywordNoteEditor )
-		marginalia.preferences.setPreference( Marginalia.P_NOTEEDITMODE, Marginalia.EDIT_NOTE_KEYWORDS );
-	else if ( editor.constructor == FreeformNoteEditor )
-		marginalia.preferences.setPreference( Marginalia.P_NOTEEDITMODE, Marginalia.EDIT_NOTE_FREEFORM );
-}
-
-
 
 /**
  * Could do this in the initializer, but by leaving it until now we can avoid
@@ -683,6 +664,28 @@ Marginalia.prototype.hideAnnotations = function( )
 	}
 }
 
+
+/**
+ * Display a tip to the user in the margin
+ * current implementation only shows the tip in the top post
+ */
+Marginalia.prototype.showTip = function( tip, onclose )
+{
+	var posts = this.listPosts( ).getAllPosts( );
+	if ( posts.length >= 1 )
+		return posts[ 0 ].showTip( this, tip, onclose );
+	else
+		return null;
+}
+
+Marginalia.prototype.hideTip = function ( tipNode )
+{
+	var post = marginalia.posts.getPostByElement( tipNode );
+	if ( post )
+		post.hideTip( this, tipNode );
+}
+
+
 /* *****************************
  * Additions to Annotation class
  */
@@ -933,9 +936,6 @@ PostMicro.prototype.saveAnnotation = function( marginalia, annotation )
 		return false;
 	}
 	
-	// Now that validation's complete, start storing things
-	Marginalia.saveEditPrefs( marginalia, annotation, marginalia.noteEditor );
-
 	// Ensure the window doesn't scroll by saving and restoring scroll position
 	var scrollY = domutil.getWindowYScroll( );
 	var scrollX = domutil.getWindowXScroll( );
