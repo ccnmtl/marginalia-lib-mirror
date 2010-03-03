@@ -612,7 +612,7 @@ FreeformNoteEditor.prototype.save = function( marginalia )
 	this.annotation.setNote( this.editNode.value );
 }
 
-FreeformNoteEditor.REMAINING_THRESHOLD = 50;
+FreeformNoteEditor.REMAINING_THRESHOLD = 240;
 FreeformNoteEditor.prototype.show = function( marginalia )
 {
 	var postMicro = this.postMicro;
@@ -630,14 +630,15 @@ FreeformNoteEditor.prototype.show = function( marginalia )
 	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
 	var remainingNode = domutil.element( 'p', {
 		className: Marginalia.PREFIX + 'charsremaining',
-		style: noteText.length > threshold ? 'display:none' : '' } );
+		style: 'display:none' } );
 	noteElement.appendChild( remainingNode, null );
+	FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, editNode, remainingNode, noteElement, prompt );
 
 	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
 	var editNode = this.editNode;
-	trace( null, 'editNode=' + editNode );
+	var prompt = getLocalized( 'chars remaining' );
 	var onkey = function( e ) {
-		FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode, e );
+		FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, editNode, remainingNode, noteElement, prompt );
 		_editChangedKeyup( e );
 	};
 	this.editNode.annotationId = this.annotation.getId();
@@ -656,15 +657,23 @@ FreeformNoteEditor.prototype.focus = function( marginalia )
 		this.editNode.focus( );
 }
 		
-FreeformNoteEditor.showCharsRemaining = function( marginalia, threshold, editNode, remainingNode, event )
+FreeformNoteEditor.showCharsRemaining = function( marginalia, postMicro, editNode, remainingNode, noteElement, prompt )
 {
-	if ( editNode.value.length > threshold )
+	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
+	var reposition = false;
+	if ( editNode.value.length > threshold && ! editNode.mia_showremaining )
 	{
-		var remaining = marginalia.maxNoteLength - editNode.value.length;
-		jQuery( remainingNode ).text( remaining + ' ' + getLocalized( 'chars remaining' ) ).css( 'display', '' );
+		jQuery( remainingNode ).css( 'display', 'block' );
+		editNode.mia_showremaining = true;
+		reposition = true;
 	}
-	else
-		jQuery( remainingNode ).css( 'display', 'none' );
+	if ( editNode.mia_showremaining )
+	{
+		var remaining = Math.max( marginalia.maxNoteLength - editNode.value.length, 0 );
+		jQuery( remainingNode ).text( remaining + ' ' + prompt );
+		if ( reposition )
+			postMicro.repositionSubsequentNotes( marginalia, noteElement );
+	}
 }
 
 
@@ -746,17 +755,17 @@ YuiAutocompleteNoteEditor.prototype.show = function( marginalia )
 	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
 	// Create the place for showing how many characters remain
 	var editNode = this.editNode;
+	var prompt = getLocalized( 'chars remaining' );
 	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
 	var remainingNode = domutil.element( 'p', {
-		className: Marginalia.PREFIX + 'charsremaining' } );
-	FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode );
-//	if ( noteText.length < threshold )
-//		jQuery( remainingNode ).css( 'display', 'none' );
-	noteElement.appendChild( remainingNode );
+		className: Marginalia.PREFIX + 'charsremaining',
+		style: 'display:none' } );
+	noteElement.appendChild( remainingNode, null );
+	FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, editNode, remainingNode, noteElement, prompt );
 
 	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
 	var onkey = function( e ) {
-		FreeformNoteEditor.showCharsRemaining( marginalia, threshold, editNode, remainingNode, e );
+		FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, editNode, remainingNode, noteElement, prompt );
 		_editChangedKeyup( e );
 	};
 

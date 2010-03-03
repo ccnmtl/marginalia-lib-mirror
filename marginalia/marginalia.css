@@ -183,10 +183,12 @@ em.mia_annotation sup a {
 	z-index: 1000;
 }
 
+/*
 .mia_margin li .controls button:hover,
 .mia_margin li button.mia_expand-edit {
 	font-weight: bold;
 }
+*/
 
 .mia_margin li textarea {
 	font-size: inherit;
@@ -211,7 +213,9 @@ em.mia_annotation sup a {
 }
 */
 
-.mia_margin li.mia_hover,
+.mia_margin li.mia_hover {
+	color: red;
+}
 em.mia_annotation.mia_hover {
 	color: red;
 	outline: red 1px solid;
@@ -247,7 +251,7 @@ em.mia_annotation.mia_hover {
 p.mia_charsremaining {
 	margin: 0;
 	text-align: right;
-	color: #aaa;
+	color: #999;
 }
 
 /** Default service error display */
