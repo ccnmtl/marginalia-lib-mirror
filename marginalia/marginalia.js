@@ -61,6 +61,7 @@ function Marginalia( service, loginUserId, sheet, features )
 	this.allowAnyUserPatch = false;
 	this.onMarginHeight = null;
 	this.serviceErrorCallback = Marginalia.defaultErrorCallback;
+	this.enableRecentFlag = false;
 	
 	this.selectors = {
 		post: new Selector( '.hentry', '.hentry .hentry' ),
@@ -169,8 +170,8 @@ function Marginalia( service, loginUserId, sheet, features )
 				break;
 				
 			// Annotations newer than this should be flagged as recent
-			case 'recentThreshold':
-				this.recentThreshold = value;
+			case 'enableRecentFlag':
+				this.enableRecentFlag = value;
 				break;
 			
 			// Callback for displaying an error when a service call to the server
@@ -420,7 +421,9 @@ Marginalia.prototype.showAnnotations = function( url, block )
 	// buttons) will take the correct size into account.
 	domutil.addClass( document.body, Marginalia.C_ANNOTATED );
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, this.sheet, block,
+	this.annotationService.listAnnotations( url, this.sheet, {
+		block: block,
+		mark: 'read' },
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, true ) } );
 }
 
@@ -429,7 +432,9 @@ Marginalia.prototype.showBlockAnnotations = function( url, block )
 	// TODO: Push down calculations must be repaired where new annotations are added.
 	// Ideally this would happen automatically.
 	var marginalia = this;
-	this.annotationService.listAnnotations( url, null, block,
+	this.annotationService.listAnnotations( url, null, {
+		block: block,
+		mark: 'read' },
 		function(xmldoc) { _showAnnotationsCallback( marginalia, url, xmldoc, false, true ) } );
 }
 

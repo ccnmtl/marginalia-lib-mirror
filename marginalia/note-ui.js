@@ -201,12 +201,15 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 		var isRecent = false;
 		if ( annotation.getLastRead( ) )
 		{
-			isRecent = Date.compare( annotation.getUpdated( ) > annotation.getLastRead( ) );
-			isRecent = isRecent > 0 && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
-			// console.log( 'updated: ' + annotation.getUpdated( ) + ', read: ' + annotation.getLastRead( ) );
+			var updated = annotation.getUpdated( );
+			var lastread = annotation.getLastRead( );
+			isRecent = annotation.getUpdated( ).getTime( ) > annotation.getLastRead( ).getTime( );
 		}
+		else
+			isRecent = true;
+	//		isRecent = isRecent && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
 		var className = ( quoteFound ? '' : Marginalia_C_QUOTENOTFOUND ) + ' '
-			+ ( isRecent ? Marginalia.C_RECENT : '' );
+			+ ( isRecent && marginalia.enableRecentFlag ? Marginalia.C_RECENT : '' );
 
 		var noteElement = domutil.element( 'li', {
 			id:  Marginalia.ID_PREFIX + annotation.getId(),

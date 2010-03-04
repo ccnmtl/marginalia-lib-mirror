@@ -115,11 +115,15 @@ RestAnnotationService.prototype.listBlocks = function( url, ok, fail )
  */
 // Recent change (2009-09-29):  userid replaced by sheet.  This filters which
 // annotations are fetched.
-RestAnnotationService.prototype.listAnnotations = function( url, sheet, block, ok, fail )
+RestAnnotationService.prototype.listAnnotations = function( url, sheet, params, ok, fail )
 {
+	var block = params.block;
+	var mark = params.mark;
+	
 	var serviceUrl = this.urlTemplate.match( [
 		[ 'url', url ],
 		[ 'sheet', sheet, true ],
+		[ 'mark', mark ],
 		[ 'format', 'atom' ],
 		[ 'curuser', this.sendCurUser, this.sendCurUser ]
 	], 'listAnnotations' );

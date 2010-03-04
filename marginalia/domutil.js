@@ -920,12 +920,12 @@ urlize: function( node )
 						href: url,
 						title: url,
 						onclick: domutil.stopPropagation,
-						content: domain }), child);
+						content: domain }), next);
 					tail = tail.substr( head.length + url.length );
 				}
 				else
 				{
-					node.insertBefore( document.createTextNode( tail ), child );
+					node.insertBefore( document.createTextNode( tail ), next );
 					break;
 				}
 			}
