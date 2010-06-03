@@ -198,22 +198,15 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 		// Is this a recent post?
 		// Don't flag this for one's own notes - that would be cluttered and confusing.
 		// Currently, moodle does not seem to be storing anything in the forum_read table, so this doesn't work
-		var isRecent = false;
-		if ( annotation.getLastRead( ) )
-		{
-			var updated = annotation.getUpdated( );
-			var lastread = annotation.getLastRead( );
-			isRecent = annotation.getUpdated( ).getTime( ) > annotation.getLastRead( ).getTime( );
-		}
-		else
-			isRecent = true;
-	//		isRecent = isRecent && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
+		var isRecent = annotation.isRecent( );
+//		isRecent = isRecent && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
 		var className = ( quoteFound ? '' : Marginalia_C_QUOTENOTFOUND ) + ' '
 			+ ( isRecent && marginalia.enableRecentFlag ? Marginalia.C_RECENT : '' );
 
 		var noteElement = domutil.element( 'li', {
 			id:  Marginalia.ID_PREFIX + annotation.getId(),
-			className:  className } );
+			className:  className,
+			title: ' ' } );
 		noteElement[ Marginalia.F_ANNOTATION ] = annotation;
 
 		// Align the note (takes no account of subsequent notes, which is OK because this note
@@ -468,20 +461,18 @@ Marginalia.defaultDisplayNote = function( marginalia, annotation, noteElement, p
 	{
 		domutil.addClass( noteElement, Marginalia.C_OTHERUSER );
 		var username = annotation.getUserName( );
-		/* Users told me they prefer seeing full names to initials.
-		 * Among other things, it helps them learn the names of their
-		 * classmates.
-		var parts = username.match( /^\s*(\S)[^,]*,\s*(\S)/ );
-		if ( parts && parts.length > 2 )
-			var initials = parts[ 2 ][ 0 ] + parts[ 1 ][ 0 ];
+		if ( annotation.isRecent( ) )
+			titleText = getLocalized( 'note user recent title' );
 		else
-			var initials = username.substr( 0, 2 );
-		*/
-		titleText = annotation.getUpdated( ).toString( 'yyyy-M-d H:mm tt' );
+			titleText = getLocalized( 'note user title' );
+		titleText += annotation.getUpdated( ).toString( 'yyyy-MM-d H:mm' ); // tt' );
+		// The space is not part of the note, nor is it part of the username.  This is important so
+		// that it doesn't get underlined or otherwise styled with the username.
+		noteText.insertBefore( document.createTextNode( ' ' ), noteText.firstChild );
 		noteText.insertBefore( domutil.element( 'span', {
 			className:  Marginalia.C_USERNAME,
 			title:  titleText,
-			content:  username + ': ' } ), noteText.firstChild );
+			content:  username + ':' } ), noteText.firstChild );
 	}
 	noteElement.appendChild( noteText );
 	
@@ -615,7 +606,7 @@ FreeformNoteEditor.prototype.save = function( marginalia )
 	this.annotation.setNote( this.editNode.value );
 }
 
-FreeformNoteEditor.REMAINING_THRESHOLD = 240;
+FreeformNoteEditor.REMAINING_THRESHOLD = 50;
 FreeformNoteEditor.prototype.show = function( marginalia )
 {
 	var postMicro = this.postMicro;

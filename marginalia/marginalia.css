@@ -83,7 +83,6 @@ em.mia_annotation sup a {
 	padding: 0;
 	min-height: 1.2em;
 	line-height: 1.2em;
-	width: 100%;
 	cursor: pointer;
 }
 
@@ -96,24 +95,31 @@ em.mia_annotation sup a {
 
 /* notes by another user are in a lighter grey */
 .mia_margin li.mia_other-user {
-	color: #555;
+	color: #444;
 	cursor: inherit;
 }
 
 .mia_margin .mia_username {
-	font-variant: small-caps;
-	font-size: smaller;
+	/*font-variant: small-caps;*/
+	/*font-size: 90%;*/
 }
 
-.article .notes li.mia_recent .mia_username {
-	color: red;
+.mia_recent .mia_username {
+	xfont-weight: bold;
+	xcolor: #444;
+}
+
+.mia_recent .mia_username:before {
+	content: '*';
+	font-size: 120%;
+	color: #d00;
 }
 
 .mia_margin li.mia_quote-error p:before {
 	content: '!';
 	padding: 0 .75ex;
 	margin-right: .2ex;
-	background: red;
+	background: #d00;
 	color: white;
 	font-weight: bold;
 }
@@ -213,12 +219,27 @@ em.mia_annotation sup a {
 }
 */
 
+.mia_margin li {
+	padding-left: 2px;
+}
+
 .mia_margin li.mia_hover {
-	color: red;
+	color: #d00;
 }
 em.mia_annotation.mia_hover {
-	color: red;
-	outline: red 1px solid;
+	color: #d00;
+	outline: #d00 1px solid;
+}
+.mia_margin li.mia_hover:before {
+	background-color: #d00;
+	height: 100%;
+	position: absolute;
+	right: 100%;
+	width: .2px;
+	padding-right: 2px;
+	top: 0;
+	content: ' ';
+	display: block;
 }
 
 

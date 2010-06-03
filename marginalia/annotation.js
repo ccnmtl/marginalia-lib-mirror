@@ -307,6 +307,16 @@ Annotation.prototype.setLastRead = function( lastRead )
 	}
 }
 
+Annotation.prototype.isRecent = function( )
+{
+	var r;
+	if ( this.getLastRead( ) )
+		r = this.getUpdated( ).getTime( ) > this.getLastRead( ).getTime( );
+	else
+		r = true;
+	return r;
+}
+
 Annotation.prototype.fieldsFromPost = function( post )
 {
 	this.setQuoteAuthorId( post.getAuthorId( ) );
