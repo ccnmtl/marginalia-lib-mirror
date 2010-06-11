@@ -619,6 +619,7 @@ FreeformNoteEditor.prototype.show = function( marginalia )
 	this.editNode = document.createElement( "textarea" );
 	this.editNode.rows = 3;
 	this.editNode.appendChild( document.createTextNode( noteText ) );
+	this.noteElement.appendChild( this.editNode );
 	
 	// Create the place for showing how many characters remain
 	var threshold = marginalia.maxNoteLength - FreeformNoteEditor.REMAINING_THRESHOLD;
@@ -626,7 +627,7 @@ FreeformNoteEditor.prototype.show = function( marginalia )
 		className: Marginalia.PREFIX + 'charsremaining',
 		style: 'display:none' } );
 	noteElement.appendChild( remainingNode, null );
-	FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, editNode, remainingNode, noteElement, prompt );
+	FreeformNoteEditor.showCharsRemaining( marginalia, postMicro, this.editNode, remainingNode, noteElement, prompt );
 
 	// Set focus after making visible later (IE requirement; it would be OK to do it here for Gecko)
 	var editNode = this.editNode;
@@ -638,8 +639,6 @@ FreeformNoteEditor.prototype.show = function( marginalia )
 	this.editNode.annotationId = this.annotation.getId();
 	addEvent( this.editNode, 'keypress', _editNoteKeypress );
 	addEvent( this.editNode, 'keyup', onkey );
-	
-	this.noteElement.appendChild( this.editNode );
 }
 
 FreeformNoteEditor.prototype.focus = function( marginalia )
@@ -783,7 +782,10 @@ PostMicro.prototype.positionNote = function( marginalia, annotation )
 		// Don't push down if no align element was found
 		if ( null != alignElement )
 		{
-			var pushdown = this.calculateNotePushdown( marginalia, note.previousSibling, alignElement );
+			// #geof# doesn't work right.  Current fix is to have no intervening text nodes:
+			// <div class="mia_margin"><ol><li class="mia_dummyfirst"></li></ol></div>
+			var prev = jQuery( note ).prev( ); // note.previousSibling
+			var pushdown = this.calculateNotePushdown( marginalia, prev, alignElement );
 			note.style.marginTop = ( pushdown > 0 ? String( pushdown ) : '0' ) + 'px';
 		}
 		note = note.nextSibling;

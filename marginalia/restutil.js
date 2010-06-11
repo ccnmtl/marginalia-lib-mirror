@@ -248,6 +248,7 @@ getResource: function( serviceUrl, ok, fail, args )
 {
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'GET', serviceUrl );
+	xmlhttp.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
 	if ( args && args.headers )
 	{
 		for ( header in args.headers )
@@ -273,10 +274,11 @@ postResource: function( serviceUrl, body, ok, fail, args )
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( 'POST', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', args && args.contentType ? args.contentType : 'application/x-www-form-urlencoded; charset=UTF-8' );
+	xmlhttp.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
 	if ( args && args.headers )
 	{
 		for ( header in args.headers )
-			xmlhttp.setRequestHeader( header, args[headers] );
+			xmlhttp.setRequestHeader( header, args.headers[header] );
 	}
 	//xmlhttp.setRequestHeader( 'Content-length', body.length );
 	xmlhttp.onreadystatechange = function( ) {
@@ -302,6 +304,7 @@ putResource: function( serviceUrl, body, ok, fail, args )
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( args && args.noPutDelete ? 'POST' : 'PUT', serviceUrl, true );
 	xmlhttp.setRequestHeader( 'Content-Type', args && args.contentType ? args.contentType : 'application/x-www-form-urlencoded; charset=UTF-8' );
+	xmlhttp.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
 	if ( args && args.headers )
 	{
 		for ( header in args.headers )
@@ -330,6 +333,7 @@ deleteResource: function( serviceUrl, ok, fail, args )
 {
 	var xmlhttp = domutil.createAjaxRequest( );
 	xmlhttp.open( args && args.noPutDelete ? 'POST' : 'DELETE', serviceUrl, true );
+	xmlhttp.setRequestHeader( 'X-Requested-With', 'XMLHttpRequest' );
 	
 	if ( args && args.headers )
 	{
