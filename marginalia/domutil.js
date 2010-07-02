@@ -635,13 +635,27 @@ closestPrecedingMatchingElement: function( node, f )
 	return null;
 },
 
+// Should be a jQuery function, but right now I just want to make it work
+closestPrecedingFlat: function( rel, selector, orself )
+{
+	if ( orself && $( rel ).is( selector ) )
+		return rel;
+	else
+	{
+		return domutil.closestPrecedingMatchingElement( rel, function( node, tag ) {
+			return $( node ).is( selector ); } );
+	}
+},
+
 /*
  * Find the start of the closest preceding breaking element *in document order*
  * This is not the same as the closest preceding element at the same depth as the passed element
  * E.g., for <a> <b>...</b> </a> <rel/>, the closest preceding element for rel is b - not a
  */
-closestPrecedingBreakingElement: function( rel )
+closestPrecedingBreakingElement: function( rel, orself )
 {
+	if ( orself && ELEMENT_NODE == rel.nodeType && domutil.isBreakingElement( rel.tagName ) )
+		return rel;
 	return domutil.closestPrecedingMatchingElement( rel, function( node, isStartTag ) {
 		return isStartTag && domutil.isBreakingElement( node.tagName ); } );
 },
@@ -649,8 +663,10 @@ closestPrecedingBreakingElement: function( rel )
 /**
  * Find the start of the closest preceding block-level element in document order
  */
-closestPrecedingBlockElement: function( rel )
+closestPrecedingBlockElement: function( rel, orself )
 {
+	if ( orself && ELEMENT_NODE == rel.nodeType && domutil.isBreakingElement( rel.tagName ) )
+		return rel;
 	return domutil.closestPrecedingMatchingElement( rel, function( node, isStartTag ) {
 		return isStartTag && domutil.isBlockElement( node.tagName ); } );
 },
@@ -1000,7 +1016,9 @@ getWindowXScroll: function( )
 
 SCROLL_POS_TOP: 0,
 SCROLL_POS_CENTER: 1,
-scrollWindowToNode: function( node, position )
+SCROLL_POS_CENTER_NODE: 2,
+SCROLL_POS_UP_NODE: 3,
+scrollWindowToNode: function( node, position, params )
 {
 	if ( null != node )
 	{
@@ -1008,7 +1026,12 @@ scrollWindowToNode: function( node, position )
 		var yoffset = domutil.getElementYOffset( node, node.ownerDocument.documentElement );
 		if ( domutil.SCROLL_POS_CENTER == position )
 			yoffset -= document.documentElement.clientHeight / 2;
-		window.scrollTo( xoffset, yoffset );
+		else if ( domutil.SCROLL_POS_CENTER_NODE == position )
+			yoffset -= document.documentElement.clientHeight / 2 - Math.ceil( $( node ).innerHeight( ) / 2 );
+		else if ( domutil.SCROLL_POS_UP_NODE == position )
+			yoffset -= document.documentElement.clientHeight / 4;
+		$( 'body' ).scrollTo( { left:xoffset, top:yoffset}, params );
+//		window.scrollTo( xoffset, yoffset );
 	}
 },
 

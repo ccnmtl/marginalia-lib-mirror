@@ -200,7 +200,7 @@ PostMicro.prototype.showNoteElement = function( marginalia, annotation, nextNode
 		// Currently, moodle does not seem to be storing anything in the forum_read table, so this doesn't work
 		var isRecent = annotation.isRecent( );
 //		isRecent = isRecent && marginalia.loginUserId && annotation.getUserId( ) != marginalia.loginUserId;
-		var className = ( quoteFound ? '' : Marginalia_C_QUOTENOTFOUND ) + ' '
+		var className = ( quoteFound ? '' : Marginalia.C_QUOTENOTFOUND ) + ' '
 			+ ( isRecent && marginalia.enableRecentFlag ? Marginalia.C_RECENT : '' );
 
 		var noteElement = domutil.element( 'li', {

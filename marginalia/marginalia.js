@@ -542,8 +542,19 @@ function _annotationDisplayCallback( marginalia, callbackUrl, doBlockMarkers, no
 					// Now insert before beforeNote
 					var success = post.addAnnotation( marginalia, annotation, nextNode );
 					
-					if ( success && annotation.getUserId( ) == marginalia.loginUserId || marginalia.allowAnyUserPatch )
-						marginalia.patchAnnotation( annotation, post );
+					// If the annotation was added it may need to be patched (to update the XPathRange
+					// or SequenceRange to the current format)
+					if ( success )
+					{
+						if ( annotation.getUserId( ) == marginalia.loginUserId || marginalia.allowAnyUserPatch )
+							marginalia.patchAnnotation( annotation, post );
+					}
+					// If the highlight could not be located, try to fix the annotation
+					else
+					{
+						if ( annotation.getUserId( ) == marginalia.loginUserId || marginalia.allowAnyUserPatch )
+							marginalia.fixAnnotation( annotation, post );
+					}
 				}
 			}
 			
@@ -647,6 +658,49 @@ Marginalia.prototype.patchAnnotation = function( annotation, post )
 		// Reposition block markers
 		post.repositionBlockMarkers( this );
 	}
+}
+
+/**
+ * Fix a broken annotation range by searching for the quote text
+ */
+Marginalia.prototype.fixAnnotation = function( annotation, post )
+{
+	while( window.find( annotation.getQuote( ) ) )
+	{
+		// the find function places a text range over the found text
+		var textRange = marginalia.getSelection( );
+		var contentElement = post.getContentElement( );
+		// if the found text is within the post then we're good to go
+		if ( ( domutil.isElementDescendant( textRange.startContainer, contentElement )
+			|| textRange.startContainer == contentElement )
+			&& ( domutil.isElementDescendant( textRange.endContainer, contentElement )
+			|| textRange.endContainer == contentElement ) )
+		{
+			// Calculate the ranges
+			var wordRange = WordRange.fromTextRange( textRange, contentElement, marginalia.skipContent );
+			var sequenceRange = wordRange.toSequenceRange( contentElement );
+			var xpathRange = wordRange.toXPathRange( contentElement );
+			annotation.setSequenceRange( sequenceRange );
+			annotation.setXPathRange( xpathRange );
+			
+			// Update the annotation
+			marginalia.updateAnnotation( annotation, null );
+	
+			// Show the highlight
+			post.showHighlight( marginalia, annotation );
+
+			// Replace the editable note display
+			post.removeNote( this, annotation );
+			var nextNode = post.getAnnotationNextNote( this, annotation );
+			noteElement = post.showNote( this, annotation, nextNode );
+			post.repositionNotes( this, noteElement.nextSibling );
+		
+			// Reposition block markers
+			post.repositionBlockMarkers( this );
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
